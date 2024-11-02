@@ -1512,9 +1512,6 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0
 	char* txtarray = new char[n + 1];
 	strcpy(txtarray, text.c_str());
 
-
-
-
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 	int tmp_x_shift = 0;
 	for (int i = 0; i < n + 1; i++) {
@@ -1529,19 +1526,15 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0
 				tmp_x_shift += font_width_map_2[txtarray[i]] - 8;
 			}
 
-			
-
-			
 		}
 		else {
 			tmp_x_shift += 20;
 		}
 
-
-
-
 	}
 	pSprite->End();
+
+	delete[] txtarray;
 
 }
 
@@ -1594,8 +1587,23 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 void Present() {
 	if (configLoaded == true) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
-		DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
+		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
+		int i = 0;
+		for (Pl0000* player : players) {
+			if (player == nullptr) continue;
 
+			string name = "";
+			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
+			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
+			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
+			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
+
+			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
+				player->getFuelContainer(), player->getFuelCapacity(false), name);
+			i++;
+		}
 	}
 }
 
