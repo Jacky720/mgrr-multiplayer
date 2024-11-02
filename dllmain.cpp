@@ -757,15 +757,61 @@ std::string GetVanillaKeybind(InputBitflags bit) {
 	return "None"; // Camera is analog and won't really work here anyway
 }
 
-bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
-					   InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+std::string GetVanillaKeybind(std::string Keybind) {
+	if (Keybind == WeaponMenu || Keybind == WeaponMenu2)
+		return "32"; // "2"
+	if (Keybind == Heal)
+		return "51"; // "Q"
+	if (Keybind == Taunt)
+		return "31"; // "1"
+	if (Keybind == Jump)
+		return "20"; // " "
+	if (Keybind == Interact)
+		return "46"; // "F"
+	if (Keybind == NormalAttack)
+		return "01"; // LMB
+	if (Keybind == StrongAttack)
+		return "02"; // RMB
+	if (Keybind == Pause)
+		return "1B"; // Escape
+	if (Keybind == Pause2)
+		return "33"; // "3"
+	if (Keybind == Subweapon)
+		return "43"; // "C"
+	if (Keybind == BladeMode)
+		return "A0"; // LShift
+	if (Keybind == Ability)
+		return "52"; // "R", technically not a 1:1 match because platinum
+	if (Keybind == Lockon)
+		return "45"; // "E"
+	if (Keybind == Run)
+		return "A2"; // LCtrl
+	if (Keybind == CamReset)
+		return "03"; // MMB
+	if (Keybind == Left)
+		return "41"; // "A"
+	if (Keybind == Right)
+		return "44"; // "D"
+	if (Keybind == Forward)
+		return "57"; // "W"
+	if (Keybind == Back)
+		return "53"; // "S"
+	return "None"; // Camera is analog and won't really work here anyway
+}
+
+bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind) {
 	if (controllerNumber == -1) {
-		Keybind = GetVanillaKeybind(bit);
+		Keybind = GetVanillaKeybind(Keybind);
 		if (Keybind == "None")
 			return false;
 	}
-	if ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
-		|| IsGamepadButtonPressed(controllerNumber, GamepadBind)) {
+	return ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
+		|| IsGamepadButtonPressed(controllerNumber, GamepadBind));
+}
+
+bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
+					   InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
 		player->m_nKeyHoldingFlag |= bit;
 		player->m_nKeyPressedFlag |= bit;
 		if (altField1) *altField1 |= bit;
@@ -783,13 +829,7 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 
 bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 					   InputBitflags bit, float* altField, bool invert) {
-	if (controllerNumber == -1) {
-		Keybind = GetVanillaKeybind(bit);
-		if (Keybind == "None")
-			return false;
-	}
-	if ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
-		|| IsGamepadButtonPressed(controllerNumber, GamepadBind)) {
+	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
 		player->m_nKeyHoldingFlag |= bit;
 		*altField = invert ? -1000.0f : 1000.0f;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadBind))
@@ -925,35 +965,33 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	return *isMenuShowPtr; // Возвращаем текущее состояние меню
 }
 
-void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[]) {
-	
-	int controllerNumber = 0;
+void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int controllerNumber = -1) {
 
-	if ((GetKeyState(VK_NUMPAD1) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadNormalAttack)) {
+	if (CheckControlPressed(controllerNumber, NormalAttack, GamepadNormalAttack)) { // Two punches (four strikes)
 		Enemy->setState(BossActions[0], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD2) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadStrongAttack)) {
+	if (CheckControlPressed(controllerNumber, StrongAttack, GamepadStrongAttack)) { // Two punches, kick, punch (four strike w/ sheath)
 		Enemy->setState(BossActions[1], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD3) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadRun)) {
+	if (CheckControlPressed(controllerNumber, Run, GamepadRun)) { // Run QTE (Assault Rush)
 		Enemy->setState(BossActions[2], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD4) & 0x8000)) {
+	if (CheckControlPressed(controllerNumber, Interact, GamepadInteract)) { // Overhead with AOE (unblockable QTE)
 		Enemy->setState(BossActions[3], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD5) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadJump)) {
+	if (CheckControlPressed(controllerNumber, Jump, GamepadJump)) { // Uppercut (perfect parry QTE fail)
 		Enemy->setState(BossActions[4], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD6) & 0x8000)) {
+	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)) { // Explode (un-perfect-parryable four strike)
 		Enemy->setState(BossActions[5], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD7) & 0x8000)) {
+	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)) { // Heal (taunt)
 		Enemy->setState(BossActions[6], 0, 0, 0);
 	}
 }
@@ -1104,7 +1142,7 @@ void Update()
 
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A && PlayAsArmstrong) {
 				unsigned int BossActions[] = { 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
-				UpdateBossActions(Enemy, BossActions);
+				UpdateBossActions(Enemy, BossActions, controllerNumber);
 
 				if (ArmstrongCanDamagePlayer)
 					Enemy->field_640 = 2;
@@ -1114,7 +1152,7 @@ void Update()
 
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam) {
 				unsigned int BossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x30005, 0x10006 };
-				UpdateBossActions(Enemy, BossActions);
+				UpdateBossActions(Enemy, BossActions, controllerNumber);
 
 				if (BossSamCanDamagePlayer)
 					Enemy->field_640 = 2;
@@ -1139,14 +1177,15 @@ void Update()
 			cCameraGame camera;
 			//UpdateMovement(Enemy, &camera);
 
-
+			unsigned int StandingState = 0x10000;
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) StandingState = 0x10000; // TODO: find correct state
 
 			unsigned int WalkingState = 0x10001;
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) WalkingState = 0x10002;
 
 
-			if ((GetKeyState(std::stoi(Forward, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadForward)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+			if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
+				if (Enemy->m_nCurrentAction == StandingState) Enemy->setState(WalkingState, 0, 0, 0);
 				field_Y = -1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadForward))
 					field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
@@ -1156,25 +1195,25 @@ void Update()
 
 
 			//back
-			if ((GetKeyState(std::stoi(Back, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadBack)) {
+			if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
 				//if (GetAsyncKeyState(0x4B)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+				if (Enemy->m_nCurrentAction == StandingState) Enemy->setState(WalkingState, 0, 0, 0);
 				field_Y = 1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadBack))
 					field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
 			}
 
 			//left
-			if ((GetKeyState(std::stoi(Left, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadLeft)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+			if (CheckControlPressed(controllerNumber, Left, GamepadLeft)) {
+				if (Enemy->m_nCurrentAction == StandingState) Enemy->setState(WalkingState, 0, 0, 0);
 				field_X = -1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadLeft))
 					field_X *= GetGamepadAnalog(controllerNumber, GamepadLeft);
 			}
 
 			//right
-			if ((GetKeyState(std::stoi(Right, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadRight)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+			if (CheckControlPressed(controllerNumber, Right, GamepadRight)) {
+				if (Enemy->m_nCurrentAction == StandingState) Enemy->setState(WalkingState, 0, 0, 0);
 				field_X = 1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadRight))
 					field_X *= GetGamepadAnalog(controllerNumber, GamepadRight);
@@ -1183,6 +1222,9 @@ void Update()
 			if (field_X != 0 || field_Y != 0) {
 				float angle = atan2(field_X, field_Y);
 				Enemy->m_vecRotation.y = angle;
+			}
+			else {
+				if (Enemy->m_nCurrentAction == WalkingState) Enemy->setState(StandingState, 0, 0, 0);
 			}
 
 
