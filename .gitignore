@@ -409,3 +409,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Individual project formatting
+*.vcxproj
