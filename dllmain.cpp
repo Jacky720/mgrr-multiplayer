@@ -987,11 +987,11 @@ void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int co
 		Enemy->setState(BossActions[4], 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)) { // Explode (un-perfect-parryable four strike)
+	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)) { // Explode (taunt)
 		Enemy->setState(BossActions[5], 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)) { // Heal (taunt)
+	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)) { // Heal (un-perfect-parryable four strike)
 		Enemy->setState(BossActions[6], 0, 0, 0);
 	}
 }
@@ -1139,7 +1139,7 @@ void Update()
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
 			) {
 
-
+			/*
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A && PlayAsArmstrong) {
 				unsigned int BossActions[] = { 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
 				UpdateBossActions(Enemy, BossActions, controllerNumber);
@@ -1159,7 +1159,7 @@ void Update()
 				else
 					Enemy->field_640 = 1;
 			}
-
+			*/
 
 
 
@@ -1177,11 +1177,29 @@ void Update()
 			cCameraGame camera;
 			//UpdateMovement(Enemy, &camera);
 
+			// All defaults here are for Armstrong (em0700)
 			unsigned int StandingState = 0x10000;
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) StandingState = 0x10000; // TODO: find correct state
-
 			unsigned int WalkingState = 0x10001;
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) WalkingState = 0x10002;
+			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
+
+			// Buttons: X, Y, RT, B, A, up, LT
+			unsigned int ArmstrongBossActions[] = {0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010};
+			unsigned int SamBossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005 };
+			unsigned int *BossActions = ArmstrongBossActions;
+
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) {
+				StandingState = 0x20000;
+				WalkingState = 0x10002;
+				BossActions = SamBossActions;
+				CanDamagePlayer = BossSamCanDamagePlayer;
+			}
+
+			UpdateBossActions(Enemy, BossActions, controllerNumber);
+
+			if (CanDamagePlayer)
+				Enemy->field_640 = 2;
+			else
+				Enemy->field_640 = 1;
 
 
 			if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
@@ -1494,6 +1512,7 @@ void gui::RenderWindow()
 				// Debug print Sam's flags
 //#define PRINTSAM
 //#define PRINTENEMY
+//#define SHOWBOSSACTION
 				
 				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 
@@ -1518,6 +1537,13 @@ void gui::RenderWindow()
 						int twerpsenemyflag = (int)&Enemy->m_pEnemy;
 						ImGui::InputInt("twerp's enemy flag", &twerpsenemyflag, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
 						ImGui::InputInt("Some twerp", (int*)&(Enemy->m_pEnemy->m_pEntity->m_nEntityIndex), 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
+					}
+#endif
+#ifdef SHOWBOSSACTION
+					auto Enemy = value->getEntityInstance<BehaviorEmBase>();
+					if (!Enemy) continue;
+					if (value->m_nEntityIndex == 0x20020 || value->m_nEntityIndex == 0x20700) {
+						ImGui::Text("Entity %x has state %x", value->m_nEntityIndex, Enemy->m_nCurrentAction);
 					}
 #endif
 				}
