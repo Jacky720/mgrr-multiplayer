@@ -1505,46 +1505,12 @@ void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOL
 
 }
 
-void RenderTextMGR(string text, float x, float y, D3DCOLOR color) {
+void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
 	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
 
 	int n = text.length();
 	char* txtarray = new char[n + 1];
 	strcpy(txtarray, text.c_str());
-
-
-
-
-	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
-	int tmp_x_shift = 0;
-	for (int i = 0; i < n + 1; i++) {
-		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
-		if (txtarray[i] != NULL) {
-			pSprite->Draw(font_map[txtarray[i]], NULL, NULL, &position, color);
-
-			tmp_x_shift += font_width_map[txtarray[i]] - 8;
-		}
-		else {
-			tmp_x_shift += 20;
-		}
-
-
-
-		
-	}
-	pSprite->End();
-
-}
-
-void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid) {
-	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
-
-	int n = text.length();
-	char* txtarray = new char[n + 1];
-	strcpy(txtarray, text.c_str());
-
-
-
 
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 	int tmp_x_shift = 0;
@@ -1560,46 +1526,19 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid) {
 				tmp_x_shift += font_width_map_2[txtarray[i]] - 8;
 			}
 
-			
-
-			
 		}
 		else {
 			tmp_x_shift += 20;
 		}
 
-
-
-
 	}
 	pSprite->End();
 
-}
-
-
-
-
-void RenderTextWithShadow(string text, float x, float y) {
-	static int offsets[9][2] = {
-	{-1, -1},
-	{-1, 0},
-	{-1, 1},
-	{0, -1},
-	//{0, 0},
-	{0, 1},
-	{1, -1},
-	{1, 0},
-	{1, 1},
-	};
-
-	for (int i = 0; i < 8; i++) {
-		RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], D3DCOLOR_ARGB(255, 0, 0, 0));
-	}
-	RenderTextMGR(text, x, y, D3DCOLOR_XRGB(240, 255, 255));
+	delete[] txtarray;
 
 }
 
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg, D3DCOLOR fg, int fontid) {
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
@@ -1648,8 +1587,23 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 void Present() {
 	if (configLoaded == true) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
-		DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
+		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
+		int i = 0;
+		for (Pl0000* player : players) {
+			if (player == nullptr) continue;
 
+			string name = "";
+			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
+			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
+			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
+			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
+
+			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
+				player->getFuelContainer(), player->getFuelCapacity(false), name);
+			i++;
+		}
 	}
 }
 
