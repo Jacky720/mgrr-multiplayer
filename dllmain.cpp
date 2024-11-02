@@ -1505,38 +1505,7 @@ void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOL
 
 }
 
-void RenderTextMGR(string text, float x, float y, D3DCOLOR color) {
-	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
-
-	int n = text.length();
-	char* txtarray = new char[n + 1];
-	strcpy(txtarray, text.c_str());
-
-
-
-
-	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
-	int tmp_x_shift = 0;
-	for (int i = 0; i < n + 1; i++) {
-		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
-		if (txtarray[i] != NULL) {
-			pSprite->Draw(font_map[txtarray[i]], NULL, NULL, &position, color);
-
-			tmp_x_shift += font_width_map[txtarray[i]] - 8;
-		}
-		else {
-			tmp_x_shift += 20;
-		}
-
-
-
-		
-	}
-	pSprite->End();
-
-}
-
-void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid) {
+void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
 	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
 
 	int n = text.length();
@@ -1576,30 +1545,7 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid) {
 
 }
 
-
-
-
-void RenderTextWithShadow(string text, float x, float y) {
-	static int offsets[9][2] = {
-	{-1, -1},
-	{-1, 0},
-	{-1, 1},
-	{0, -1},
-	//{0, 0},
-	{0, 1},
-	{1, -1},
-	{1, 0},
-	{1, 1},
-	};
-
-	for (int i = 0; i < 8; i++) {
-		RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], D3DCOLOR_ARGB(255, 0, 0, 0));
-	}
-	RenderTextMGR(text, x, y, D3DCOLOR_XRGB(240, 255, 255));
-
-}
-
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg, D3DCOLOR fg, int fontid) {
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
