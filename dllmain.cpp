@@ -44,14 +44,19 @@ using namespace std;
 #include <Windows.h>
 #include <Camera.h>
 
+class MGRFontCharacter {
+public:
+	char character;
+	LPDIRECT3DTEXTURE9 sprite;
+	int width;
+
+};
 
 
 
 
-std::map<char, LPDIRECT3DTEXTURE9> font_map;
-std::map<char, int> font_width_map;
-std::map<char, LPDIRECT3DTEXTURE9> font_map_2;
-std::map<char, int> font_width_map_2;
+std::map<char, MGRFontCharacter> font_map[2];
+
 LPDIRECT3DTEXTURE9 fc_segment;
 LPDIRECT3DTEXTURE9 hp_segment;
 
@@ -834,51 +839,11 @@ void LoadControl(CIniReader iniReader, std::string* Control, std::string* Gamepa
 
 LPD3DXSPRITE pSprite = NULL;
 
-void LoadUIData() {
+void LoadFont(fs::path directory_path, int id) {
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	string data_dir = "rising_multiplayer\\";
-
-
-	fs::path directory_path = "rising_multiplayer\\mgfont\\";
 	int loaded_font_textures = 0;
 	for (const auto& entry : fs::directory_iterator(directory_path)) {
 		if (entry.is_regular_file()) {
-			
-			pTexture = NULL;
-			string fname = entry.path().string();
-			D3DXIMAGE_INFO info;
-			D3DXCreateTextureFromFileEx(
-				Hw::GraphicDevice,
-				fname.c_str(),
-				D3DX_DEFAULT_NONPOW2,    // Width
-				D3DX_DEFAULT_NONPOW2,    // Height
-				D3DX_DEFAULT,            // MipLevels
-				0,                       // Usage
-				D3DFMT_UNKNOWN,          // Format
-				D3DPOOL_MANAGED,         // Pool
-				D3DX_FILTER_NONE,        // Filter
-				D3DX_FILTER_NONE,        // MipFilter
-				0,                       // ColorKey
-				NULL,                    // pSrcInfo
-				NULL,                    // pPalette
-				&pTexture
-			);
-			
-			D3DXGetImageInfoFromFile(fname.c_str(), &info);
-			if (pTexture != NULL) {
-				int n = fname.length();
-				char* arr = new char[n + 1];
-				fname = fname.substr(fname.find_last_of("\\"), fname.find_last_of("."));
-				strcpy(arr, fname.c_str());
-				font_map.insert({ arr[1], pTexture });
-				font_width_map.insert({ arr[1], info.Width });
-				loaded_font_textures++;
-			}
-		}
-	}
-	directory_path = "rising_multiplayer\\mgfont_2\\";
-	for (const auto& entry : fs::directory_iterator(directory_path)) {
-		if (entry.is_regular_file()) {
 
 			pTexture = NULL;
 			string fname = entry.path().string();
@@ -906,12 +871,29 @@ void LoadUIData() {
 				char* arr = new char[n + 1];
 				fname = fname.substr(fname.find_last_of("\\"), fname.find_last_of("."));
 				strcpy(arr, fname.c_str());
-				font_map_2.insert({ arr[1], pTexture });
-				font_width_map_2.insert({ arr[1], info.Width });
+				MGRFontCharacter character;
+				character.sprite = pTexture;
+				character.character = arr[1];
+				character.width = info.Width;
+				font_map[id].insert({ arr[1], character });
 				loaded_font_textures++;
 			}
 		}
 	}
+}
+
+
+
+
+
+void LoadUIData() {
+	
+	string data_dir = "rising_multiplayer\\";
+
+	LoadFont("rising_multiplayer\\mgfont\\", 0);
+	LoadFont("rising_multiplayer\\mgfont_2\\", 1);
+
+
 
 	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\fc_seg.png").c_str(), &fc_segment);
 	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\hp_seg.png").c_str(), &hp_segment);
@@ -1521,14 +1503,10 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0
 	for (int i = 0; i < n + 1; i++) {
 		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
 		if (txtarray[i] != NULL) {
-			if (fontid == 0) {
-				pSprite->Draw(font_map[txtarray[i]], NULL, NULL, &position, color);
-				tmp_x_shift += font_width_map[txtarray[i]] - 8;
-			}
-			else if (fontid == 1) {
-				pSprite->Draw(font_map_2[txtarray[i]], NULL, NULL, &position, color);
-				tmp_x_shift += font_width_map_2[txtarray[i]] - 8;
-			}
+
+			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
+			tmp_x_shift += font_map[fontid][txtarray[i]].width - 8;
+
 
 		}
 		else {
@@ -1542,7 +1520,37 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0
 
 }
 
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0) {
+void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
+	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
+	int n = text.length();
+	char* txtarray = new char[n + 1];
+	strcpy(txtarray, text.c_str());
+
+
+	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	int tmp_x_shift = 0;
+	for (int i = n - 1; i >= 0; i--) {
+		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
+		if (txtarray[i] != NULL) {
+
+			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
+			tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8;
+
+
+		}
+		else {
+			tmp_x_shift += 20;
+		}
+
+	}
+	pSprite->End();
+
+	delete[] txtarray;
+
+}
+
+
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0, int justification_flag=0) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
@@ -1556,9 +1564,21 @@ void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_
 	};
 
 	for (int i = 0; i < 8; i++) {
-		RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
+		if (justification_flag == 0) {
+			RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
+		}
+		else if (justification_flag == 1) {
+			RenderTextMGR_RightLeft(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
+		}
+
+		
 	}
-	RenderTextMGR(text, x, y, fg, fontid);
+	if (justification_flag == 0) {
+		RenderTextMGR(text, x, y, fg, fontid);
+	}
+	else if (justification_flag == 1) {
+		RenderTextMGR_RightLeft(text, x, y, fg, fontid);
+	}
 
 }
 
@@ -1575,8 +1595,9 @@ void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg,
 
 
 void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
-	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 230, y - 25, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 0);
-	RenderTextWithShadow(to_string((static_cast<int>((int)round((hpvalue / hpmax) * 100)) * 10) % 10) + "_%", x + 375, y - 5, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 1);
+	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
+	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 330, y - 25, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 0, 1);
+	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 375, y - 5, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 1 ,0);
 
 	RenderTextWithShadow(name, x, y);
 	DrawProgressBar(x, y + 23, hpvalue, hpmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66));
