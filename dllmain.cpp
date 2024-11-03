@@ -1105,8 +1105,6 @@ void Update()
 
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
-
-
 	if (!MainPlayer) {
 		for (int i = 0; i < 5; i++) {
 			players[i] = nullptr;
@@ -1116,8 +1114,14 @@ void Update()
 	}
 
 	// if (MainPlayer) // early return removes need for this indent
-	players[0] = MainPlayer;
-	playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+	if (players[0] != MainPlayer) {
+		for (int i = 0; i < 5; i++) {
+			players[i] = nullptr;
+			playerTypes[i] = (eObjID)0;
+		}
+		players[0] = MainPlayer;
+		playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+	}
 
 	if (EnableDamageToPlayers)
 		MainPlayer->field_640 = 0;
@@ -1585,7 +1589,8 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 
 
 void Present() {
-	if (configLoaded == true) { // Keep this IF statment to ensure UI textures are loaded
+	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
 		int i = 0;
