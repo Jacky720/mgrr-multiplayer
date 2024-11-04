@@ -1,5 +1,6 @@
 // Main program by Ruslan and Frouk
 // complete bindings, arbitrary player count, analog support by Jacky720
+// graphical user interface by GamingwithPortals
 #include "pch.h"
 #include <assert.h>
 #include "gui.h"
@@ -25,7 +26,16 @@
 #include <BehaviorEmBase.h>
 #include <d3dx9.h>
 #include <math.h>
+#include <Windows.h>;
+#include <map>
+#include <filesystem>
 
+
+
+namespace fs = std::filesystem;
+
+using namespace std;
+#pragma comment(lib, "d3dx9.lib")
 #ifdef _MSC_VER < 1700 //pre 2012
 #pragma comment(lib,"Xinput.lib")
 #else
@@ -33,6 +43,17 @@
 #endif
 #include <Windows.h>
 #include <Camera.h>
+
+
+
+
+
+std::map<char, LPDIRECT3DTEXTURE9> font_map;
+std::map<char, int> font_width_map;
+std::map<char, LPDIRECT3DTEXTURE9> font_map_2;
+std::map<char, int> font_width_map_2;
+LPDIRECT3DTEXTURE9 fc_segment;
+LPDIRECT3DTEXTURE9 hp_segment;
 
 bool configLoaded = false;
 //bool SamSpawned = false;
@@ -72,6 +93,7 @@ bool isMenuShow = false;
 //eObjID mObjId = (eObjID)0x0;
 
 unsigned int HotKey = VK_INSERT; //Hotkey for menu show
+
 
 
 std::string Forward = "26";
@@ -314,6 +336,9 @@ float GetGamepadAnalog(int controllerIndex, const std::string& button)
 	}
 	return 0.0;
 }
+
+
+
 
 bool IsGamepadButtonPressed(int controllerIndex, const std::string& button)
 {
@@ -845,9 +870,109 @@ void LoadControl(CIniReader iniReader, std::string* Control, std::string* Gamepa
 }
 
 
+
+
+LPD3DXSPRITE pSprite = NULL;
+
+void LoadUIData() {
+	LPDIRECT3DTEXTURE9 pTexture = NULL;
+	string data_dir = "rising_multiplayer\\";
+
+
+	fs::path directory_path = "rising_multiplayer\\mgfont\\";
+	int loaded_font_textures = 0;
+	for (const auto& entry : fs::directory_iterator(directory_path)) {
+		if (entry.is_regular_file()) {
+			
+			pTexture = NULL;
+			string fname = entry.path().string();
+			D3DXIMAGE_INFO info;
+			D3DXCreateTextureFromFileEx(
+				Hw::GraphicDevice,
+				fname.c_str(),
+				D3DX_DEFAULT_NONPOW2,    // Width
+				D3DX_DEFAULT_NONPOW2,    // Height
+				D3DX_DEFAULT,            // MipLevels
+				0,                       // Usage
+				D3DFMT_UNKNOWN,          // Format
+				D3DPOOL_MANAGED,         // Pool
+				D3DX_FILTER_NONE,        // Filter
+				D3DX_FILTER_NONE,        // MipFilter
+				0,                       // ColorKey
+				NULL,                    // pSrcInfo
+				NULL,                    // pPalette
+				&pTexture
+			);
+			
+			D3DXGetImageInfoFromFile(fname.c_str(), &info);
+			if (pTexture != NULL) {
+				int n = fname.length();
+				char* arr = new char[n + 1];
+				fname = fname.substr(fname.find_last_of("\\"), fname.find_last_of("."));
+				strcpy(arr, fname.c_str());
+				font_map.insert({ arr[1], pTexture });
+				font_width_map.insert({ arr[1], info.Width });
+				loaded_font_textures++;
+			}
+		}
+	}
+	directory_path = "rising_multiplayer\\mgfont_2\\";
+	for (const auto& entry : fs::directory_iterator(directory_path)) {
+		if (entry.is_regular_file()) {
+
+			pTexture = NULL;
+			string fname = entry.path().string();
+			D3DXIMAGE_INFO info;
+			D3DXCreateTextureFromFileEx(
+				Hw::GraphicDevice,
+				fname.c_str(),
+				D3DX_DEFAULT_NONPOW2,    // Width
+				D3DX_DEFAULT_NONPOW2,    // Height
+				D3DX_DEFAULT,            // MipLevels
+				0,                       // Usage
+				D3DFMT_UNKNOWN,          // Format
+				D3DPOOL_MANAGED,         // Pool
+				D3DX_FILTER_NONE,        // Filter
+				D3DX_FILTER_NONE,        // MipFilter
+				0,                       // ColorKey
+				NULL,                    // pSrcInfo
+				NULL,                    // pPalette
+				&pTexture
+			);
+
+			D3DXGetImageInfoFromFile(fname.c_str(), &info);
+			if (pTexture != NULL) {
+				int n = fname.length();
+				char* arr = new char[n + 1];
+				fname = fname.substr(fname.find_last_of("\\"), fname.find_last_of("."));
+				strcpy(arr, fname.c_str());
+				font_map_2.insert({ arr[1], pTexture });
+				font_width_map_2.insert({ arr[1], info.Width });
+				loaded_font_textures++;
+			}
+		}
+	}
+
+	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\fc_seg.png").c_str(), &fc_segment);
+	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\hp_seg.png").c_str(), &hp_segment);
+
+
+}
+
+
+
 void LoadConfig() noexcept
 {
+	// Load image data
+	LoadUIData();
 
+
+	// Absolutely required
+	if (pSprite == NULL) {
+		D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
+	}
+
+	// Load configuration data
 	CIniReader iniReader("MGRRMultiplayerControls.ini");
 
 	LoadControl(iniReader, &Forward, &GamepadForward, "Forward");
@@ -1003,6 +1128,10 @@ void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int co
 	}
 }
 
+
+
+
+
 void Update()
 {
 
@@ -1018,9 +1147,8 @@ void Update()
 		configLoaded = true;
 	}
 
+
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-
-
 
 	if (!MainPlayer) {
 		for (int i = 0; i < 5; i++) {
@@ -1031,8 +1159,14 @@ void Update()
 	}
 
 	// if (MainPlayer) // early return removes need for this indent
-	players[0] = MainPlayer;
-	playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+	if (players[0] != MainPlayer) {
+		for (int i = 0; i < 5; i++) {
+			players[i] = nullptr;
+			playerTypes[i] = (eObjID)0;
+		}
+		players[0] = MainPlayer;
+		playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+	}
 
 	if (EnableDamageToPlayers)
 		MainPlayer->field_640 = 0;
@@ -1418,6 +1552,131 @@ void Update()
 
 }
 
+void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR)
+{
+	D3DRECT rec;
+	rec.x1 = bx;
+	rec.y1 = by;
+	rec.x2 = bx + bw;//makes line longer/shorter going right
+	rec.y2 = by + 6;//makes line one pixel tall
+	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
+
+}
+
+void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR, int thickness)
+{
+	D3DRECT rec;
+	rec.x1 = bx;
+	rec.y1 = by;
+	rec.x2 = bx + bw;//makes line longer/shorter going right
+	rec.y2 = by + thickness;//makes line one pixel tall
+	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
+
+}
+
+void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
+	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
+
+	int n = text.length();
+	char* txtarray = new char[n + 1];
+	strcpy(txtarray, text.c_str());
+
+	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	int tmp_x_shift = 0;
+	for (int i = 0; i < n + 1; i++) {
+		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
+		if (txtarray[i] != NULL) {
+			if (fontid == 0) {
+				pSprite->Draw(font_map[txtarray[i]], NULL, NULL, &position, color);
+				tmp_x_shift += font_width_map[txtarray[i]] - 8;
+			}
+			else if (fontid == 1) {
+				pSprite->Draw(font_map_2[txtarray[i]], NULL, NULL, &position, color);
+				tmp_x_shift += font_width_map_2[txtarray[i]] - 8;
+			}
+
+		}
+		else {
+			tmp_x_shift += 20;
+		}
+
+	}
+	pSprite->End();
+
+	delete[] txtarray;
+
+}
+
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0) {
+	static int offsets[9][2] = {
+	{-1, -1},
+	{-1, 0},
+	{-1, 1},
+	{0, -1},
+	//{0, 0},
+	{0, 1},
+	{1, -1},
+	{1, 0},
+	{1, 1},
+	};
+
+	for (int i = 0; i < 8; i++) {
+		RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
+	}
+	RenderTextMGR(text, x, y, fg, fontid);
+
+}
+
+
+
+void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
+
+	DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
+	DrawLine(Hw::GraphicDevice, x, y, ((value / maxvalue) * 400), fg, 4);
+}
+
+
+
+
+
+void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
+	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 230, y - 25, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 0);
+	RenderTextWithShadow(to_string((static_cast<int>((int)round((hpvalue / hpmax) * 100)) * 10) % 10) + "_%", x + 375, y - 5, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 1);
+
+	RenderTextWithShadow(name, x, y);
+	DrawProgressBar(x, y + 23, hpvalue, hpmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66));
+	DrawProgressBar(x, y + 28, fcvalue, fcmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 0, 255, 255));
+
+
+}
+
+
+
+
+void Present() {
+	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
+		// also _ = space, but i assume you got that
+		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
+		int i = 0;
+		for (Pl0000* player : players) {
+			if (player == nullptr) continue;
+
+			string name = "";
+			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
+			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
+			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
+			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
+
+			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
+				player->getFuelContainer(), player->getFuelCapacity(false), name);
+			i++;
+		}
+	}
+}
+
 
 class Plugin
 {
@@ -1430,6 +1689,9 @@ public:
 		/* // Or if you want to switch it to Present
 		Events::OnPresent += gui::OnEndScene;
 		*/
+		Events::OnPresent += []() {
+			Present();
+			};
 
 		Events::OnTickEvent += []()
 			{
@@ -1442,6 +1704,8 @@ public:
 		InitGUI();
 	}
 } plugin;
+
+
 
 
 
