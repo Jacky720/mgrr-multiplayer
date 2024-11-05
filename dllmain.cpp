@@ -1,5 +1,6 @@
 // Main program by Ruslan and Frouk
 // complete bindings, arbitrary player count, analog support by Jacky720
+// graphical user interface by GamingwithPortals
 #include "pch.h"
 #include <assert.h>
 #include "gui.h"
@@ -25,7 +26,16 @@
 #include <BehaviorEmBase.h>
 #include <d3dx9.h>
 #include <math.h>
+#include <Windows.h>;
+#include <map>
+#include <filesystem>
 
+
+
+namespace fs = std::filesystem;
+
+using namespace std;
+#pragma comment(lib, "d3dx9.lib")
 #ifdef _MSC_VER < 1700 //pre 2012
 #pragma comment(lib,"Xinput.lib")
 #else
@@ -33,6 +43,22 @@
 #endif
 #include <Windows.h>
 #include <Camera.h>
+
+class MGRFontCharacter {
+public:
+	char character;
+	LPDIRECT3DTEXTURE9 sprite;
+	int width;
+
+};
+
+
+
+
+std::map<char, MGRFontCharacter> font_map[2];
+
+LPDIRECT3DTEXTURE9 fc_segment;
+LPDIRECT3DTEXTURE9 hp_segment;
 
 bool configLoaded = false;
 //bool SamSpawned = false;
@@ -72,6 +98,7 @@ bool isMenuShow = false;
 //eObjID mObjId = (eObjID)0x0;
 
 unsigned int HotKey = VK_INSERT; //Hotkey for menu show
+
 
 
 std::string Forward = "26";
@@ -314,6 +341,9 @@ float GetGamepadAnalog(int controllerIndex, const std::string& button)
 	}
 	return 0.0;
 }
+
+
+
 
 bool IsGamepadButtonPressed(int controllerIndex, const std::string& button)
 {
@@ -757,15 +787,61 @@ std::string GetVanillaKeybind(InputBitflags bit) {
 	return "None"; // Camera is analog and won't really work here anyway
 }
 
-bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
-					   InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+std::string GetVanillaKeybind(std::string Keybind) {
+	if (Keybind == WeaponMenu || Keybind == WeaponMenu2)
+		return "32"; // "2"
+	if (Keybind == Heal)
+		return "51"; // "Q"
+	if (Keybind == Taunt)
+		return "31"; // "1"
+	if (Keybind == Jump)
+		return "20"; // " "
+	if (Keybind == Interact)
+		return "46"; // "F"
+	if (Keybind == NormalAttack)
+		return "01"; // LMB
+	if (Keybind == StrongAttack)
+		return "02"; // RMB
+	if (Keybind == Pause)
+		return "1B"; // Escape
+	if (Keybind == Pause2)
+		return "33"; // "3"
+	if (Keybind == Subweapon)
+		return "43"; // "C"
+	if (Keybind == BladeMode)
+		return "A0"; // LShift
+	if (Keybind == Ability)
+		return "52"; // "R", technically not a 1:1 match because platinum
+	if (Keybind == Lockon)
+		return "45"; // "E"
+	if (Keybind == Run)
+		return "A2"; // LCtrl
+	if (Keybind == CamReset)
+		return "03"; // MMB
+	if (Keybind == Left)
+		return "41"; // "A"
+	if (Keybind == Right)
+		return "44"; // "D"
+	if (Keybind == Forward)
+		return "57"; // "W"
+	if (Keybind == Back)
+		return "53"; // "S"
+	return "None"; // Camera is analog and won't really work here anyway
+}
+
+bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind) {
 	if (controllerNumber == -1) {
-		Keybind = GetVanillaKeybind(bit);
+		Keybind = GetVanillaKeybind(Keybind);
 		if (Keybind == "None")
 			return false;
 	}
-	if ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
-		|| IsGamepadButtonPressed(controllerNumber, GamepadBind)) {
+	return ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
+		|| IsGamepadButtonPressed(controllerNumber, GamepadBind));
+}
+
+bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
+					   InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
 		player->m_nKeyHoldingFlag |= bit;
 		player->m_nKeyPressedFlag |= bit;
 		if (altField1) *altField1 |= bit;
@@ -783,13 +859,7 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 
 bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 					   InputBitflags bit, float* altField, bool invert) {
-	if (controllerNumber == -1) {
-		Keybind = GetVanillaKeybind(bit);
-		if (Keybind == "None")
-			return false;
-	}
-	if ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
-		|| IsGamepadButtonPressed(controllerNumber, GamepadBind)) {
+	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
 		player->m_nKeyHoldingFlag |= bit;
 		*altField = invert ? -1000.0f : 1000.0f;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadBind))
@@ -805,9 +875,86 @@ void LoadControl(CIniReader iniReader, std::string* Control, std::string* Gamepa
 }
 
 
+
+
+LPD3DXSPRITE pSprite = NULL;
+
+void LoadFont(fs::path directory_path, int id) {
+	LPDIRECT3DTEXTURE9 pTexture = NULL;
+	int loaded_font_textures = 0;
+	for (const auto& entry : fs::directory_iterator(directory_path)) {
+		if (entry.is_regular_file()) {
+
+			pTexture = NULL;
+			string fname = entry.path().string();
+			D3DXIMAGE_INFO info;
+			D3DXCreateTextureFromFileEx(
+				Hw::GraphicDevice,
+				fname.c_str(),
+				D3DX_DEFAULT_NONPOW2,    // Width
+				D3DX_DEFAULT_NONPOW2,    // Height
+				D3DX_DEFAULT,            // MipLevels
+				0,                       // Usage
+				D3DFMT_UNKNOWN,          // Format
+				D3DPOOL_MANAGED,         // Pool
+				D3DX_FILTER_NONE,        // Filter
+				D3DX_FILTER_NONE,        // MipFilter
+				0,                       // ColorKey
+				NULL,                    // pSrcInfo
+				NULL,                    // pPalette
+				&pTexture
+			);
+
+			D3DXGetImageInfoFromFile(fname.c_str(), &info);
+			if (pTexture != NULL) {
+				int n = fname.length();
+				char* arr = new char[n + 1];
+				fname = fname.substr(fname.find_last_of("\\"), fname.find_last_of("."));
+				strcpy(arr, fname.c_str());
+				MGRFontCharacter character;
+				character.sprite = pTexture;
+				character.character = arr[1];
+				character.width = info.Width;
+				font_map[id].insert({ arr[1], character });
+				loaded_font_textures++;
+			}
+		}
+	}
+}
+
+
+
+
+
+void LoadUIData() {
+	
+	string data_dir = "rising_multiplayer\\";
+
+	LoadFont("rising_multiplayer\\mgfont\\", 0);
+	LoadFont("rising_multiplayer\\mgfont_2\\", 1);
+
+
+
+	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\fc_seg.png").c_str(), &fc_segment);
+	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\hp_seg.png").c_str(), &hp_segment);
+
+
+}
+
+
+
 void LoadConfig() noexcept
 {
+	// Load image data
+	LoadUIData();
 
+
+	// Absolutely required
+	if (pSprite == NULL) {
+		D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
+	}
+
+	// Load configuration data
 	CIniReader iniReader("MGRRMultiplayerControls.ini");
 
 	LoadControl(iniReader, &Forward, &GamepadForward, "Forward");
@@ -925,38 +1072,47 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	return *isMenuShowPtr; // Возвращаем текущее состояние меню
 }
 
-void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[]) {
-	
-	int controllerNumber = 0;
+void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int controllerNumber = -1) {
 
-	if ((GetKeyState(VK_NUMPAD1) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadNormalAttack)) {
+	if (CheckControlPressed(controllerNumber, NormalAttack, GamepadNormalAttack)
+		&& Enemy->m_nCurrentAction != BossActions[0]) { // Two punches (four strikes)
 		Enemy->setState(BossActions[0], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD2) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadStrongAttack)) {
+	if (CheckControlPressed(controllerNumber, StrongAttack, GamepadStrongAttack)
+		&& Enemy->m_nCurrentAction != BossActions[1]) { // Two punches, kick, punch (four strike w/ sheath)
 		Enemy->setState(BossActions[1], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD3) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadRun)) {
+	if (CheckControlPressed(controllerNumber, Run, GamepadRun)
+		&& Enemy->m_nCurrentAction != BossActions[2]) { // Run QTE (Assault Rush)
 		Enemy->setState(BossActions[2], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD4) & 0x8000)) {
+	if (CheckControlPressed(controllerNumber, Interact, GamepadInteract)
+		&& Enemy->m_nCurrentAction != BossActions[3]) { // Overhead with AOE (unblockable QTE)
 		Enemy->setState(BossActions[3], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD5) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadJump)) {
+	if (CheckControlPressed(controllerNumber, Jump, GamepadJump)
+		&& Enemy->m_nCurrentAction != BossActions[4]) { // Uppercut (perfect parry QTE fail)
 		Enemy->setState(BossActions[4], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD6) & 0x8000)) {
+	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)
+		&& Enemy->m_nCurrentAction != BossActions[5]) { // Explode (taunt)
 		Enemy->setState(BossActions[5], 0, 0, 0);
 	}
 
-	if ((GetKeyState(VK_NUMPAD7) & 0x8000)) {
+	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)
+		&& Enemy->m_nCurrentAction != BossActions[6]) { // Heal (un-perfect-parryable four strike)
 		Enemy->setState(BossActions[6], 0, 0, 0);
 	}
 }
+
+
+
+
 
 void Update()
 {
@@ -973,9 +1129,8 @@ void Update()
 		configLoaded = true;
 	}
 
+
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-
-
 
 	if (!MainPlayer) {
 		for (int i = 0; i < 5; i++) {
@@ -986,8 +1141,14 @@ void Update()
 	}
 
 	// if (MainPlayer) // early return removes need for this indent
-	players[0] = MainPlayer;
-	playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+	if (players[0] != MainPlayer) {
+		for (int i = 0; i < 5; i++) {
+			players[i] = nullptr;
+			playerTypes[i] = (eObjID)0;
+		}
+		players[0] = MainPlayer;
+		playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+	}
 
 	if (EnableDamageToPlayers)
 		MainPlayer->field_640 = 0;
@@ -1101,10 +1262,10 @@ void Update()
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
 			) {
 
-
+			/*
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A && PlayAsArmstrong) {
 				unsigned int BossActions[] = { 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
-				UpdateBossActions(Enemy, BossActions);
+				UpdateBossActions(Enemy, BossActions, controllerNumber);
 
 				if (ArmstrongCanDamagePlayer)
 					Enemy->field_640 = 2;
@@ -1114,14 +1275,14 @@ void Update()
 
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam) {
 				unsigned int BossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x30005, 0x10006 };
-				UpdateBossActions(Enemy, BossActions);
+				UpdateBossActions(Enemy, BossActions, controllerNumber);
 
 				if (BossSamCanDamagePlayer)
 					Enemy->field_640 = 2;
 				else
 					Enemy->field_640 = 1;
 			}
-
+			*/
 
 
 
@@ -1136,17 +1297,35 @@ void Update()
 			long double tann = 0;
 			//forward
 
-			cCameraGame camera;
+			cCameraGame camera = cCameraGame::Instance;
 			//UpdateMovement(Enemy, &camera);
 
-
-
+			// All defaults here are for Armstrong (em0700)
+			unsigned int StandingState = 0x10000;
 			unsigned int WalkingState = 0x10001;
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) WalkingState = 0x10002;
+			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
+
+			// Buttons: X, Y, RT, B, A, up, LT
+			static unsigned int ArmstrongBossActions[] = {0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010};
+			static unsigned int SamBossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005 };
+			unsigned int *BossActions = ArmstrongBossActions;
+
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) {
+				StandingState = 0x20000;
+				WalkingState = 0x10002;
+				BossActions = SamBossActions;
+				CanDamagePlayer = BossSamCanDamagePlayer;
+			}
+
+			UpdateBossActions(Enemy, BossActions, controllerNumber);
+
+			if (CanDamagePlayer)
+				Enemy->field_640 = 2;
+			else
+				Enemy->field_640 = 1;
 
 
-			if ((GetKeyState(std::stoi(Forward, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadForward)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+			if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
 				field_Y = -1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadForward))
 					field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
@@ -1156,33 +1335,35 @@ void Update()
 
 
 			//back
-			if ((GetKeyState(std::stoi(Back, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadBack)) {
+			if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
 				//if (GetAsyncKeyState(0x4B)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
 				field_Y = 1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadBack))
 					field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
 			}
 
 			//left
-			if ((GetKeyState(std::stoi(Left, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadLeft)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+			if (CheckControlPressed(controllerNumber, Left, GamepadLeft)) {
 				field_X = -1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadLeft))
 					field_X *= GetGamepadAnalog(controllerNumber, GamepadLeft);
 			}
 
 			//right
-			if ((GetKeyState(std::stoi(Right, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadRight)) {
-				if (Enemy->m_nCurrentAction != WalkingState && Enemy->m_nCurrentAction == 0x10000) Enemy->setState(WalkingState, 0, 0, 0);
+			if (CheckControlPressed(controllerNumber, Right, GamepadRight)) {
 				field_X = 1000;
 				if (IsGamepadButtonPressed(controllerNumber, GamepadRight))
 					field_X *= GetGamepadAnalog(controllerNumber, GamepadRight);
 			}
 
 			if (field_X != 0 || field_Y != 0) {
+				if (Enemy->m_nCurrentAction == StandingState) Enemy->setState(WalkingState, 0, 0, 0);
 				float angle = atan2(field_X, field_Y);
+				angle += camera.cCameraTypes::field_4 + PI;
 				Enemy->m_vecRotation.y = angle;
+			}
+			else {
+				if (Enemy->m_nCurrentAction == WalkingState) Enemy->setState(StandingState, 0, 0, 0);
 			}
 
 
@@ -1353,6 +1534,170 @@ void Update()
 
 }
 
+void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR)
+{
+	D3DRECT rec;
+	rec.x1 = bx;
+	rec.y1 = by;
+	rec.x2 = bx + bw;//makes line longer/shorter going right
+	rec.y2 = by + 6;//makes line one pixel tall
+	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
+
+}
+
+void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR, int thickness)
+{
+	D3DRECT rec;
+	rec.x1 = bx;
+	rec.y1 = by;
+	rec.x2 = bx + bw;//makes line longer/shorter going right
+	rec.y2 = by + thickness;//makes line one pixel tall
+	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
+
+}
+
+void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
+	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
+
+	int n = text.length();
+	char* txtarray = new char[n + 1];
+	strcpy(txtarray, text.c_str());
+
+	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	int tmp_x_shift = 0;
+	for (int i = 0; i < n + 1; i++) {
+		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
+		if (txtarray[i] != NULL) {
+
+			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
+			tmp_x_shift += font_map[fontid][txtarray[i]].width - 8;
+
+
+		}
+		else {
+			tmp_x_shift += 20;
+		}
+
+	}
+	pSprite->End();
+
+	delete[] txtarray;
+
+}
+
+void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
+	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
+	int n = text.length();
+	char* txtarray = new char[n + 1];
+	strcpy(txtarray, text.c_str());
+
+
+	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	int tmp_x_shift = 0;
+	for (int i = n - 1; i >= 0; i--) {
+		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
+		if (txtarray[i] != NULL) {
+
+			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
+			tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8;
+
+
+		}
+		else {
+			tmp_x_shift += 20;
+		}
+
+	}
+	pSprite->End();
+
+	delete[] txtarray;
+
+}
+
+
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0, int justification_flag=0) {
+	static int offsets[9][2] = {
+	{-1, -1},
+	{-1, 0},
+	{-1, 1},
+	{0, -1},
+	//{0, 0},
+	{0, 1},
+	{1, -1},
+	{1, 0},
+	{1, 1},
+	};
+
+	for (int i = 0; i < 8; i++) {
+		if (justification_flag == 0) {
+			RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
+		}
+		else if (justification_flag == 1) {
+			RenderTextMGR_RightLeft(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
+		}
+
+		
+	}
+	if (justification_flag == 0) {
+		RenderTextMGR(text, x, y, fg, fontid);
+	}
+	else if (justification_flag == 1) {
+		RenderTextMGR_RightLeft(text, x, y, fg, fontid);
+	}
+
+}
+
+
+
+void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
+
+	DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
+	DrawLine(Hw::GraphicDevice, x, y, ((value / maxvalue) * 400), fg, 4);
+}
+
+
+
+
+
+void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
+	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
+	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 330, y - 25, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 0, 1);
+	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 375, y - 5, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 1 ,0);
+
+	RenderTextWithShadow(name, x, y);
+	DrawProgressBar(x, y + 23, hpvalue, hpmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66));
+	DrawProgressBar(x, y + 28, fcvalue, fcmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 0, 255, 255));
+
+
+}
+
+
+
+
+void Present() {
+	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
+		// also _ = space, but i assume you got that
+		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
+		int i = 0;
+		for (Pl0000* player : players) {
+			if (player == nullptr) continue;
+
+			string name = "";
+			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
+			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
+			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
+			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
+
+			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
+				player->getFuelContainer(), player->getFuelCapacity(false), name);
+			i++;
+		}
+	}
+}
+
 
 class Plugin
 {
@@ -1365,6 +1710,9 @@ public:
 		/* // Or if you want to switch it to Present
 		Events::OnPresent += gui::OnEndScene;
 		*/
+		Events::OnPresent += []() {
+			Present();
+			};
 
 		Events::OnTickEvent += []()
 			{
@@ -1377,6 +1725,8 @@ public:
 		InitGUI();
 	}
 } plugin;
+
+
 
 
 
@@ -1452,6 +1802,7 @@ void gui::RenderWindow()
 				// Debug print Sam's flags
 //#define PRINTSAM
 //#define PRINTENEMY
+//#define SHOWBOSSACTION
 				
 				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 
@@ -1476,6 +1827,13 @@ void gui::RenderWindow()
 						int twerpsenemyflag = (int)&Enemy->m_pEnemy;
 						ImGui::InputInt("twerp's enemy flag", &twerpsenemyflag, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
 						ImGui::InputInt("Some twerp", (int*)&(Enemy->m_pEnemy->m_pEntity->m_nEntityIndex), 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
+					}
+#endif
+#ifdef SHOWBOSSACTION
+					auto Enemy = value->getEntityInstance<BehaviorEmBase>();
+					if (!Enemy) continue;
+					if (value->m_nEntityIndex == 0x20020 || value->m_nEntityIndex == 0x20700) {
+						ImGui::Text("Entity %x has state %x", value->m_nEntityIndex, Enemy->m_nCurrentAction);
 					}
 #endif
 				}

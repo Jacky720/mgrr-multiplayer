@@ -1,7 +1,9 @@
 # Gaming with Portals
 *.asi
 *.zip
-
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 
 
 ## Ignore Visual Studio temporary files, build results, and
