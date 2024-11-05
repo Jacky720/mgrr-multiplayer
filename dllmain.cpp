@@ -1,19 +1,14 @@
-// Main program by Ruslan and Frouk
-// complete bindings, arbitrary player count, analog support by Jacky720
-// graphical user interface by GamingwithPortals
 #include "pch.h"
 #include <assert.h>
 #include "gui.h"
 #include <Events.h>
 #include "imgui/imgui.h"
-#include "IniReader.h"
 #include "spawner.cpp"
 #include <Trigger.h>
 #include <GameMenuStatus.h>
 #include <Pl0000.h>
 #include <EntitySystem.h>
 #include <Entity.h>
-#include <cCameraGame.h>
 #include <cGameUIManager.h>
 #include <injector/injector.hpp>
 #include <string>
@@ -22,43 +17,31 @@
 #include <fstream>
 #include <cstdlib>
 #include <PlayerManagerImplement.h>
-#include <XInput.h>
 #include <BehaviorEmBase.h>
-#include <d3dx9.h>
 #include <math.h>
-#include <Windows.h>;
-#include <map>
-#include <filesystem>
+#include <Windows.h>
+#include "MGRCustomAI.h"
+#include "MGRCustomUI.h"
+
+extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump, Interact,
+	CamUp, CamDown, CamLeft, CamRight, Heal, Taunt, WeaponMenu, WeaponMenu2, Run,
+	BladeMode, Subweapon, Lockon, Pause, Pause2, Ability, CamReset, GamepadForward,
+	GamepadBack, GamepadLeft, GamepadRight, GamepadNormalAttack, GamepadStrongAttack,
+	GamepadJump, GamepadInteract, GamepadCamUp, GamepadCamDown, GamepadCamLeft,
+	GamepadCamRight, GamepadHeal, GamepadTaunt, GamepadWeaponMenu, GamepadWeaponMenu2,
+	GamepadRun, GamepadBladeMode, GamepadSubweapon, GamepadLockon, GamepadPause, GamepadPause2,
+	GamepadAbility, GamepadCamReset, GamepadSpawnSam, GamepadSpawnWolf, GamepadSpawnArmstrong,
+	GamepadSpawnBossSam;
+extern LPD3DXSPRITE pSprite;
 
 
-
-namespace fs = std::filesystem;
-
-using namespace std;
 #pragma comment(lib, "d3dx9.lib")
 #ifdef _MSC_VER < 1700 //pre 2012
 #pragma comment(lib,"Xinput.lib")
 #else
 #pragma comment(lib,"Xinput9_1_0.lib")
 #endif
-#include <Windows.h>
 #include <Camera.h>
-
-class MGRFontCharacter {
-public:
-	char character;
-	LPDIRECT3DTEXTURE9 sprite;
-	int width;
-
-};
-
-
-
-
-std::map<char, MGRFontCharacter> font_map[2];
-
-LPDIRECT3DTEXTURE9 fc_segment;
-LPDIRECT3DTEXTURE9 hp_segment;
 
 bool configLoaded = false;
 //bool SamSpawned = false;
@@ -100,71 +83,11 @@ bool isMenuShow = false;
 unsigned int HotKey = VK_INSERT; //Hotkey for menu show
 
 
-
-std::string Forward = "26";
-std::string Back = "28";
-std::string Left = "25";
-std::string Right = "27";
-std::string NormalAttack = "49"; // I
-std::string StrongAttack = "4F"; // O
-std::string Jump = "50"; // P
-std::string Interact = "74";
-std::string CamUp = "70";
-std::string CamDown = "71";
-std::string CamLeft = "72";
-std::string CamRight = "73";
-std::string Heal = "76";
-std::string Taunt = "59"; // Y
-std::string WeaponMenu = "77";
-std::string WeaponMenu2 = "78";
-std::string Run = "55"; // U
-std::string BladeMode = "4C"; // L
-std::string Subweapon = "79";
-std::string Lockon = "80";
-std::string Pause = "81";
-std::string Pause2 = "75";
-std::string Ability = "82";
-std::string CamReset = "83";
-
-std::string GamepadForward = "XINPUT_GAMEPAD_LEFT_THUMB_UP";
-std::string GamepadBack = "XINPUT_GAMEPAD_LEFT_THUMB_DOWN";
-std::string GamepadLeft = "XINPUT_GAMEPAD_LEFT_THUMB_LEFT";
-std::string GamepadRight = "XINPUT_GAMEPAD_LEFT_THUMB_RIGHT";
-std::string GamepadNormalAttack = "XINPUT_GAMEPAD_X";
-std::string GamepadStrongAttack = "XINPUT_GAMEPAD_Y";
-std::string GamepadJump = "XINPUT_GAMEPAD_A";
-std::string GamepadInteract = "XINPUT_GAMEPAD_B";
-std::string GamepadCamUp = "XINPUT_GAMEPAD_RIGHT_THUMB_UP";
-std::string GamepadCamDown = "XINPUT_GAMEPAD_RIGHT_THUMB_DOWN";
-std::string GamepadCamLeft = "XINPUT_GAMEPAD_RIGHT_THUMB_LEFT";
-std::string GamepadCamRight = "XINPUT_GAMEPAD_RIGHT_THUMB_RIGHT";
-std::string GamepadHeal = "XINPUT_GAMEPAD_DPAD_DOWN";
-std::string GamepadTaunt = "XINPUT_GAMEPAD_DPAD_UP";
-std::string GamepadWeaponMenu = "XINPUT_GAMEPAD_DPAD_LEFT";
-std::string GamepadWeaponMenu2 = "XINPUT_GAMEPAD_DPAD_RIGHT";
-std::string GamepadRun = "XINPUT_GAMEPAD_RIGHT_TRIGGER";
-std::string GamepadBladeMode = "XINPUT_GAMEPAD_LEFT_TRIGGER";
-std::string GamepadSubweapon = "XINPUT_GAMEPAD_LEFT_SHOULDER";
-std::string GamepadLockon = "XINPUT_GAMEPAD_RIGHT_SHOULDER";
-std::string GamepadPause = "XINPUT_GAMEPAD_START";
-std::string GamepadPause2 = "XINPUT_GAMEPAD_BACK";
-std::string GamepadAbility = "XINPUT_GAMEPAD_LEFT_THUMB";
-std::string GamepadCamReset = "XINPUT_GAMEPAD_RIGHT_THUMB";
-
-std::string GamepadSpawnSam = "XINPUT_GAMEPAD_START";
-std::string GamepadSpawnWolf = "XINPUT_GAMEPAD_BACK";
-std::string GamepadSpawnArmstrong = "XINPUT_GAMEPAD_LEFT_TRIGGER";
-std::string GamepadSpawnBossSam = "XINPUT_GAMEPAD_RIGHT_TRIGGER";
-
-bool DisableNumberBinds = false;
-
-
-
-DWORD dwResult;
-XINPUT_STATE state;
+//DWORD dwResult;
+//XINPUT_STATE state;
 
 //this struct begins from player CF8 field (player key isHolding), size - 0x30;
-struct KeysStruct
+/*struct KeysStruct
 {
 	unsigned int keyCode; //CF8
 	unsigned int  field_4;//CFC
@@ -181,7 +104,7 @@ struct KeysStruct
 };
 
 KeysStruct* m_pKeysStruct;
-KeysStruct m_nKeysStruct;
+KeysStruct m_nKeysStruct;*/
 
 
 struct ModelItems
@@ -201,7 +124,7 @@ ModelItems originalModelItems;
 
 
 //original address in game is "METAL GEAR RISING REVENGEANCE.exe"+1777E60
-struct Player1_Keys
+/*struct Player1_Keys
 {
 	unsigned int key_forward = 'W';
 	unsigned int key_back = 'S';
@@ -225,50 +148,22 @@ struct Player1_Keys
 	unsigned int key_finish = VK_SCROLL;
 	unsigned int key_dodge = 0x80000004;
 
-};
+};*/
 
-struct Keys {
+/*struct Keys {
 	unsigned int m_nKeys[28];
 };
 
-Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);
+Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);*/
 
-unsigned int keyArray[] = {
+/*unsigned int keyArray[] = {
 	'W', 'S', 'A', 'D', VK_TAB, VK_SPACE, 0x80000001, 0x80000002, 0x9F,
 	0x9B, 'F', 'R', 'E', 'V'
-};
+};*/
 
-Player1_Keys pl1Keys;
+//Player1_Keys pl1Keys;
 
-KeysStruct currentKey;
-
-enum InputBitflags { // Initially written by Jacky720
-	WeaponMenuBit = 0x1,
-	WeaponMenu2Bit = 0x2,
-	HealBit = 0x4,
-	TauntBit = 0x8,
-	JumpBit = 0x10,
-	InteractBit = 0x20,
-	LightAttackBit = 0x40,
-	HeavyAttackBit = 0x80,
-	PauseBit = 0x100,
-	CodecBit = 0x200,
-	SubWeaponBit = 0x400,
-	BladeModeBit = 0x800,
-	AbilityBit = 0x1000,
-	LockOnBit = 0x2000,
-	RunBit = 0x4000,
-	CamResetBit = 0x8000,
-	LeftBit = 0x100000,
-	RightBit = 0x200000,
-	ForwardBit = 0x400000,
-	BackwardBit = 0x800000,
-	CamLeftBit = 0x1000000,
-	CamRightBit = 0x2000000,
-    CamUpBit = 0x4000000,
-	CamDownBit = 0x8000000,
-};
-
+//KeysStruct currentKey;
 
 bool isPlayerAtOnce = false;
 
@@ -303,693 +198,6 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 
 }
 
-enum GamepadAnalogValues {
-	LeftX,
-	LeftY,
-	RightX,
-	RightY
-};
-
-// Returns a scale factor (expected 0.0 to 1.0, technically can give -1.0 to 1.0) for analog movement
-float GetGamepadAnalog(int controllerIndex, const std::string& button)
-{
-	XINPUT_STATE state;
-	DWORD dwResult = XInputGetState(controllerIndex, &state);
-
-
-
-	if (dwResult == ERROR_SUCCESS)
-	{
-		GamepadAnalogValues mode;
-		float invertFactor = 1.0;
-		if (button == "XINPUT_GAMEPAD_LEFT_THUMB_UP") mode = LeftY;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_DOWN") { mode = LeftY; invertFactor = -1.0; }
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_RIGHT") mode = LeftX;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_LEFT") { mode = LeftX; invertFactor = -1.0; }
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_UP") mode = RightY;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_DOWN") { mode = RightY; invertFactor = -1.0; }
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_RIGHT") mode = RightX;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_LEFT") { mode = RightX; invertFactor = -1.0; }
-		else { return 1.0; } // Default behavior shouldn't slow you down
-
-		switch (mode) {
-		case LeftX: return invertFactor * state.Gamepad.sThumbLX / SHRT_MAX;
-		case RightX: return invertFactor * state.Gamepad.sThumbRX / SHRT_MAX;
-		case LeftY: return invertFactor * state.Gamepad.sThumbLY / SHRT_MAX;
-		case RightY: return invertFactor * state.Gamepad.sThumbRY / SHRT_MAX;
-		}
-	}
-	return 0.0;
-}
-
-
-
-
-bool IsGamepadButtonPressed(int controllerIndex, const std::string& button)
-{
-	if (controllerIndex < 0)
-		return false;
-
-	XINPUT_STATE state;
-	DWORD dwResult = XInputGetState(controllerIndex, &state);
-
-
-	if (dwResult == ERROR_SUCCESS)
-	{
-		if (button == "XINPUT_GAMEPAD_A")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_A) != 0;
-		else if (button == "XINPUT_GAMEPAD_B")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_B) != 0;
-		else if (button == "XINPUT_GAMEPAD_X")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_X) != 0;
-		else if (button == "XINPUT_GAMEPAD_Y")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) != 0;
-		else if (button == "XINPUT_GAMEPAD_LEFT_SHOULDER")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_SHOULDER")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0;
-		else if (button == "XINPUT_GAMEPAD_BACK")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) != 0;
-		else if (button == "XINPUT_GAMEPAD_START")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) != 0;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
-		else if (button == "XINPUT_GAMEPAD_DPAD_UP")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0;
-		else if (button == "XINPUT_GAMEPAD_DPAD_DOWN")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
-		else if (button == "XINPUT_GAMEPAD_DPAD_LEFT")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
-		else if (button == "XINPUT_GAMEPAD_DPAD_RIGHT")
-			return (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_UP")
-			return state.Gamepad.sThumbLY > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_DOWN")
-			return state.Gamepad.sThumbLY < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_LEFT")
-			return state.Gamepad.sThumbLX < -XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_LEFT_THUMB_RIGHT")
-			return state.Gamepad.sThumbLX > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_UP")
-			return state.Gamepad.sThumbRY > XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_DOWN")
-			return state.Gamepad.sThumbRY < -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_LEFT")
-			return state.Gamepad.sThumbRX < -XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_THUMB_RIGHT")
-			return state.Gamepad.sThumbRX > XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE;
-		else if (button == "XINPUT_GAMEPAD_LEFT_TRIGGER")
-			return state.Gamepad.bLeftTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
-		else if (button == "XINPUT_GAMEPAD_RIGHT_TRIGGER")
-			return state.Gamepad.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD;
-	}
-
-	return false;
-}
-
-std::string TryParseVKToHex(std::string in) {
-	// Ruslan found the docs, I just copied them into a massive if-chain --Jacky720
-	// http://www.kbdedit.com/manual/low_level_vk_list.html
-	if (in == "LMB" || in == "Mouse1" || in == "VK_LBUTTON")
-		return "01";
-	if (in == "RMB" || in == "Mouse2" || in == "VK_RBUTTON")
-		return "02";
-	if (in == "VK_CANCEL" || in == "Break")
-		return "03";
-	if (in == "MMB" || in == "Mouse3" || in == "VK_MBUTTON")
-		return "04";
-	if (in == "Mouse4" || in == "VK_XBUTTON1")
-		return "05";
-	if (in == "Mouse5" || in == "VK_XBUTTON2")
-		return "06";
-	if (in == "VK_BACK" || in == "Backspace")
-		return "08";
-	if (in == "VK_TAB")
-		return "09";
-	if (in == "VK_CLEAR" || in == "Clear")
-		return "0C";
-	if (in == "VK_RETURN" || in == "Return" || in == "Enter")
-		return "0D";
-	if (in == "VK_PAUSE" || in == "Pause")
-		return "13";
-	if (in == "VK_CAPITAL" || in == "CapsLock" || in == "Caps" || in == "Caps Lock")
-		return "14";
-	if (in == "VK_KANA" || in == "Kana")
-		return "15";
-	if (in == "VK_JUNJA" || in == "Junja")
-		return "17";
-	if (in == "VK_FINAL" || in == "Final")
-		return "18";
-	if (in == "VK_KANJI" || in == "Kanji")
-		return "19";
-	if (in == "VK_ESCAPE" || in == "Esc" || in == "Escape")
-		return "1B";
-	if (in == "VK_CONVERT" || in == "Convert")
-		return "1C";
-	if (in == "VK_NONCONVERT" || in == "NonConvert" || in == "Non Convert")
-		return "1D";
-	if (in == "VK_ACCEPT" || in == "Accept")
-		return "1E";
-	if (in == "VK_MODECHANGE" || in == "Mode Change" || in == "ModeChange")
-		return "1F";
-	if (in == "VK_SPACE" || in == "Space")
-		return "20";
-	if (in == "VK_PRIOR" || in == "PageUp" || in == "Page Up" || in == "Prior")
-		return "21";
-	if (in == "VK_NEXT" || in == "PageDown" || in == "Page Down" || in == "Next")
-		return "22";
-	if (in == "VK_END" || in == "End")
-		return "23";
-	if (in == "VK_HOME" || in == "Home")
-		return "24";
-	if (in == "VK_LEFT" || in == "Left" || in == "Left Arrow" || in == "LeftArrow")
-		return "25";
-	if (in == "VK_UP" || in == "Up" || in == "Up Arrow" || in == "UpArrow")
-		return "26";
-	if (in == "VK_RIGHT" || in == "Right" || in == "Right Arrow" || in == "RightArrow")
-		return "27";
-	if (in == "VK_DOWN" || in == "Down" || in == "Down Arrow" || in == "DownArrow")
-		return "28";
-	if (in == "VK_SELECT" || in == "Select")
-		return "29";
-	if (in == "VK_PRINT" || in == "Print")
-		return "2A";
-	if (in == "VK_EXECUTE" || in == "Execute")
-		return "2B";
-	if (in == "VK_SNAPSHOT" || in == "Snapshot" || in == "PrintScreen" || in == "Print Screen")
-		return "2C";
-	if (in == "VK_INSERT" || in == "Insert")
-		return "2D";
-	if (in == "VK_DELETE" || in == "Delete")
-		return "2E";
-	if (in == "VK_HELP" || in == "Help")
-		return "2F";
-	if (in == "VK_LWIN" || in == "LeftWin" || in == "Left Win" || in == "Windows" || in == "Win" || in == "LWin")
-		return "5B";
-	if (in == "VK_RWIN" || in == "RightWin" || in == "Right Win" || in == "RWin")
-		return "5C";
-	if (in == "VK_APPS" || in == "Apps" || in == "Context")
-		return "5D";
-	if (in == "VK_SLEEP" || in == "Sleep")
-		return "5F";
-	if (in == "VK_MULTIPLY" || in == "Multiply" || in == "Numpad*" || in == "Numpad *" || in == "Mul")
-		return "6A";
-	if (in == "VK_ADD" || in == "Add" || in == "Numpad+" || in == "Numpad +")
-		return "6B";
-	if (in == "VK_SEPARATOR" || in == "Separator" || in == "Seperator")
-		return "6C";
-	if (in == "VK_SUBTRACT" || in == "Subtract" || in == "Numpad-" || in == "Numpad -" || in == "Sub")
-		return "6D";
-	if (in == "VK_DECIMAL" || in == "Decimal" || in == "Numpad." || in == "Numpad .")
-		return "6E";
-	if (in == "VK_DIVIDE" || in == "Divide" || in == "Numpad/" || in == "Numpad /" || in == "Div")
-		return "6F";
-	if (in == "VK_NUMLOCK" || in == "Num Lock" || in == "NumLock")
-		return "90";
-	if (in == "VK_SCROLL" || in == "Scroll Lock" || in == "ScrollLock" || in == "Scroll")
-		return "91";
-	if (in == "VK_OEM_FJ_JISHO" || in == "Jisho")
-		return "92";
-	if (in == "VK_OEM_FJ_MASSHOU" || in == "Masshou" || in == "Mashu")
-		return "93";
-	if (in == "VK_OEM_FJ_TOUROKU" || in == "Touroku")
-		return "94";
-	if (in == "VK_OEM_FJ_LOYA" || in == "Loya")
-		return "95";
-	if (in == "VK_OEM_FJ_ROYA" || in == "Roya")
-		return "96";
-	if (in == "VK_LSHIFT" || in == "Left Shift" || in == "LeftShift" || in == "Shift")
-		return "A0";
-	if (in == "VK_RSHIFT" || in == "Right Shift" || in == "RightShift")
-		return "A1";
-	if (in == "VK_LCONTROL" || in == "Left Control" || in == "LeftControl" || in == "Control")
-		return "A2";
-	if (in == "VK_RCONTROL" || in == "Right Control" || in == "RightControl")
-		return "A3";
-	if (in == "VK_LMENU" || in == "Left Alt" || in == "LeftAlt" || in == "Alt")
-		return "A4";
-	if (in == "VK_RMENU" || in == "Right Alt" || in == "RightAlt")
-		return "A5";
-	if (in == "VK_BROWSER_BACK" || in == "Browser Back" || in == "BrowserBack")
-		return "A6";
-	if (in == "VK_BROWSER_FORWARD" || in == "Browser Forward" || in == "BrowserForward")
-		return "A7";
-	if (in == "VK_BROWSER_REFRESH" || in == "Browser Refresh" || in == "BrowserRefresh")
-		return "A8";
-	if (in == "VK_BROWSER_STOP" || in == "Browser Stop" || in == "BrowserStop")
-		return "A9";
-	if (in == "VK_BROWSER_SEARCH" || in == "Browser Search" || in == "BrowserSearch")
-		return "AA";
-	if (in == "VK_BROWSER_FAVORITES" || in == "Browser Favorites" || in == "BrowserFavorites")
-		return "AB";
-	if (in == "VK_BROWSER_HOME" || in == "Browser Home" || in == "BrowserHome")
-		return "AC";
-	if (in == "VK_VOLUME_MUTE" || in == "Mute" || in == "Volume Mute" || in == "VolumeMute")
-		return "AD";
-	if (in == "VK_VOLUME_DOWN" || in == "Volume Down" || in == "VolumeDown")
-		return "AE";
-	if (in == "VK_VOLUME_UP" || in == "Volume Up" || in == "VolumeUp")
-		return "AF";
-	if (in == "VK_MEDIA_NEXT_TRACK" || in == "Next Track" || in == "NextTrack")
-		return "B0";
-	if (in == "VK_MEDIA_PREV_TRACK" || in == "Previous Track" || in == "PreviousTrack" || in == "PrevTrack")
-		return "B1";
-	if (in == "VK_MEDIA_STOP" || in == "Stop" || in == "Media Stop" || in == "MediaStop")
-		return "B2";
-	if (in == "VK_MEDIA_PLAY_PAUSE" || in == "Play/Pause" || in == "Media Play" || in == "MediaPlay")
-		return "B3";
-	if (in == "VK_LAUNCH_MAIL" || in == "Mail" || in == "Launch Mail" || in == "LaunchMail")
-		return "B4";
-	if (in == "VK_LAUNCH_MEDIA_SELECT" || in == "Media" || in == "Media Select" || in == "MediaSelect")
-		return "B5";
-	if (in == "VK_LAUNCH_APP1" || in == "App1" || in == "App 1" || in == "Application 1")
-		return "B6";
-	if (in == "VK_LAUNCH_APP2" || in == "App2" || in == "App 2" || in == "Application 2")
-		return "B7";
-	if (in == "VK_OEM_1" || in == ";" || in == "';'")
-		return "BA";
-	if (in == "VK_OEM_PLUS" || in == "=" || in == "'='" || in == "Plus")
-		return "BB";
-	if (in == "VK_OEM_COMMA" || in == "," || in == "','")
-		return "BC";
-	if (in == "VK_OEM_MINUS" || in == "-" || in == "'-'")
-		return "BD";
-	if (in == "VK_OEM_PERIOD" || in == "." || in == "'.'")
-		return "BE";
-	if (in == "VK_OEM_2" || in == "/" || in == "'/'")
-		return "BF";
-	if (in == "VK_OEM_3" || in == "`" || in == "'`'")
-		return "C0";
-	if (in == "VK_ABNT_C1" || in == "Abnt C1" || in == "AbntC1")
-		return "C1";
-	if (in == "VK_ABNT_C2" || in == "Abnt C2" || in == "AbntC2")
-		return "C2";
-	if (in == "VK_OEM_4" || in == "[" || in == "'['")
-		return "DB";
-	if (in == "VK_OEM_5" || in == "\\" || in == "'\\'")
-		return "DC";
-	if (in == "VK_OEM_6" || in == "]" || in == "']'")
-		return "DD";
-	if (in == "VK_OEM_7" || in == "'" || in == "'\\''")
-		return "DE";
-	if (in == "VK_OEM_8" || in == "!" || in == "'!'")
-		return "DF";
-	if (in == "VK_OEM_AX" || in == "Ax")
-		return "E1";
-	if (in == "VK_OEM_102" || in == "<" || in == "'<'")
-		return "E2";
-	if (in == "VK_ICO_HELP" || in == "Ico Help" || in == "IcoHelp")
-		return "E3";
-	if (in == "VK_ICO_00")
-		return "E4";
-	if (in == "VK_PROCESSKEY" || in == "Process")
-		return "E5";
-	if (in == "VK_ICO_CLEAR" || in == "Ico Clear" || in == "IcoClear")
-		return "E6";
-	if (in == "VK_PACKET" || in == "Packet")
-		return "E7";
-	if (in == "VK_OEM_RESET" || in == "Reset")
-		return "E9";
-	if (in == "VK_OEM_JUMP" || in == "Jump")
-		return "EA";
-	if (in == "VK_OEM_PA1" || in == "OemPa1" || in == "Oem Pa1")
-		return "EB";
-	if (in == "VK_OEM_PA2" || in == "OemPa2" || in == "Oem Pa2")
-		return "EC";
-	if (in == "VK_OEM_PA3" || in == "OemPa3" || in == "Oem Pa3")
-		return "ED";
-	if (in == "VK_OEM_WSCTRL" || in == "WsCtrl")
-		return "EE";
-	if (in == "VK_OEM_CUSEL" || in == "CuSel" || in == "Cu Sel")
-		return "EF";
-	if (in == "VK_OEM_ATTN" || in == "OemAttn" || in == "Oem Attn")
-		return "F0";
-	if (in == "VK_OEM_FINISH" || in == "Finish")
-		return "F1";
-	if (in == "VK_OEM_COPY" || in == "Copy")
-		return "F2";
-	if (in == "VK_OEM_AUTO" || in == "Auto")
-		return "F3";
-	if (in == "VK_OEM_ENLW" || in == "Enlw")
-		return "F4";
-	if (in == "VK_OEM_BACKTAB" || in == "Back Tab" || in == "BackTab")
-		return "F5";
-	if (in == "VK_ATTN" || in == "Attn")
-		return "F6";
-	if (in == "VK_CRSEL" || in == "CrSel" || in == "Cr Sel")
-		return "F7";
-	if (in == "VK_EXSEL" || in == "ExSel" || in == "Ex Sel")
-		return "F8";
-	if (in == "VK_EREOF" || in == "ErEof" || in == "Er Eof")
-		return "F9";
-	if (in == "VK_PLAY" || in == "Play")
-		return "FA";
-	if (in == "VK_ZOOM" || in == "Zoom")
-		return "FB";
-	if (in == "VK_NONAME" || in == "NoName" || in == "No Name")
-		return "FC";
-	if (in == "VK_PA1" || in == "Pa1" || in == "PA1")
-		return "FD";
-	if (in == "VK_OEM_CLEAR" || in == "OemClear" || in == "Oem Clear")
-		return "FE";
-	if (in == "VK__none_" || in == "None")
-		return "FF";
-
-	if (in.starts_with("VK_F") || (in[0] == 'F' && in.length() > 1)) {
-		std::string num = in.substr(1);
-		if (in[0] == 'V') num = in.substr(4);
-		switch (std::stoi(num)) {
-		case 1: return "70";
-		case 2: return "71";
-		case 3: return "72";
-		case 4: return "73";
-		case 5: return "74";
-		case 6: return "75";
-		case 7: return "76";
-		case 8: return "77";
-		case 9: return "78";
-		case 10: return "79";
-		case 11: return "7A";
-		case 12: return "7B";
-		case 13: return "7C";
-		case 14: return "7D";
-		case 15: return "7E";
-		case 16: return "7F";
-		case 17: return "80";
-		case 18: return "81";
-		case 19: return "82";
-		case 20: return "83";
-		case 21: return "84";
-		case 22: return "85";
-		case 23: return "86";
-		case 24: return "87";
-		}
-	}
-	if (in.starts_with("VK_NUMPAD") || in.starts_with("Numpad")) {
-		char usednum = in[6];
-		if (in[0] == 'V')
-			usednum = in[9];
-		else if (usednum == ' ')
-			usednum = in[7];
-		return "6" + usednum;
-	}
-	if (in.starts_with("VK_KEY_") || in.length() == 1 || (in.length() == 3 && in[0] == '\'' && in[2] == '\'')) {
-		char usedchar = in[0];
-		if (in.length() == 3)
-			usedchar = in[1];
-		if (in.length() > 3)
-			usedchar = in[7];
-		switch (usedchar) {
-		case ' ': return "20";
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9': return "3" + usedchar;
-		case 'A': return "41";
-		case 'B': return "42";
-		case 'C': return "43";
-		case 'D': return "44";
-		case 'E': return "45";
-		case 'F': return "46";
-		case 'G': return "47";
-		case 'H': return "48";
-		case 'I': return "49";
-		case 'J': return "4A";
-		case 'K': return "4B";
-		case 'L': return "4C";
-		case 'M': return "4D";
-		case 'N': return "4E";
-		case 'O': return "4F";
-		case 'P': return "50";
-		case 'Q': return "51";
-		case 'R': return "52";
-		case 'S': return "53";
-		case 'T': return "54";
-		case 'U': return "55";
-		case 'V': return "56";
-		case 'W': return "57";
-		case 'X': return "58";
-		case 'Y': return "59";
-		case 'Z': return "5A";
-		}
-	}
-
-	return in;
-}
-
-std::string GetVanillaKeybind(InputBitflags bit) {
-	if (bit == WeaponMenuBit || bit == WeaponMenu2Bit)
-		return "32"; // "2"
-	if (bit == HealBit)
-		return "51"; // "Q"
-	if (bit == TauntBit)
-		return "31"; // "1"
-	if (bit == JumpBit)
-		return "20"; // " "
-	if (bit == InteractBit)
-		return "46"; // "F"
-	if (bit == LightAttackBit)
-		return "01"; // LMB
-	if (bit == HeavyAttackBit)
-		return "02"; // RMB
-	if (bit == PauseBit)
-		return "1B"; // Escape
-	if (bit == CodecBit)
-		return "33"; // "3"
-	if (bit == SubWeaponBit)
-		return "43"; // "C"
-	if (bit == BladeModeBit)
-		return "A0"; // LShift
-	if (bit == AbilityBit)
-		return "52"; // "R", technically not a 1:1 match because platinum
-	if (bit == LockOnBit)
-		return "45"; // "E"
-	if (bit == RunBit)
-		return "A2"; // LCtrl
-	if (bit == CamResetBit)
-		return "03"; // MMB
-	if (bit == LeftBit)
-		return "41"; // "A"
-	if (bit == RightBit)
-		return "44"; // "D"
-	if (bit == ForwardBit)
-		return "57"; // "W"
-	if (bit == BackwardBit)
-		return "53"; // "S"
-	return "None"; // Camera is analog and won't really work here anyway
-}
-
-std::string GetVanillaKeybind(std::string Keybind) {
-	if (Keybind == WeaponMenu || Keybind == WeaponMenu2)
-		return "32"; // "2"
-	if (Keybind == Heal)
-		return "51"; // "Q"
-	if (Keybind == Taunt)
-		return "31"; // "1"
-	if (Keybind == Jump)
-		return "20"; // " "
-	if (Keybind == Interact)
-		return "46"; // "F"
-	if (Keybind == NormalAttack)
-		return "01"; // LMB
-	if (Keybind == StrongAttack)
-		return "02"; // RMB
-	if (Keybind == Pause)
-		return "1B"; // Escape
-	if (Keybind == Pause2)
-		return "33"; // "3"
-	if (Keybind == Subweapon)
-		return "43"; // "C"
-	if (Keybind == BladeMode)
-		return "A0"; // LShift
-	if (Keybind == Ability)
-		return "52"; // "R", technically not a 1:1 match because platinum
-	if (Keybind == Lockon)
-		return "45"; // "E"
-	if (Keybind == Run)
-		return "A2"; // LCtrl
-	if (Keybind == CamReset)
-		return "03"; // MMB
-	if (Keybind == Left)
-		return "41"; // "A"
-	if (Keybind == Right)
-		return "44"; // "D"
-	if (Keybind == Forward)
-		return "57"; // "W"
-	if (Keybind == Back)
-		return "53"; // "S"
-	return "None"; // Camera is analog and won't really work here anyway
-}
-
-bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind) {
-	if (controllerNumber == -1) {
-		Keybind = GetVanillaKeybind(Keybind);
-		if (Keybind == "None")
-			return false;
-	}
-	return ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
-		|| IsGamepadButtonPressed(controllerNumber, GamepadBind));
-}
-
-bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
-					   InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
-	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
-		player->m_nKeyHoldingFlag |= bit;
-		player->m_nKeyPressedFlag |= bit;
-		if (altField1) *altField1 |= bit;
-		if (altField2) *altField2 |= bit;
-		return true;
-	}
-	else {
-		player->m_nKeyHoldingFlag &= ~bit;
-		player->m_nKeyPressedFlag &= ~bit;
-		if (altField1) *altField1 &= ~bit;
-		if (altField2) *altField2 &= ~bit;
-		return false;
-	}
-}
-
-bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
-					   InputBitflags bit, float* altField, bool invert) {
-	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
-		player->m_nKeyHoldingFlag |= bit;
-		*altField = invert ? -1000.0f : 1000.0f;
-		if (IsGamepadButtonPressed(controllerNumber, GamepadBind))
-			*altField *= GetGamepadAnalog(controllerNumber, GamepadBind);
-		return true;
-	}
-	return false;
-}
-
-void LoadControl(CIniReader iniReader, std::string* Control, std::string* GamepadControl, std::string name) {
-	*Control = TryParseVKToHex(iniReader.ReadString("MGRRMultiplayerControls", name, *Control));
-	*GamepadControl = iniReader.ReadString("MGRRMultiplayerControls", "Gamepad" + name, *GamepadControl);
-}
-
-
-
-
-LPD3DXSPRITE pSprite = NULL;
-
-void LoadFont(fs::path directory_path, int id) {
-	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	int loaded_font_textures = 0;
-	for (const auto& entry : fs::directory_iterator(directory_path)) {
-		if (entry.is_regular_file()) {
-
-			pTexture = NULL;
-			string fname = entry.path().string();
-			D3DXIMAGE_INFO info;
-			D3DXCreateTextureFromFileEx(
-				Hw::GraphicDevice,
-				fname.c_str(),
-				D3DX_DEFAULT_NONPOW2,    // Width
-				D3DX_DEFAULT_NONPOW2,    // Height
-				D3DX_DEFAULT,            // MipLevels
-				0,                       // Usage
-				D3DFMT_UNKNOWN,          // Format
-				D3DPOOL_MANAGED,         // Pool
-				D3DX_FILTER_NONE,        // Filter
-				D3DX_FILTER_NONE,        // MipFilter
-				0,                       // ColorKey
-				NULL,                    // pSrcInfo
-				NULL,                    // pPalette
-				&pTexture
-			);
-
-			D3DXGetImageInfoFromFile(fname.c_str(), &info);
-			if (pTexture != NULL) {
-				int n = fname.length();
-				char* arr = new char[n + 1];
-				fname = fname.substr(fname.find_last_of("\\"), fname.find_last_of("."));
-				strcpy(arr, fname.c_str());
-				MGRFontCharacter character;
-				character.sprite = pTexture;
-				character.character = arr[1];
-				character.width = info.Width;
-				font_map[id].insert({ arr[1], character });
-				loaded_font_textures++;
-			}
-		}
-	}
-}
-
-
-
-
-
-void LoadUIData() {
-	
-	string data_dir = "rising_multiplayer\\";
-
-	LoadFont("rising_multiplayer\\mgfont\\", 0);
-	LoadFont("rising_multiplayer\\mgfont_2\\", 1);
-
-
-
-	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\fc_seg.png").c_str(), &fc_segment);
-	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\hp_seg.png").c_str(), &hp_segment);
-
-
-}
-
-
-
-void LoadConfig() noexcept
-{
-	// Load image data
-	LoadUIData();
-
-
-	// Absolutely required
-	if (pSprite == NULL) {
-		D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
-	}
-
-	// Load configuration data
-	CIniReader iniReader("MGRRMultiplayerControls.ini");
-
-	LoadControl(iniReader, &Forward, &GamepadForward, "Forward");
-	LoadControl(iniReader, &Back, &GamepadBack, "Back");
-	LoadControl(iniReader, &Left, &GamepadLeft, "Left");
-	LoadControl(iniReader, &Right, &GamepadRight, "Right");
-	LoadControl(iniReader, &NormalAttack, &GamepadNormalAttack, "NormalAttack");
-	LoadControl(iniReader, &StrongAttack, &GamepadStrongAttack, "StrongAttack");
-	LoadControl(iniReader, &Jump, &GamepadJump, "Jump");
-	LoadControl(iniReader, &Interact, &GamepadInteract, "Interact");
-	LoadControl(iniReader, &Run, &GamepadRun, "Run");
-	LoadControl(iniReader, &BladeMode, &GamepadBladeMode, "BladeMode");
-	LoadControl(iniReader, &Lockon, &GamepadLockon, "Lockon");
-	LoadControl(iniReader, &Subweapon, &GamepadSubweapon, "Subweapon");
-	LoadControl(iniReader, &CamUp, &GamepadCamUp, "CamUp");
-	LoadControl(iniReader, &CamDown, &GamepadCamDown, "CamDown");
-	LoadControl(iniReader, &CamLeft, &GamepadCamLeft, "CamLeft");
-	LoadControl(iniReader, &CamRight, &GamepadCamRight, "CamRight");
-	LoadControl(iniReader, &Taunt, &GamepadTaunt, "Taunt");
-	LoadControl(iniReader, &WeaponMenu, &GamepadWeaponMenu, "WeaponMenu");
-	LoadControl(iniReader, &WeaponMenu2, &GamepadWeaponMenu2, "WeaponMenu2");
-	LoadControl(iniReader, &Heal, &GamepadHeal, "Heal");
-	LoadControl(iniReader, &Pause, &GamepadPause, "Pause");
-	LoadControl(iniReader, &Pause2, &GamepadPause2, "Codec"); // Note non-matching, Codec is apparently an enum somewhere
-	LoadControl(iniReader, &Ability, &GamepadAbility, "Ability");
-	LoadControl(iniReader, &CamReset, &GamepadCamReset, "CamReset");
-
-	GamepadSpawnSam = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnSam", GamepadSpawnSam);
-	GamepadSpawnWolf = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnWolf", GamepadSpawnWolf);
-	GamepadSpawnBossSam = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnBossSam", GamepadSpawnBossSam);
-	GamepadSpawnArmstrong = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnArmstrong", GamepadSpawnArmstrong);
-
-	DisableNumberBinds = iniReader.ReadBoolean("MGRRMultiplayerControls", "DisableNumberBinds", false);
-
-}
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
@@ -1022,9 +230,9 @@ void RecalibrateBossCode() {
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
 }
 
-void TeleportToMainPlayer(Pl0000* MainPlayer, int controllerIndex = -1) {
-	cVec4& pos = MainPlayer->m_vecTransPos;
-	cVec4& rot = MainPlayer->m_vecRotation;
+void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1) {
+	cVec4& pos = mainPlayer->m_vecTransPos;
+	cVec4& rot = mainPlayer->m_vecRotation;
 	if (controllerIndex >= 0) {
 		Pl0000* player = players[controllerIndex + 1];
 		player->place(pos, rot);
@@ -1072,46 +280,9 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	return *isMenuShowPtr; // Возвращаем текущее состояние меню
 }
 
-void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int controllerNumber = -1) {
-
-	if (CheckControlPressed(controllerNumber, NormalAttack, GamepadNormalAttack)
-		&& Enemy->m_nCurrentAction != BossActions[0]) { // Two punches (four strikes)
-		Enemy->setState(BossActions[0], 0, 0, 0);
-	}
-
-	if (CheckControlPressed(controllerNumber, StrongAttack, GamepadStrongAttack)
-		&& Enemy->m_nCurrentAction != BossActions[1]) { // Two punches, kick, punch (four strike w/ sheath)
-		Enemy->setState(BossActions[1], 0, 0, 0);
-	}
-
-	if (CheckControlPressed(controllerNumber, Run, GamepadRun)
-		&& Enemy->m_nCurrentAction != BossActions[2]) { // Run QTE (Assault Rush)
-		Enemy->setState(BossActions[2], 0, 0, 0);
-	}
-
-	if (CheckControlPressed(controllerNumber, Interact, GamepadInteract)
-		&& Enemy->m_nCurrentAction != BossActions[3]) { // Overhead with AOE (unblockable QTE)
-		Enemy->setState(BossActions[3], 0, 0, 0);
-	}
-
-	if (CheckControlPressed(controllerNumber, Jump, GamepadJump)
-		&& Enemy->m_nCurrentAction != BossActions[4]) { // Uppercut (perfect parry QTE fail)
-		Enemy->setState(BossActions[4], 0, 0, 0);
-	}
-
-	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)
-		&& Enemy->m_nCurrentAction != BossActions[5]) { // Explode (taunt)
-		Enemy->setState(BossActions[5], 0, 0, 0);
-	}
-
-	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)
-		&& Enemy->m_nCurrentAction != BossActions[6]) { // Heal (un-perfect-parryable four strike)
-		Enemy->setState(BossActions[6], 0, 0, 0);
-	}
-}
 
 
-
+Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 
 void Update()
@@ -1125,12 +296,20 @@ void Update()
 		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
 		//injector::WriteMemory<unsigned char>(shared::base + 0x6C7EC3, 0xEB, true); // Disable vanilla enemy targeting (broken)
 
+		// Load image data
+		LoadUIData();
+
+
+		// Absolutely required
+		if (pSprite == NULL) {
+			D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
+		}
+
 		LoadConfig();
 		configLoaded = true;
 	}
 
-
-	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 	if (!MainPlayer) {
 		for (int i = 0; i < 5; i++) {
@@ -1180,13 +359,13 @@ void Update()
 		if (modelItems->m_nSheath != 0x11404) originalModelItems.m_nSheath = modelItems->m_nSheath;
 		if (modelItems->m_nHead != 0x11405) originalModelItems.m_nHead = modelItems->m_nHead;
 
-		if (getKeyState('6').isPressed && !DisableNumberBinds) {
+		if (getKeyState('6').isPressed) {
 			Spawner((eObjID)0x11400);
 			//camera back to Raiden
 			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
 
-		if (getKeyState('5').isPressed && !DisableNumberBinds) {
+		if (getKeyState('5').isPressed) {
 			Spawner((eObjID)0x11500);
 			//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 			//camera back to Raiden
@@ -1262,150 +441,12 @@ void Update()
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
 			) {
 
-			/*
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A && PlayAsArmstrong) {
-				unsigned int BossActions[] = { 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
-				UpdateBossActions(Enemy, BossActions, controllerNumber);
-
-				if (ArmstrongCanDamagePlayer)
-					Enemy->field_640 = 2;
-				else
-					Enemy->field_640 = 1;
-			}
-
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam) {
-				unsigned int BossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x30005, 0x10006 };
-				UpdateBossActions(Enemy, BossActions, controllerNumber);
-
-				if (BossSamCanDamagePlayer)
-					Enemy->field_640 = 2;
-				else
-					Enemy->field_640 = 1;
-			}
-			*/
-
-
-
-
-			float rotation = 0;
-			float v9;
-			float field_X = 0;
-			float field_Y = 0;
-			float v10;
-			float v11;
-			cVec4 v54;
-			long double tann = 0;
-			//forward
-
-			cCameraGame camera = cCameraGame::Instance;
-			//UpdateMovement(Enemy, &camera);
-
-			// All defaults here are for Armstrong (em0700)
-			unsigned int StandingState = 0x10000;
-			unsigned int WalkingState = 0x10001;
 			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
-			// Buttons: X, Y, RT, B, A, up, LT
-			static unsigned int ArmstrongBossActions[] = {0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010};
-			static unsigned int SamBossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005 };
-			unsigned int *BossActions = ArmstrongBossActions;
-
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) {
-				StandingState = 0x20000;
-				WalkingState = 0x10002;
-				BossActions = SamBossActions;
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
 				CanDamagePlayer = BossSamCanDamagePlayer;
-			}
-
-			UpdateBossActions(Enemy, BossActions, controllerNumber);
-
-			if (CanDamagePlayer)
-				Enemy->field_640 = 2;
-			else
-				Enemy->field_640 = 1;
-
-
-			if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
-				field_Y = -1000;
-				if (IsGamepadButtonPressed(controllerNumber, GamepadForward))
-					field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
-			}
-
-
-
-
-			//back
-			if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
-				//if (GetAsyncKeyState(0x4B)) {
-				field_Y = 1000;
-				if (IsGamepadButtonPressed(controllerNumber, GamepadBack))
-					field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
-			}
-
-			//left
-			if (CheckControlPressed(controllerNumber, Left, GamepadLeft)) {
-				field_X = -1000;
-				if (IsGamepadButtonPressed(controllerNumber, GamepadLeft))
-					field_X *= GetGamepadAnalog(controllerNumber, GamepadLeft);
-			}
-
-			//right
-			if (CheckControlPressed(controllerNumber, Right, GamepadRight)) {
-				field_X = 1000;
-				if (IsGamepadButtonPressed(controllerNumber, GamepadRight))
-					field_X *= GetGamepadAnalog(controllerNumber, GamepadRight);
-			}
-
-			if (field_X != 0 || field_Y != 0) {
-				if (Enemy->m_nCurrentAction == StandingState) Enemy->setState(WalkingState, 0, 0, 0);
-				float angle = atan2(field_X, field_Y);
-				angle += camera.cCameraTypes::field_4 + PI;
-				Enemy->m_vecRotation.y = angle;
-			}
-			else {
-				if (Enemy->m_nCurrentAction == WalkingState) Enemy->setState(StandingState, 0, 0, 0);
-			}
-
-
-			//v9 = field_X * field_X + field_Y * field_Y;
-
-
-
-
-			//D3DXMATRIX matrix;
-			//D3DXMatrixIdentity(matrix);
-
-			//((void(__thiscall*)(BehaviorEmBase* Enemy, D3DXMATRIX* matrix))(shared::base + 0x77A260))(Enemy, &matrix);
-
-		/*	const D3DXMATRIX* ConstMatrix;
-
-			//ConstMatrix = matrix;
-
-			if (v9 > 0.0)
-			{
-				v10 = -field_X;
-				v11 = -field_Y;
-				//Enemy->field_D2C = atan2(v10, v11);
-				v54.x = v10;
-				v54.y = v11;
-				v54.z = 0.0;
-				D3DXVECTOR3 vector;
-				vector.x = v54.x;
-				vector.y = v54.y;
-				vector.z = v54.z;
-				//D3DXVec3TransformNormal(vector,vector, matrix);
-				//((D3DXVECTOR3*(__cdecl*)(D3DXVECTOR3* pOut, const D3DXVECTOR3* pV, const D3DXMATRIX* pM))(shared::base + 0x1036F2C))(&vector,&vector,&matrix);
-				//D3DXVec3TransformNormal(&vector,&vector, &matrix);
-				v54.x = Enemy->m_vecTransPos.x + v54.x;
-				v54.y = Enemy->m_vecTransPos.y + v54.y;
-				v54.z = Enemy->m_vecTransPos.z + v54.z;
-				v54.w = Enemy->m_vecTransPos.w + v54.w;
-				Enemy->m_vecRotation.y = ((long double(__thiscall*)(Behavior* Enemy, cVec4 * vec4))(shared::base + 0x68EC30))(Enemy, &v54);
-			}
-
-
-			/*player->field_D30 = player->m_vecRotation.y;
-			*/
+			
+			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
 
 		}
 		
@@ -1416,286 +457,12 @@ void Update()
 			modelItems->m_nVisor = originalModelItems.m_nVisor;
 			modelItems->m_nSheath = originalModelItems.m_nSheath;
 			modelItems->m_nHead = originalModelItems.m_nHead;
-
-			if (EnableDamageToPlayers)
-				player->field_640 = 0;
-			else
-				player->field_640 = 1;
-
-			player->m_nKeyHoldingFlag = 0;
-			player->field_D0C = 0;
-			player->field_D08 = 0;
-			player->field_D10 = 0;
-			player->field_D14 = 0;
-
-			static bool wasJumpSam[5] = { false }; // For Sam, whether jump was already pressed on the previous frame
-			static bool wasCrouchWolf[5] = { false }; // For Wolf, whether Ability was already pressed
-
-
-			//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, originalSword, true);
-
-
-			if (getKeyState('9').isPressed && !DisableNumberBinds) {
-				AutoNormalAttackEnable = !AutoNormalAttackEnable;
-				AutoStrongAttackEnable = false;
-			}
-
-			if (getKeyState('0').isPressed && !DisableNumberBinds) {
-				AutoStrongAttackEnable = !AutoStrongAttackEnable;
-				AutoNormalAttackEnable = false;
-			}
-
-			//Change camera between players
-
-			if ((GetKeyState('8') & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadLockon))
-				((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(player);
-
-			if ((GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
-				TeleportToMainPlayer(MainPlayer, controllerNumber);
-
-
-			bool isAny = false;
-
-			// Special cases where keyPressedFlag is important
-			if (player->m_nModelIndex == 0x11400) {
-				if (wasJumpSam[i]) {
-					wasJumpSam[i] = SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-					player->m_nKeyPressedFlag &= ~JumpBit;
-				}
-				else {
-					wasJumpSam[i] = SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-				}
-				isAny |= wasJumpSam[i];
-			}
-			else {
-				isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-			}
-
-			if (player->m_nModelIndex == 0x11500) {
-				if (wasCrouchWolf[i]) {
-					wasCrouchWolf[i] = SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-					player->m_nKeyPressedFlag &= ~AbilityBit;
-				}
-				else {
-					wasCrouchWolf[i] = SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-				}
-				isAny |= wasCrouchWolf[i];
-			}
-			else {
-				isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-			}
-
-			// Left stick
-			isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->field_D0C, true);
-			isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->field_D0C, false);
-			isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->field_D08, true);
-			isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->field_D08, false);
-			// Right stick
-			isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->field_D14, true);
-			isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->field_D14, false);
-			isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->field_D10, true);
-			isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->field_D10, false);
-			// Face buttons
-			isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->field_D04);
-			if (AutoNormalAttackEnable) {
-				player->m_nKeyHoldingFlag |= LightAttackBit;
-				player->m_nKeyPressedFlag |= LightAttackBit;
-				player->field_D04 |= LightAttackBit;
-			}
-			isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->field_D04);
-			if (AutoStrongAttackEnable) {
-				player->m_nKeyHoldingFlag |= HeavyAttackBit;
-				player->m_nKeyPressedFlag |= HeavyAttackBit;
-				player->field_D04 |= HeavyAttackBit;
-			}
-			isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
-			// Triggers and bumpers (lock-on takes camera control instead)
-			isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->field_D00, &player->field_D04);
-			isAny |= SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04);
-			isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
-			// D-pad
-			isAny |= SetFlagsForAction(player, controllerNumber, Taunt, GamepadTaunt, TauntBit);
-			isAny |= SetFlagsForAction(player, controllerNumber, Heal, GamepadHeal, HealBit); // Plays effect, does not heal
-			//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu, GamepadWeaponMenu, WeaponMenuBit);
-			//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu2, GamepadWeaponMenu2, WeaponMenu2Bit);
-			// Other
-			isAny |= SetFlagsForAction(player, controllerNumber, CamReset, GamepadCamReset, CamResetBit);
-			//isAny |= SetFlagsForAction(player, controllerNumber, Pause, GamepadPause, PauseBit); // Does not work
-			//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
-
-			if (!isAny) {
-				player->m_nKeyPressedFlag = 0;
-				player->field_D04 = 0;
-			}
+			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 
 		}
 	}
 
 
-}
-
-void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR)
-{
-	D3DRECT rec;
-	rec.x1 = bx;
-	rec.y1 = by;
-	rec.x2 = bx + bw;//makes line longer/shorter going right
-	rec.y2 = by + 6;//makes line one pixel tall
-	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
-
-}
-
-void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR, int thickness)
-{
-	D3DRECT rec;
-	rec.x1 = bx;
-	rec.y1 = by;
-	rec.x2 = bx + bw;//makes line longer/shorter going right
-	rec.y2 = by + thickness;//makes line one pixel tall
-	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
-
-}
-
-void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
-	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
-
-	int n = text.length();
-	char* txtarray = new char[n + 1];
-	strcpy(txtarray, text.c_str());
-
-	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
-	int tmp_x_shift = 0;
-	for (int i = 0; i < n + 1; i++) {
-		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
-		if (txtarray[i] != NULL) {
-
-			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
-			tmp_x_shift += font_map[fontid][txtarray[i]].width - 8;
-
-
-		}
-		else {
-			tmp_x_shift += 20;
-		}
-
-	}
-	pSprite->End();
-
-	delete[] txtarray;
-
-}
-
-void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
-	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
-	int n = text.length();
-	char* txtarray = new char[n + 1];
-	strcpy(txtarray, text.c_str());
-
-
-	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
-	int tmp_x_shift = 0;
-	for (int i = n - 1; i >= 0; i--) {
-		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
-		if (txtarray[i] != NULL) {
-
-			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
-			tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8;
-
-
-		}
-		else {
-			tmp_x_shift += 20;
-		}
-
-	}
-	pSprite->End();
-
-	delete[] txtarray;
-
-}
-
-
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0, int justification_flag=0) {
-	static int offsets[9][2] = {
-	{-1, -1},
-	{-1, 0},
-	{-1, 1},
-	{0, -1},
-	//{0, 0},
-	{0, 1},
-	{1, -1},
-	{1, 0},
-	{1, 1},
-	};
-
-	for (int i = 0; i < 8; i++) {
-		if (justification_flag == 0) {
-			RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
-		}
-		else if (justification_flag == 1) {
-			RenderTextMGR_RightLeft(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
-		}
-
-		
-	}
-	if (justification_flag == 0) {
-		RenderTextMGR(text, x, y, fg, fontid);
-	}
-	else if (justification_flag == 1) {
-		RenderTextMGR_RightLeft(text, x, y, fg, fontid);
-	}
-
-}
-
-
-
-void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
-
-	DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
-	DrawLine(Hw::GraphicDevice, x, y, ((value / maxvalue) * 400), fg, 4);
-}
-
-
-
-
-
-void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
-	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
-	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 330, y - 25, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 0, 1);
-	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 375, y - 5, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 1 ,0);
-
-	RenderTextWithShadow(name, x, y);
-	DrawProgressBar(x, y + 23, hpvalue, hpmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66));
-	DrawProgressBar(x, y + 28, fcvalue, fcmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 0, 255, 255));
-
-
-}
-
-
-
-
-void Present() {
-	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
-		// also _ = space, but i assume you got that
-		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
-		int i = 0;
-		for (Pl0000* player : players) {
-			if (player == nullptr) continue;
-
-			string name = "";
-			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
-			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
-			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
-			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
-			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
-
-			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
-				player->getFuelContainer(), player->getFuelCapacity(false), name);
-			i++;
-		}
-	}
 }
 
 
