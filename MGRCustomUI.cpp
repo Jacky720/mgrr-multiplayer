@@ -153,14 +153,10 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 	int tmp_x_shift = 0;
 	for (int i = n - 1; i >= 0; i--) {
+		tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8; // Shift BEFORE since we're going left, THROUGH the character's space
 		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
 		if (txtarray[i] != NULL) {
-
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
-			if (i > 0)
-				tmp_x_shift -= font_map[fontid][txtarray[i-1]].width - 8;
-
-
 		}
 
 	}
@@ -222,8 +218,8 @@ void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg,
 
 void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
-	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 330, y - 25, C_DKGRAY, C_HPYELLOW, 0, 1);
-	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 375, y - 5, C_DKGRAY, C_HPYELLOW, 1, 0);
+	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, 1);
+	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, 0);
 
 	RenderTextWithShadow(name, x, y);
 	DrawProgressBar(x, y + 23, hpvalue, hpmax, C_DKGRAY, C_HPYELLOW);
