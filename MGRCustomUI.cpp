@@ -2,6 +2,7 @@
 #include <cGameUIManager.h>
 #include <Hw.h>
 #include <Pl0000.h>
+#include <BehaviorEmBase.h>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -152,16 +153,10 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 	int tmp_x_shift = 0;
 	for (int i = n - 1; i >= 0; i--) {
+		tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8; // Shift BEFORE since we're going left, THROUGH the character's space
 		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
 		if (txtarray[i] != NULL) {
-
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
-			tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8;
-
-
-		}
-		else {
-			tmp_x_shift += 20;
 		}
 
 	}
@@ -171,8 +166,13 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 
 }
 
+#define C_BLACK D3DCOLOR_XRGB(0, 0, 0)
+#define C_LTGRAY D3DCOLOR_XRGB(240, 255, 255)
+#define C_CYAN D3DCOLOR_XRGB(0, 255, 255)
+#define C_DKGRAY D3DCOLOR_XRGB(30, 30, 30)
+#define C_HPYELLOW D3DCOLOR_XRGB(255, 227, 66)
 
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = D3DCOLOR_ARGB(255, 0, 0, 0), D3DCOLOR fg = D3DCOLOR_XRGB(240, 255, 255), int fontid = 0, int justification_flag = 0) {
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = 0) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
@@ -218,12 +218,14 @@ void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg,
 
 void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
-	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 330, y - 25, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 0, 1);
-	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 375, y - 5, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66), 1, 0);
+	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, 1);
+	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, 0);
 
 	RenderTextWithShadow(name, x, y);
-	DrawProgressBar(x, y + 23, hpvalue, hpmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66));
-	DrawProgressBar(x, y + 28, fcvalue, fcmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 0, 255, 255));
+	DrawProgressBar(x, y + 23, hpvalue, hpmax, C_DKGRAY, C_HPYELLOW);
+	if (fcmax > 0) {
+		DrawProgressBar(x, y + 28, fcvalue, fcmax, C_DKGRAY, C_CYAN);
+	}
 
 
 }
@@ -244,11 +246,14 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
 			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
-			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
-			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
+			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
 
-			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
+			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x20000)
+				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->m_nHealth, player->m_nMaxHealth, 0, 0, name);
+			else
+				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
 				player->getFuelContainer(), player->getFuelCapacity(false), name);
 			i++;
 		}
