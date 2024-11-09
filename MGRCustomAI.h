@@ -4,6 +4,8 @@
 #include <cCameraGame.h>
 #include <Pl0000.h>
 
+extern bool EveryHeal;
+
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr);
 

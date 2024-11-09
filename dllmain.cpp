@@ -620,6 +620,8 @@ void gui::RenderWindow()
 
 				}
 
+				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
+
 				ImGui::EndTabItem();
 			}
 
