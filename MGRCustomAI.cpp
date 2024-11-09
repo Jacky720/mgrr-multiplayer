@@ -15,6 +15,9 @@ extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump,
 	GamepadSpawnBossSam;
 extern Pl0000* MainPlayer;
 
+int healTimers[5] = { -1, -1, -1, -1, -1 };
+bool EveryHeal = true;
+
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
 	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
@@ -320,7 +323,15 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
 	// D-pad
 	isAny |= SetFlagsForAction(player, controllerNumber, Taunt, GamepadTaunt, TauntBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Heal, GamepadHeal, HealBit); // Plays effect, does not heal
+	if (SetFlagsForAction(player, controllerNumber, Heal, GamepadHeal, HealBit)) { // Plays effect, does not heal
+		isAny |= true;
+		if (EveryHeal && healTimers[i] <= 0) {
+			healTimers[i] = 30 * 60;
+			player->setHealth(player->getMaxHealth());
+		}
+	}
+	if (healTimers[i] > 0)
+		healTimers[i]--;
 	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu, GamepadWeaponMenu, WeaponMenuBit);
 	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu2, GamepadWeaponMenu2, WeaponMenu2Bit);
 	// Other
