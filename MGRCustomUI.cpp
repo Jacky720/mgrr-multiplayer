@@ -2,6 +2,7 @@
 #include <cGameUIManager.h>
 #include <Hw.h>
 #include <Pl0000.h>
+#include <BehaviorEmBase.h>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -223,7 +224,9 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 
 	RenderTextWithShadow(name, x, y);
 	DrawProgressBar(x, y + 23, hpvalue, hpmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 255, 227, 66));
-	DrawProgressBar(x, y + 28, fcvalue, fcmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 0, 255, 255));
+	if (fcmax > 0) {
+		DrawProgressBar(x, y + 28, fcvalue, fcmax, D3DCOLOR_ARGB(255, 30, 30, 30), D3DCOLOR_ARGB(255, 0, 255, 255));
+	}
 
 
 }
@@ -244,11 +247,14 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
 			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_nEntityIndex == 0x20020) continue; // Bosses don't have FC, let's just not play as them rn
-			if (player->m_pEntity->m_nEntityIndex == 0x20700) continue;
-			if (player->m_pEntity->m_nEntityIndex == 0x2070A) continue;
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
+			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
 
-			DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
+			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x20000)
+				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->m_nHealth, player->m_nMaxHealth, 0, 0, name);
+			else
+				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
 				player->getFuelContainer(), player->getFuelCapacity(false), name);
 			i++;
 		}
