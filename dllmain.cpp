@@ -23,16 +23,6 @@
 #include "MGRCustomAI.h"
 #include "MGRCustomUI.h"
 
-extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump, Interact,
-	CamUp, CamDown, CamLeft, CamRight, Heal, Taunt, WeaponMenu, WeaponMenu2, Run,
-	BladeMode, Subweapon, Lockon, Pause, Pause2, Ability, CamReset, GamepadForward,
-	GamepadBack, GamepadLeft, GamepadRight, GamepadNormalAttack, GamepadStrongAttack,
-	GamepadJump, GamepadInteract, GamepadCamUp, GamepadCamDown, GamepadCamLeft,
-	GamepadCamRight, GamepadHeal, GamepadTaunt, GamepadWeaponMenu, GamepadWeaponMenu2,
-	GamepadRun, GamepadBladeMode, GamepadSubweapon, GamepadLockon, GamepadPause, GamepadPause2,
-	GamepadAbility, GamepadCamReset, GamepadSpawnSam, GamepadSpawnWolf, GamepadSpawnArmstrong,
-	GamepadSpawnBossSam;
-extern LPD3DXSPRITE pSprite;
 
 
 #pragma comment(lib, "d3dx9.lib")
