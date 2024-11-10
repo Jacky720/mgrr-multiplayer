@@ -22,7 +22,7 @@
 #include <Windows.h>
 #include "MGRCustomAI.h"
 #include "MGRCustomUI.h"
-
+int memory_address = 0x0;
 
 
 #pragma comment(lib, "d3dx9.lib")
@@ -48,7 +48,7 @@ bool MonsoonAtOnce = false;
 bool SamAtOnce = false;
 */
 
-
+bool SundownerBehaviorActive = true;
 
 bool PlayAsMistral = false;
 bool PlayAsMonsoon = false;
@@ -56,7 +56,7 @@ bool PlayAsSundowner = false;
 bool PlayAsSam = false;
 bool BossSamCanDamagePlayer = true;
 bool PlayAsArmstrong = false;
-bool ArmstrongCanDamagePlayer = true;
+bool ArmstrongCanDamagePlayer = false;
 
 
 bool EnableDamageToPlayers = false;
@@ -195,13 +195,22 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0xFFD00EE8, true);
 
+	if (PlayAsSundowner) {
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true);
+		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
+	}
+	// Potential Offsets:
+	// 0x001011AD - Handles entity, something
+
+
+
 	if (PlayAsSam) {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
 	}
 	else {
-		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0xFFEE49E8, true);
-		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0xFFEE49E8, true);
+		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
+		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
 	}
 
 	/*if (PlayAsSundowner)
@@ -277,6 +286,7 @@ Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 void Update()
 {
+
 
 
 	if (!configLoaded) {
@@ -374,9 +384,13 @@ void Update()
 				PlayAsArmstrong = true;
 			}
 			else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
-				Spawner((eObjID)0x20020, i);
-				PlayAsSam = true;
+				Spawner((eObjID)0x20310, i);
+				PlayAsSundowner = true;
 			}
+			//else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
+			//	Spawner((eObjID)0x20020, i);
+			//	PlayAsSam = true;
+			//}
 			else {
 				continue;
 			}
@@ -396,6 +410,8 @@ void Update()
 
 
 	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+		
+
 
 		auto value = node->m_value;
 		if (!value) continue;
@@ -438,6 +454,11 @@ void Update()
 			
 			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
 
+		}
+		if (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && (PlayAsSundowner)){
+
+
+			FullHandleAIBoss(Enemy, controllerNumber, EnableDamageToPlayers);
 		}
 		
 
@@ -555,7 +576,21 @@ void gui::RenderWindow()
 				}
 
 
+				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
+					Spawner((eObjID)0x20310);
+					PlayAsSundowner = false;
+					RecalibrateBossCode();
+				}
+
+
+
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
+
+				
+
+				// Sundonwers Head: 1581929
+
+
 				// Debug print Sam's flags
 //#define PRINTSAM
 //#define PRINTENEMY
@@ -623,6 +658,14 @@ void gui::RenderWindow()
 				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
 				ImGui::EndTabItem();
 			}
+			if (ImGui::BeginTabItem("Dev")) {
+				ImGui::InputInt("Memory Address:", &memory_address);
+				if (ImGui::Button("Disable Memory Address") && MainPlayer) {
+					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
+				}
+				ImGui::EndTabItem();
+			}
+
 
 			ImGui::EndTabBar();
 		}

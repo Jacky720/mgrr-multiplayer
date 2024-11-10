@@ -133,12 +133,18 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	// Buttons: X, Y, RT, B, A, up, LT
 	static unsigned int ArmstrongBossActions[] = { 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
 	static unsigned int SamBossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005 };
+	static unsigned int SundownerBossActions[] = { 0x20001, 0x20000, 0x20008, 0x20002, 0x20007, 0x10006, 0x20009 };
 	unsigned int* BossActions = ArmstrongBossActions;
 
 	if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) {
 		StandingState = 0x20000;
 		WalkingState = 0x10002;
 		BossActions = SamBossActions;
+	}
+	if (Enemy->m_pEntity->m_nEntityIndex == 0x20310) {
+		StandingState = 0x10000;
+		WalkingState = 0x10001;
+		BossActions = SundownerBossActions;
 	}
 
 	UpdateBossActions(Enemy, BossActions, controllerNumber);
