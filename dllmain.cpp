@@ -48,13 +48,14 @@ bool MonsoonAtOnce = false;
 bool SamAtOnce = false;
 */
 
-bool SundownerBehaviorActive = true;
+//bool SundownerBehaviorActive = true;
 
 bool PlayAsMistral = false;
 bool PlayAsMonsoon = false;
 bool PlayAsSundowner = false;
+bool SundownerCanDamagePlayer = false;
 bool PlayAsSam = false;
-bool BossSamCanDamagePlayer = true;
+bool BossSamCanDamagePlayer = false;
 bool PlayAsArmstrong = false;
 bool ArmstrongCanDamagePlayer = false;
 
@@ -195,10 +196,16 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0xFFD00EE8, true);
 
+	/*if (PlayAsSundowner)
+		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
+	else
+		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
 	if (PlayAsSundowner) {
 		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true);
 		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
 	}
+	else
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true); // TODO: What's the original value here? All four bytes.
 	// Potential Offsets:
 	// 0x001011AD - Handles entity, something
 
@@ -209,15 +216,11 @@ void RecalibrateBossCode() {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
 	}
 	else {
-		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
-		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
+		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0xFFEE49E8, true);
+		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0xFFEE49E8, true);
 	}
 
-	/*if (PlayAsSundowner)
-		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
-	else
-		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);
-
+	/*
 	if (PlayAsMonsoon)
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
 	else
@@ -442,23 +445,21 @@ void Update()
 		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
 		int controllerNumber = i - 1;
 
-		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
+		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && PlayAsArmstrong)
 
-			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
+			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
+			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
 			) {
 
 			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
 			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
 				CanDamagePlayer = BossSamCanDamagePlayer;
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
+				CanDamagePlayer = SundownerCanDamagePlayer;
 			
 			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
 
-		}
-		if (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && (PlayAsSundowner)){
-
-
-			FullHandleAIBoss(Enemy, controllerNumber, EnableDamageToPlayers);
 		}
 		
 
@@ -576,10 +577,11 @@ void gui::RenderWindow()
 				}
 
 
+				ImGui::Checkbox("Sundowner is player-controlled", &PlayAsSundowner);
+				ImGui::Checkbox("Sundowner can damage player", &SundownerCanDamagePlayer);
 				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
 					Spawner((eObjID)0x20310);
-					PlayAsSundowner = false;
-					RecalibrateBossCode();
+					PlayAsSundowner = true;
 				}
 
 
@@ -588,7 +590,7 @@ void gui::RenderWindow()
 
 				
 
-				// Sundonwers Head: 1581929
+				// Sundowner's Head: 1581929
 
 
 				// Debug print Sam's flags
@@ -660,7 +662,7 @@ void gui::RenderWindow()
 			}
 			if (ImGui::BeginTabItem("Dev")) {
 				ImGui::InputInt("Memory Address:", &memory_address);
-				if (ImGui::Button("Disable Memory Address") && MainPlayer) {
+				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
 					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
 				}
 				ImGui::EndTabItem();
