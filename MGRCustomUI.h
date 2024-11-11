@@ -6,3 +6,5 @@ extern LPD3DXSPRITE pSprite;
 void LoadUIData();
 
 void Present();
+
+void ResetControllerAllFlags();

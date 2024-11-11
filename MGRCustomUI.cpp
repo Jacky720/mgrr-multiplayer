@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <XInput.h>
+#include "MGRControls.h"
 
 using namespace std;
 
@@ -29,7 +30,6 @@ int controller_flag[5] = { 0, 0, 0, 0, 0 };
 
 
 extern void SpawnCharacter(int, int);
-extern bool IsGamepadButtonPressed(int, const string&);
 
 extern bool configLoaded;
 extern std::string character_titles[5];
@@ -352,8 +352,6 @@ void ResetControllerAllFlags() {
 void Present() {
 
 
-
-
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
@@ -366,7 +364,7 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
 			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "jetstream sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "jetstream_sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x20310) name = "sundowner";
@@ -378,29 +376,28 @@ void Present() {
 				player->getFuelContainer(), player->getFuelCapacity(false), name);
 			i++;
 
-			int draw_offset = 0;
-			for (int ctrlr = 0; ctrlr < 5; ctrlr++) {
-				
-
-				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START") && controller_flag[ctrlr] == 0) {
-					controller_flag[ctrlr] = 1;
-				}
-
-				if (controller_flag[ctrlr] == 1) {
-					DrawCharacterSelector(60, (draw_offset * 140), ctrlr + 1);
-					draw_offset++;
-				}
-
-				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A") && controller_flag[ctrlr] == 1) {
-					controller_flag[ctrlr] = 2;
-					Se_PlayEvent("core_se_sys_decide_l");
-					SpawnCharacter(selection_ids[ctrlr + 1], ctrlr);
-				}
-
-			}
 		}
 
+		int draw_offset = 0;
+		for (int ctrlr = 0; ctrlr < 5; ctrlr++) {
 
+
+			if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START") && controller_flag[ctrlr] == 0) {
+				controller_flag[ctrlr] = 1;
+			}
+
+			if (controller_flag[ctrlr] == 1) {
+				DrawCharacterSelector(60, (draw_offset * 140), ctrlr + 1);
+				draw_offset++;
+			}
+
+			if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A") && controller_flag[ctrlr] == 1) {
+				controller_flag[ctrlr] = 2;
+				Se_PlayEvent("core_se_sys_decide_l");
+				SpawnCharacter(selection_ids[ctrlr + 1], ctrlr);
+			}
+
+		}
 
 	}
 }

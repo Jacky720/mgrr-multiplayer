@@ -33,7 +33,6 @@ int memory_address = 0x0;
 #endif
 #include <Camera.h>
 
-extern void ResetControllerAllFlags();
 
 std::string character_titles[5] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong"};
 
@@ -42,8 +41,8 @@ bool configLoaded = false;
 //bool SamSpawned = false;
 //bool WolfSpawned = false;
 
-bool AutoNormalAttackEnable = false;
-bool AutoStrongAttackEnable = false;
+//bool AutoNormalAttackEnable = false;
+//bool AutoStrongAttackEnable = false;
 
 /*
 bool ArmstrongAtOnce = false;
@@ -209,11 +208,11 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
 	if (PlayAsSundowner) {
-		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true);
+		injector::WriteMemory<unsigned char>(shared::base + 0x1961B0, 0xC3, true);
 		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
 	}
 	else
-		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true); // TODO: What's the original value here? All four bytes.
+		injector::WriteMemory<unsigned char>(shared::base + 0x1961B0, 0x56, true);
 	// Potential Offsets:
 	// 0x001011AD - Handles entity, something
 
@@ -386,12 +385,6 @@ void Update()
 			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
 
-		for (int i = 0; i < 4; i++) {
-			if (playerTypes[i + 1]) continue;
-
-			
-		}
-
 		// Disables summoning code
 		/*for (int i = 0; i < 4; i++) {
 			if (playerTypes[i + 1]) continue;
@@ -418,77 +411,71 @@ void Update()
 			RecalibrateBossCode();
 			//camera back to Raiden
 			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+		}*/
+	}
+
+	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
+		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+
+	Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
+
+	auto& pos = matrix[0];
+	auto& rotate = matrix[1];
+
+	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+
+		auto value = node->m_value;
+		if (!value) continue;
+
+		auto player = value->getEntityInstance<Pl0000>();
+		if (!player) continue;
+
+		bool alreadyInit = false;
+		for (int i = 0; i < 5; i++) {
+			if (players[i] == player)
+				alreadyInit = true;
 		}
-	}*/
-
-		if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-
-		Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
-
-		auto& pos = matrix[0];
-		auto& rotate = matrix[1];
-
-		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
-
-			auto value = node->m_value;
-			if (!value) continue;
-
-			auto player = node->m_value->getEntityInstance<Pl0000>();
-			if (!player) continue;
-
-			bool alreadyInit = false;
-			for (int i = 0; i < 5; i++) {
-				if (players[i] == player)
-					alreadyInit = true;
-			}
-			if (alreadyInit) continue;
-
-			for (int i = 0; i < 5; i++) {
-				if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
-					players[i] = player;
-					break;
-				}
-			}
-
-		}
+		if (alreadyInit) continue;
 
 		for (int i = 0; i < 5; i++) {
-			Pl0000* player = players[i];
-			if (!player) continue;
+			if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
+				players[i] = player;
+				break;
+			}
+		}
 
-			BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
-			int controllerNumber = i - 1;
+	}
 
-			if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
+	for (int i = 0; i < 5; i++) {
+		Pl0000* player = players[i];
+		if (!player) continue;
 
-				|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
-				) {
+		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
+		int controllerNumber = i - 1;
 
 		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && PlayAsArmstrong)
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
 			) {
-				bool CanDamagePlayer = ArmstrongCanDamagePlayer;
+			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
-			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-				    CanDamagePlayer = BossSamCanDamagePlayer;
-			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
-				    CanDamagePlayer = SundownerCanDamagePlayer;
-			
-			  FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
-    }
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
+				CanDamagePlayer = BossSamCanDamagePlayer;
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
+				CanDamagePlayer = SundownerCanDamagePlayer;
 
-			if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
-				&& modelItems) {
-				modelItems->m_nHair = originalModelItems.m_nHair;
-				modelItems->m_nVisor = originalModelItems.m_nVisor;
-				modelItems->m_nSheath = originalModelItems.m_nSheath;
-				modelItems->m_nHead = originalModelItems.m_nHead;
-			  *modelSword = originalModelSword;
-				FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+		}
 
-			}
+		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
+			&& modelItems) {
+			modelItems->m_nHair = originalModelItems.m_nHair;
+			modelItems->m_nVisor = originalModelItems.m_nVisor;
+			modelItems->m_nSheath = originalModelItems.m_nSheath;
+			modelItems->m_nHead = originalModelItems.m_nHead;
+			*modelSword = originalModelSword;
+			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+
 		}
 	}
 }
@@ -501,18 +488,18 @@ public:
 	{
 		Events::OnDeviceReset.before += gui::OnReset::Before;
 		Events::OnDeviceReset.after += gui::OnReset::After;
-		Events::OnEndScene += gui::OnEndScene; 
+		Events::OnEndScene += gui::OnEndScene;
 		/* // Or if you want to switch it to Present
 		Events::OnPresent += gui::OnEndScene;
 		*/
 		Events::OnPresent += []() {
 			Present();
-			};
+		};
 
 		Events::OnTickEvent += []()
-			{
-				Update();
-			};
+		{
+			Update();
+		};
 	}
 
 	Plugin()

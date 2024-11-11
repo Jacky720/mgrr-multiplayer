@@ -46,17 +46,6 @@ bool IsGamepadButtonPressed(int controllerIndex, const std::string& button);
 
 std::string TryParseVKToHex(std::string in);
 
-/*
-std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump, Interact,
-	CamUp, CamDown, CamLeft, CamRight, Heal, Taunt, WeaponMenu, WeaponMenu2, Run,
-	BladeMode, Subweapon, Lockon, Pause, Pause2, Ability, CamReset, GamepadForward,
-	GamepadBack, GamepadLeft, GamepadRight, GamepadNormalAttack, GamepadStrongAttack,
-	GamepadJump, GamepadInteract, GamepadCamUp, GamepadCamDown, GamepadCamLeft,
-	GamepadCamRight, GamepadHeal, GamepadTaunt, GamepadWeaponMenu, GamepadWeaponMenu2,
-	GamepadRun, GamepadBladeMode, GamepadSubweapon, GamepadLockon, GamepadPause, GamepadPause2,
-	GamepadAbility, GamepadCamReset, GamepadSpawnSam, GamepadSpawnWolf, GamepadSpawnArmstrong,
-	GamepadSpawnBossSam;*/
-
 void LoadConfig();
 
 bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind);
