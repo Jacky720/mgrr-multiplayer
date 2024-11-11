@@ -200,19 +200,6 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0xFFD00EE8, true);
 
-<<<<<<< Updated upstream
-=======
-	if (PlayAsSundowner) {
-		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true); // space you better not change this to char, if it works we dont touch
-
-		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
-	}
-	// Potential Offsets:
-	// 0x001011AD - Handles entity, something
-
-
-
->>>>>>> Stashed changes
 	if (PlayAsSam) {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
@@ -420,14 +407,7 @@ void Update()
 		auto& pos = matrix[0];
 		auto& rotate = matrix[1];
 
-
-<<<<<<< Updated upstream
-	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
-=======
 		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
-
->>>>>>> Stashed changes
-
 
 			auto value = node->m_value;
 			if (!value) continue;
@@ -489,44 +469,6 @@ void Update()
 			}
 		}
 	}
-<<<<<<< Updated upstream
-
-	for (int i = 0; i < 5; i++) {
-		Pl0000* player = players[i];
-		if (!player) continue;
-
-		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
-		int controllerNumber = i - 1;
-
-		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
-
-			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
-			) {
-
-			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
-
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-				CanDamagePlayer = BossSamCanDamagePlayer;
-			
-			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
-
-		}
-		
-
-		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
-			&& modelItems) {
-			modelItems->m_nHair = originalModelItems.m_nHair;
-			modelItems->m_nVisor = originalModelItems.m_nVisor;
-			modelItems->m_nSheath = originalModelItems.m_nSheath;
-			modelItems->m_nHead = originalModelItems.m_nHead;
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
-
-		}
-	}
-
-
-=======
->>>>>>> Stashed changes
 }
 
 
@@ -651,17 +593,6 @@ void gui::RenderWindow()
 				}
 
 
-<<<<<<< Updated upstream
-=======
-				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
-					Spawner((eObjID)0x20310);
-					PlayAsSundowner = true;
-					RecalibrateBossCode();
-				}
-
-
-
->>>>>>> Stashed changes
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
 				// Debug print Sam's flags
 //#define PRINTSAM
