@@ -22,7 +22,7 @@
 #include <Windows.h>
 #include "MGRCustomAI.h"
 #include "MGRCustomUI.h"
-
+int memory_address = 0x0;
 
 
 #pragma comment(lib, "d3dx9.lib")
@@ -32,6 +32,11 @@
 #pragma comment(lib,"Xinput9_1_0.lib")
 #endif
 #include <Camera.h>
+
+extern void ResetControllerAllFlags();
+
+std::string character_titles[5] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong"};
+
 
 bool configLoaded = false;
 //bool SamSpawned = false;
@@ -48,15 +53,16 @@ bool MonsoonAtOnce = false;
 bool SamAtOnce = false;
 */
 
-
+//bool SundownerBehaviorActive = true;
 
 bool PlayAsMistral = false;
 bool PlayAsMonsoon = false;
 bool PlayAsSundowner = false;
+bool SundownerCanDamagePlayer = false;
 bool PlayAsSam = false;
-bool BossSamCanDamagePlayer = true;
+bool BossSamCanDamagePlayer = false;
 bool PlayAsArmstrong = false;
-bool ArmstrongCanDamagePlayer = true;
+bool ArmstrongCanDamagePlayer = false;
 
 
 bool EnableDamageToPlayers = false;
@@ -198,6 +204,21 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0xFFD00EE8, true);
 
+	/*if (PlayAsSundowner)
+		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
+	else
+		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
+	if (PlayAsSundowner) {
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true);
+		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
+	}
+	else
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true); // TODO: What's the original value here? All four bytes.
+	// Potential Offsets:
+	// 0x001011AD - Handles entity, something
+
+
+
 	if (PlayAsSam) {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
@@ -207,11 +228,7 @@ void RecalibrateBossCode() {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0xFFEE49E8, true);
 	}
 
-	/*if (PlayAsSundowner)
-		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
-	else
-		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);
-
+	/*
 	if (PlayAsMonsoon)
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
 	else
@@ -245,7 +262,7 @@ struct KeyState {
 
 KeyState getKeyState(int virtualKeyCode) {
 	KeyState keyState;
-	static bool keyHoldingStates[256] = { false }; // Массив для отслеживания состояния удержания клавиш
+	static bool keyHoldingStates[256] = { false }; // ГЊГ Г±Г±ГЁГў Г¤Г«Гї Г®ГІГ±Г«ГҐГ¦ГЁГўГ Г­ГЁГї Г±Г®Г±ГІГ®ГїГ­ГЁГї ГіГ¤ГҐГ°Г¦Г Г­ГЁГї ГЄГ«Г ГўГЁГё
 
 	bool isKeyDown = (GetKeyState(virtualKeyCode) & 0x8000) != 0;
 
@@ -259,7 +276,7 @@ KeyState getKeyState(int virtualKeyCode) {
 
 
 bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
-	static bool wasHotKeyPressed = false; // Статическая переменная, сохраняет состояние между вызовами
+	static bool wasHotKeyPressed = false; // Г‘ГІГ ГІГЁГ·ГҐГ±ГЄГ Гї ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї, Г±Г®ГµГ°Г Г­ГїГҐГІ Г±Г®Г±ГІГ®ГїГ­ГЁГҐ Г¬ГҐГ¦Г¤Гі ГўГ»Г§Г®ГўГ Г¬ГЁ
 
 	if (GetKeyState(hotKey) & 0x8000) {
 		if (!wasHotKeyPressed) {
@@ -270,7 +287,7 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	else {
 		wasHotKeyPressed = false;
 	}
-	return *isMenuShowPtr; // Возвращаем текущее состояние меню
+	return *isMenuShowPtr; // Г‚Г®Г§ГўГ°Г Г№Г ГҐГ¬ ГІГҐГЄГіГ№ГҐГҐ Г±Г®Г±ГІГ®ГїГ­ГЁГҐ Г¬ГҐГ­Гѕ
 }
 
 
@@ -280,6 +297,7 @@ Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 void Update()
 {
+
 
 
 	if (!configLoaded) {
@@ -309,6 +327,7 @@ void Update()
 			players[i] = nullptr;
 			playerTypes[i] = (eObjID)0;
 		}
+		ResetControllerAllFlags();
 		return;
 	}
 
@@ -370,6 +389,13 @@ void Update()
 		for (int i = 0; i < 4; i++) {
 			if (playerTypes[i + 1]) continue;
 
+			
+		}
+
+		// Disables summoning code
+		/*for (int i = 0; i < 4; i++) {
+			if (playerTypes[i + 1]) continue;
+
 			if (IsGamepadButtonPressed(i, GamepadSpawnSam))
 				Spawner((eObjID)0x11400, i);
 			else if (IsGamepadButtonPressed(i, GamepadSpawnWolf))
@@ -379,9 +405,13 @@ void Update()
 				PlayAsArmstrong = true;
 			}
 			else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
-				Spawner((eObjID)0x20020, i);
-				PlayAsSam = true;
+				Spawner((eObjID)0x20310, i);
+				PlayAsSundowner = true;
 			}
+			//else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
+			//	Spawner((eObjID)0x20020, i);
+			//	PlayAsSam = true;
+			//}
 			else {
 				continue;
 			}
@@ -389,76 +419,78 @@ void Update()
 			//camera back to Raiden
 			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
-	}
+	}*/
 
-	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+		if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
+			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
-	Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
+		Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
-	auto& pos = matrix[0];
-	auto& rotate = matrix[1];
+		auto& pos = matrix[0];
+		auto& rotate = matrix[1];
 
+		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 
-	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+			auto value = node->m_value;
+			if (!value) continue;
 
-		auto value = node->m_value;
-		if (!value) continue;
+			auto player = node->m_value->getEntityInstance<Pl0000>();
+			if (!player) continue;
 
-		auto player = node->m_value->getEntityInstance<Pl0000>();
-		if (!player) continue;
+			bool alreadyInit = false;
+			for (int i = 0; i < 5; i++) {
+				if (players[i] == player)
+					alreadyInit = true;
+			}
+			if (alreadyInit) continue;
 
-		bool alreadyInit = false;
-		for (int i = 0; i < 5; i++) {
-			if (players[i] == player)
-				alreadyInit = true;
+			for (int i = 0; i < 5; i++) {
+				if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
+					players[i] = player;
+					break;
+				}
+			}
+
 		}
-		if (alreadyInit) continue;
 
 		for (int i = 0; i < 5; i++) {
-			if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
-				players[i] = player;
-				break;
+			Pl0000* player = players[i];
+			if (!player) continue;
+
+			BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
+			int controllerNumber = i - 1;
+
+			if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
+
+				|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
+				) {
+
+		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && PlayAsArmstrong)
+			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
+			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
+			) {
+				bool CanDamagePlayer = ArmstrongCanDamagePlayer;
+
+			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
+				    CanDamagePlayer = BossSamCanDamagePlayer;
+			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
+				    CanDamagePlayer = SundownerCanDamagePlayer;
+			
+			  FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+    }
+
+			if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
+				&& modelItems) {
+				modelItems->m_nHair = originalModelItems.m_nHair;
+				modelItems->m_nVisor = originalModelItems.m_nVisor;
+				modelItems->m_nSheath = originalModelItems.m_nSheath;
+				modelItems->m_nHead = originalModelItems.m_nHead;
+			  *modelSword = originalModelSword;
+				FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+
 			}
 		}
-
 	}
-
-	for (int i = 0; i < 5; i++) {
-		Pl0000* player = players[i];
-		if (!player) continue;
-
-		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
-		int controllerNumber = i - 1;
-
-		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
-
-			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
-			) {
-
-			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
-
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-				CanDamagePlayer = BossSamCanDamagePlayer;
-			
-			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
-
-		}
-		
-
-		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
-			&& modelItems) {
-			modelItems->m_nHair = originalModelItems.m_nHair;
-			modelItems->m_nVisor = originalModelItems.m_nVisor;
-			modelItems->m_nSheath = originalModelItems.m_nSheath;
-			modelItems->m_nHead = originalModelItems.m_nHead;
-			*modelSword = originalModelSword;
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
-
-		}
-	}
-
-
 }
 
 
@@ -492,7 +524,29 @@ public:
 
 
 
+void SpawnCharacter(int id, int controller) {
 
+	if (id == 0)
+		Spawner((eObjID)0x11400, controller);
+	else if (id == 1)
+		Spawner((eObjID)0x11500, controller);
+	else if (id == 4) {
+		Spawner((eObjID)0x20700, controller);
+		PlayAsArmstrong = true;
+	}
+	else if (id == 3) {
+		Spawner((eObjID)0x20310, controller);
+		PlayAsSundowner = true;
+	}
+	else if (id == 2) {
+		Spawner((eObjID)0x20020, controller);
+		PlayAsSam = true;
+	}
+	RecalibrateBossCode();
+	//camera back to Raiden
+	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+
+}
 
 void gui::RenderWindow()
 {
@@ -561,7 +615,22 @@ void gui::RenderWindow()
 				}
 
 
+				ImGui::Checkbox("Sundowner is player-controlled", &PlayAsSundowner);
+				ImGui::Checkbox("Sundowner can damage player", &SundownerCanDamagePlayer);
+				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
+					Spawner((eObjID)0x20310);
+					PlayAsSundowner = true;
+				}
+
+
+
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
+
+				
+
+				// Sundowner's Head: 1581929
+
+
 				// Debug print Sam's flags
 //#define PRINTSAM
 //#define PRINTENEMY
@@ -629,11 +698,20 @@ void gui::RenderWindow()
 				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
 				ImGui::EndTabItem();
 			}
+			if (ImGui::BeginTabItem("Dev")) {
+				ImGui::InputInt("Memory Address:", &memory_address);
+				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
+					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
+				}
+				ImGui::EndTabItem();
+			}
+
 
 			ImGui::EndTabBar();
 		}
 		ImGui::End();
 		ImGui::EndFrame();
 		ImGui::Render();
+		
 	}
 }
