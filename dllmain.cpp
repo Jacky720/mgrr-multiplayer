@@ -33,6 +33,11 @@
 #endif
 #include <Camera.h>
 
+extern void ResetControllerAllFlags();
+
+std::string character_titles[5] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong"};
+
+
 bool configLoaded = false;
 //bool SamSpawned = false;
 //bool WolfSpawned = false;
@@ -195,6 +200,19 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0xFFD00EE8, true);
 
+<<<<<<< Updated upstream
+=======
+	if (PlayAsSundowner) {
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true); // space you better not change this to char, if it works we dont touch
+
+		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
+	}
+	// Potential Offsets:
+	// 0x001011AD - Handles entity, something
+
+
+
+>>>>>>> Stashed changes
 	if (PlayAsSam) {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
@@ -306,6 +324,7 @@ void Update()
 			players[i] = nullptr;
 			playerTypes[i] = (eObjID)0;
 		}
+		ResetControllerAllFlags();
 		return;
 	}
 
@@ -365,6 +384,13 @@ void Update()
 		for (int i = 0; i < 4; i++) {
 			if (playerTypes[i + 1]) continue;
 
+			
+		}
+
+		// Disables summoning code
+		/*for (int i = 0; i < 4; i++) {
+			if (playerTypes[i + 1]) continue;
+
 			if (IsGamepadButtonPressed(i, GamepadSpawnSam))
 				Spawner((eObjID)0x11400, i);
 			else if (IsGamepadButtonPressed(i, GamepadSpawnWolf))
@@ -384,40 +410,86 @@ void Update()
 			//camera back to Raiden
 			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
-	}
+	}*/
 
-	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+		if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
+			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
-	Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
+		Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
-	auto& pos = matrix[0];
-	auto& rotate = matrix[1];
+		auto& pos = matrix[0];
+		auto& rotate = matrix[1];
 
 
+<<<<<<< Updated upstream
 	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+=======
+		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 
-		auto value = node->m_value;
-		if (!value) continue;
+>>>>>>> Stashed changes
 
-		auto player = node->m_value->getEntityInstance<Pl0000>();
-		if (!player) continue;
 
-		bool alreadyInit = false;
-		for (int i = 0; i < 5; i++) {
-			if (players[i] == player)
-				alreadyInit = true;
+			auto value = node->m_value;
+			if (!value) continue;
+
+			auto player = node->m_value->getEntityInstance<Pl0000>();
+			if (!player) continue;
+
+			bool alreadyInit = false;
+			for (int i = 0; i < 5; i++) {
+				if (players[i] == player)
+					alreadyInit = true;
+			}
+			if (alreadyInit) continue;
+
+			for (int i = 0; i < 5; i++) {
+				if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
+					players[i] = player;
+					break;
+				}
+			}
+
 		}
-		if (alreadyInit) continue;
 
 		for (int i = 0; i < 5; i++) {
-			if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
-				players[i] = player;
-				break;
+			Pl0000* player = players[i];
+			if (!player) continue;
+
+			BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
+			int controllerNumber = i - 1;
+
+			if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
+
+				|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
+				) {
+
+				bool CanDamagePlayer = ArmstrongCanDamagePlayer;
+
+				if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
+					CanDamagePlayer = BossSamCanDamagePlayer;
+
+				FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+
+			}
+			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && (PlayAsSundowner)) {
+
+
+				FullHandleAIBoss(Enemy, controllerNumber, EnableDamageToPlayers);
+			}
+
+
+			if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
+				&& modelItems) {
+				modelItems->m_nHair = originalModelItems.m_nHair;
+				modelItems->m_nVisor = originalModelItems.m_nVisor;
+				modelItems->m_nSheath = originalModelItems.m_nSheath;
+				modelItems->m_nHead = originalModelItems.m_nHead;
+				FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+
 			}
 		}
-
 	}
+<<<<<<< Updated upstream
 
 	for (int i = 0; i < 5; i++) {
 		Pl0000* player = players[i];
@@ -453,6 +525,8 @@ void Update()
 	}
 
 
+=======
+>>>>>>> Stashed changes
 }
 
 
@@ -486,7 +560,29 @@ public:
 
 
 
+void SpawnCharacter(int id, int controller) {
 
+	if (id == 0)
+		Spawner((eObjID)0x11400, controller);
+	else if (id == 1)
+		Spawner((eObjID)0x11500, controller);
+	else if (id == 4) {
+		Spawner((eObjID)0x20700, controller);
+		PlayAsArmstrong = true;
+	}
+	else if (id == 3) {
+		Spawner((eObjID)0x20310, controller);
+		PlayAsSundowner = true;
+	}
+	else if (id == 2) {
+		Spawner((eObjID)0x20020, controller);
+		PlayAsSam = true;
+	}
+	RecalibrateBossCode();
+	//camera back to Raiden
+	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+
+}
 
 void gui::RenderWindow()
 {
@@ -555,6 +651,17 @@ void gui::RenderWindow()
 				}
 
 
+<<<<<<< Updated upstream
+=======
+				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
+					Spawner((eObjID)0x20310);
+					PlayAsSundowner = true;
+					RecalibrateBossCode();
+				}
+
+
+
+>>>>>>> Stashed changes
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
 				// Debug print Sam's flags
 //#define PRINTSAM
@@ -629,5 +736,6 @@ void gui::RenderWindow()
 		ImGui::End();
 		ImGui::EndFrame();
 		ImGui::Render();
+		
 	}
 }
