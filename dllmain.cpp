@@ -117,6 +117,8 @@ struct ModelItems
 
 ModelItems* modelItems;
 ModelItems originalModelItems;
+unsigned int* modelSword;
+unsigned int originalModelSword;
 
 
 //original address in game is "METAL GEAR RISING REVENGEANCE.exe"+1777E60
@@ -184,6 +186,7 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nVisor = 0x11402;
 		modelItems->m_nSheath = 0x11404;
 		modelItems->m_nHead = 0x11405;
+		*modelSword = 0x11403;
 		m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
 	}
 	else {
@@ -358,6 +361,7 @@ void Update()
 
 
 	modelItems = injector::ReadMemory<ModelItems*>(shared::base + 0x17EA01C, true);
+	modelSword = injector::ReadMemory<unsigned int*>(shared::base + 0x17E9FF4, true);
 
 
 	//originalSword = injector::ReadMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, true);
@@ -367,6 +371,7 @@ void Update()
 		if (modelItems->m_nVisor != 0x11402) originalModelItems.m_nVisor = modelItems->m_nVisor;
 		if (modelItems->m_nSheath != 0x11404) originalModelItems.m_nSheath = modelItems->m_nSheath;
 		if (modelItems->m_nHead != 0x11405) originalModelItems.m_nHead = modelItems->m_nHead;
+		if (*modelSword != 0x11403) originalModelSword = *modelSword;
 
 		if (getKeyState('6').isPressed) {
 			Spawner((eObjID)0x11400);
@@ -480,6 +485,7 @@ void Update()
 				modelItems->m_nVisor = originalModelItems.m_nVisor;
 				modelItems->m_nSheath = originalModelItems.m_nSheath;
 				modelItems->m_nHead = originalModelItems.m_nHead;
+			  *modelSword = originalModelSword;
 				FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 
 			}
