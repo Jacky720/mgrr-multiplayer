@@ -22,7 +22,7 @@
 #include <Windows.h>
 #include "MGRCustomAI.h"
 #include "MGRCustomUI.h"
-
+int memory_address = 0x0;
 
 
 #pragma comment(lib, "d3dx9.lib")
@@ -53,15 +53,16 @@ bool MonsoonAtOnce = false;
 bool SamAtOnce = false;
 */
 
-
+//bool SundownerBehaviorActive = true;
 
 bool PlayAsMistral = false;
 bool PlayAsMonsoon = false;
 bool PlayAsSundowner = false;
+bool SundownerCanDamagePlayer = false;
 bool PlayAsSam = false;
-bool BossSamCanDamagePlayer = true;
+bool BossSamCanDamagePlayer = false;
 bool PlayAsArmstrong = false;
-bool ArmstrongCanDamagePlayer = true;
+bool ArmstrongCanDamagePlayer = false;
 
 
 bool EnableDamageToPlayers = false;
@@ -200,6 +201,21 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0xFFD00EE8, true);
 
+	/*if (PlayAsSundowner)
+		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
+	else
+		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
+	if (PlayAsSundowner) {
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true);
+		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
+	}
+	else
+		injector::WriteMemory<unsigned int>(shared::base + 0x1961B0, 0xC3, true); // TODO: What's the original value here? All four bytes.
+	// Potential Offsets:
+	// 0x001011AD - Handles entity, something
+
+
+
 	if (PlayAsSam) {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0x909090, true);
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0x909090, true);
@@ -209,11 +225,7 @@ void RecalibrateBossCode() {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0xFFEE49E8, true);
 	}
 
-	/*if (PlayAsSundowner)
-		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
-	else
-		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);
-
+	/*
 	if (PlayAsMonsoon)
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x90909090, true);
 	else
@@ -247,7 +259,7 @@ struct KeyState {
 
 KeyState getKeyState(int virtualKeyCode) {
 	KeyState keyState;
-	static bool keyHoldingStates[256] = { false }; // Ìàññèâ äëÿ îòñëåæèâàíèÿ ñîñòîÿíèÿ óäåðæàíèÿ êëàâèø
+	static bool keyHoldingStates[256] = { false }; // ÃŒÃ Ã±Ã±Ã¨Ã¢ Ã¤Ã«Ã¿ Ã®Ã²Ã±Ã«Ã¥Ã¦Ã¨Ã¢Ã Ã­Ã¨Ã¿ Ã±Ã®Ã±Ã²Ã®Ã¿Ã­Ã¨Ã¿ Ã³Ã¤Ã¥Ã°Ã¦Ã Ã­Ã¨Ã¿ ÃªÃ«Ã Ã¢Ã¨Ã¸
 
 	bool isKeyDown = (GetKeyState(virtualKeyCode) & 0x8000) != 0;
 
@@ -261,7 +273,7 @@ KeyState getKeyState(int virtualKeyCode) {
 
 
 bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
-	static bool wasHotKeyPressed = false; // Ñòàòè÷åñêàÿ ïåðåìåííàÿ, ñîõðàíÿåò ñîñòîÿíèå ìåæäó âûçîâàìè
+	static bool wasHotKeyPressed = false; // Ã‘Ã²Ã Ã²Ã¨Ã·Ã¥Ã±ÃªÃ Ã¿ Ã¯Ã¥Ã°Ã¥Ã¬Ã¥Ã­Ã­Ã Ã¿, Ã±Ã®ÃµÃ°Ã Ã­Ã¿Ã¥Ã² Ã±Ã®Ã±Ã²Ã®Ã¿Ã­Ã¨Ã¥ Ã¬Ã¥Ã¦Ã¤Ã³ Ã¢Ã»Ã§Ã®Ã¢Ã Ã¬Ã¨
 
 	if (GetKeyState(hotKey) & 0x8000) {
 		if (!wasHotKeyPressed) {
@@ -272,7 +284,7 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	else {
 		wasHotKeyPressed = false;
 	}
-	return *isMenuShowPtr; // Âîçâðàùàåì òåêóùåå ñîñòîÿíèå ìåíþ
+	return *isMenuShowPtr; // Ã‚Ã®Ã§Ã¢Ã°Ã Ã¹Ã Ã¥Ã¬ Ã²Ã¥ÃªÃ³Ã¹Ã¥Ã¥ Ã±Ã®Ã±Ã²Ã®Ã¿Ã­Ã¨Ã¥ Ã¬Ã¥Ã­Ã¾
 }
 
 
@@ -282,6 +294,7 @@ Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 void Update()
 {
+
 
 
 	if (!configLoaded) {
@@ -387,9 +400,13 @@ void Update()
 				PlayAsArmstrong = true;
 			}
 			else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
-				Spawner((eObjID)0x20020, i);
-				PlayAsSam = true;
+				Spawner((eObjID)0x20310, i);
+				PlayAsSundowner = true;
 			}
+			//else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
+			//	Spawner((eObjID)0x20020, i);
+			//	PlayAsSam = true;
+			//}
 			else {
 				continue;
 			}
@@ -443,20 +460,19 @@ void Update()
 				|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
 				) {
 
+		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && PlayAsArmstrong)
+			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
+			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
+			) {
 				bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
-				if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-					CanDamagePlayer = BossSamCanDamagePlayer;
-
-				FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
-
-			}
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && (PlayAsSundowner)) {
-
-
-				FullHandleAIBoss(Enemy, controllerNumber, EnableDamageToPlayers);
-			}
-
+			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
+				    CanDamagePlayer = BossSamCanDamagePlayer;
+			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
+				    CanDamagePlayer = SundownerCanDamagePlayer;
+			
+			  FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+    }
 
 			if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
 				&& modelItems) {
@@ -593,7 +609,22 @@ void gui::RenderWindow()
 				}
 
 
+				ImGui::Checkbox("Sundowner is player-controlled", &PlayAsSundowner);
+				ImGui::Checkbox("Sundowner can damage player", &SundownerCanDamagePlayer);
+				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
+					Spawner((eObjID)0x20310);
+					PlayAsSundowner = true;
+				}
+
+
+
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
+
+				
+
+				// Sundowner's Head: 1581929
+
+
 				// Debug print Sam's flags
 //#define PRINTSAM
 //#define PRINTENEMY
@@ -661,6 +692,14 @@ void gui::RenderWindow()
 				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
 				ImGui::EndTabItem();
 			}
+			if (ImGui::BeginTabItem("Dev")) {
+				ImGui::InputInt("Memory Address:", &memory_address);
+				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
+					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
+				}
+				ImGui::EndTabItem();
+			}
+
 
 			ImGui::EndTabBar();
 		}

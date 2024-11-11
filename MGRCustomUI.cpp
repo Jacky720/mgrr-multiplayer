@@ -369,6 +369,7 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "jetstream sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
+			if (player->m_pEntity->m_nEntityIndex == 0x20310) name = "sundowner";
 
 			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x20000)
 				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->m_nHealth, player->m_nMaxHealth, 0, 0, name);
