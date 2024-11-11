@@ -6,13 +6,37 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <XInput.h>
 
 using namespace std;
 
+
 namespace fs = std::filesystem;
 
+void __cdecl Se_PlayEvent(const char* event)
+{
+	((void(__cdecl*)(const char*))(shared::base + 0xA5E1B0))(event);
+}
+
+int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+int selection_ids[6] = { 0, 0, 0, 0, 0, 0 };
+int controller_flag[5] = { 0, 0, 0, 0, 0 };
+// 0 - Unknown/Not Connected
+// 1 - Requires selection
+// 2 - Character selected, ready
+
+
+extern void SpawnCharacter(int, int);
+extern bool IsGamepadButtonPressed(int, const string&);
+
 extern bool configLoaded;
+extern std::string character_titles[5];
 extern Pl0000* players[5];
+
+bool dpad_up_pressed[6] = { false, false, false, false, false, false };
+bool dpad_down_pressed[6] = { false, false, false, false, false, false };
 
 class MGRFontCharacter {
 public:
@@ -26,6 +50,10 @@ std::map<char, MGRFontCharacter> font_map[2];
 
 LPDIRECT3DTEXTURE9 fc_segment;
 LPDIRECT3DTEXTURE9 hp_segment;
+
+
+// 0-1 Player menus, 
+LPDIRECT3DTEXTURE9 radial_assets[4];
 
 LPD3DXSPRITE pSprite = NULL;
 
@@ -87,6 +115,7 @@ void LoadUIData() {
 
 	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\fc_seg.png").c_str(), &fc_segment);
 	D3DXCreateTextureFromFile(Hw::GraphicDevice, (data_dir + "\\ui\\hp_seg.png").c_str(), &hp_segment);
+
 
 
 }
@@ -168,6 +197,7 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 
 #define C_BLACK D3DCOLOR_XRGB(0, 0, 0)
 #define C_LTGRAY D3DCOLOR_XRGB(240, 255, 255)
+#define C_LTGRAYFADE D3DCOLOR_ARGB(100, 240, 255, 255)
 #define C_CYAN D3DCOLOR_XRGB(0, 255, 255)
 #define C_DKGRAY D3DCOLOR_XRGB(30, 30, 30)
 #define C_HPYELLOW D3DCOLOR_XRGB(255, 227, 66)
@@ -230,10 +260,100 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 
 }
 
+void DrawCharacterSelector(float offset_x, float y, int controller_id) {
+	// Render character selection
+	string numbername = "";
+	
+	if (controller_id == 0) {
+		numbername = "zero";
+	}
+	else if (controller_id == 1) {
+		numbername = "one";
+	}
+	else if (controller_id == 2) {
+		numbername = "two";
+	}
+	else if (controller_id == 3) {
+		numbername = "three";
+	}
+	else if (controller_id == 4) {
+		numbername = "four";
+	}
+	else if (controller_id == 5) {
+		numbername = "five";
+	}
+	else if (controller_id == 6) {
+		numbername = "six";
+	}
+	else if (controller_id == 7) {
+		numbername = "seven";
+	}
+	else if (controller_id == 8) {
+		numbername = "eight";
+	}
+	else if (controller_id == 9) {
+		numbername = "nine";
+	}
+	else {
+		numbername = "unknown";
+	}
 
+	if (IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_UP") && !dpad_up_pressed[controller_id]) {
+		dpad_up_pressed[controller_id] = true;
+		selection_ids[controller_id]--;
+		if (selection_ids[controller_id] < 0) {
+			selection_ids[controller_id] = character_titles->length() + 1;
+		}
+		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
+	}
+	else if (!IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_UP")) {
+		dpad_up_pressed[controller_id] = false;
+	}
+	if (IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_DOWN") && !dpad_down_pressed[controller_id]) {
+		dpad_down_pressed[controller_id] = true;
+
+		selection_ids[controller_id]++;
+		if (selection_ids[controller_id] > character_titles->length() + 1) {
+			selection_ids[controller_id] = 0;
+		}
+		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
+	}
+	else if (!IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_DOWN")) {
+		dpad_down_pressed[controller_id] = false;
+	}
+	
+
+	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, 1);
+
+	for (int i = 0; i < 5; i++) {
+		if (i == selection_ids[controller_id]) {
+			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAY, 0, 1);
+		}
+		else {
+			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAYFADE,  0, 1);
+		}
+		
+	}
+	
+	//RenderTextMGR_RightLeft("sundowner", screenWidth - offset_x, y + 60, C_LTGRAY, 0);
+	//RenderTextMGR_RightLeft("raiden", screenWidth - offset_x, y + 80, C_LTGRAYFADE, 0);
+
+}
+
+void ResetControllerAllFlags() {
+	controller_flag[0] = 0;
+	controller_flag[1] = 0;
+	controller_flag[2] = 0;
+	controller_flag[3] = 0;
+	controller_flag[4] = 0;
+}
 
 
 void Present() {
+
+
+
+
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
@@ -246,7 +366,7 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
 			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "sam";
+			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "jetstream sam";
 			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
 
@@ -256,6 +376,30 @@ void Present() {
 				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
 				player->getFuelContainer(), player->getFuelCapacity(false), name);
 			i++;
+
+			int draw_offset = 0;
+			for (int ctrlr = 0; ctrlr < 5; ctrlr++) {
+				
+
+				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START") && controller_flag[ctrlr] == 0) {
+					controller_flag[ctrlr] = 1;
+				}
+
+				if (controller_flag[ctrlr] == 1) {
+					DrawCharacterSelector(60, (draw_offset * 140), ctrlr + 1);
+					draw_offset++;
+				}
+
+				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A") && controller_flag[ctrlr] == 1) {
+					controller_flag[ctrlr] = 2;
+					Se_PlayEvent("core_se_sys_decide_l");
+					SpawnCharacter(selection_ids[ctrlr + 1], ctrlr);
+				}
+
+			}
 		}
+
+
+
 	}
 }
