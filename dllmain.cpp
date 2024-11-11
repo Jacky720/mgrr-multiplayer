@@ -33,6 +33,11 @@ int memory_address = 0x0;
 #endif
 #include <Camera.h>
 
+extern void ResetControllerAllFlags();
+
+std::string character_titles[5] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong"};
+
+
 bool configLoaded = false;
 //bool SamSpawned = false;
 //bool WolfSpawned = false;
@@ -254,7 +259,7 @@ struct KeyState {
 
 KeyState getKeyState(int virtualKeyCode) {
 	KeyState keyState;
-	static bool keyHoldingStates[256] = { false }; // Массив для отслеживания состояния удержания клавиш
+	static bool keyHoldingStates[256] = { false }; // ГЊГ Г±Г±ГЁГў Г¤Г«Гї Г®ГІГ±Г«ГҐГ¦ГЁГўГ Г­ГЁГї Г±Г®Г±ГІГ®ГїГ­ГЁГї ГіГ¤ГҐГ°Г¦Г Г­ГЁГї ГЄГ«Г ГўГЁГё
 
 	bool isKeyDown = (GetKeyState(virtualKeyCode) & 0x8000) != 0;
 
@@ -268,7 +273,7 @@ KeyState getKeyState(int virtualKeyCode) {
 
 
 bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
-	static bool wasHotKeyPressed = false; // Статическая переменная, сохраняет состояние между вызовами
+	static bool wasHotKeyPressed = false; // Г‘ГІГ ГІГЁГ·ГҐГ±ГЄГ Гї ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї, Г±Г®ГµГ°Г Г­ГїГҐГІ Г±Г®Г±ГІГ®ГїГ­ГЁГҐ Г¬ГҐГ¦Г¤Гі ГўГ»Г§Г®ГўГ Г¬ГЁ
 
 	if (GetKeyState(hotKey) & 0x8000) {
 		if (!wasHotKeyPressed) {
@@ -279,7 +284,7 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	else {
 		wasHotKeyPressed = false;
 	}
-	return *isMenuShowPtr; // Возвращаем текущее состояние меню
+	return *isMenuShowPtr; // Г‚Г®Г§ГўГ°Г Г№Г ГҐГ¬ ГІГҐГЄГіГ№ГҐГҐ Г±Г®Г±ГІГ®ГїГ­ГЁГҐ Г¬ГҐГ­Гѕ
 }
 
 
@@ -319,6 +324,7 @@ void Update()
 			players[i] = nullptr;
 			playerTypes[i] = (eObjID)0;
 		}
+		ResetControllerAllFlags();
 		return;
 	}
 
@@ -378,6 +384,13 @@ void Update()
 		for (int i = 0; i < 4; i++) {
 			if (playerTypes[i + 1]) continue;
 
+			
+		}
+
+		// Disables summoning code
+		/*for (int i = 0; i < 4; i++) {
+			if (playerTypes[i + 1]) continue;
+
 			if (IsGamepadButtonPressed(i, GamepadSpawnSam))
 				Spawner((eObjID)0x11400, i);
 			else if (IsGamepadButtonPressed(i, GamepadSpawnWolf))
@@ -401,80 +414,77 @@ void Update()
 			//camera back to Raiden
 			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
-	}
+	}*/
 
-	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+		if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
+			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
-	Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
+		Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
-	auto& pos = matrix[0];
-	auto& rotate = matrix[1];
+		auto& pos = matrix[0];
+		auto& rotate = matrix[1];
 
+		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 
-	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
-		
+			auto value = node->m_value;
+			if (!value) continue;
 
+			auto player = node->m_value->getEntityInstance<Pl0000>();
+			if (!player) continue;
 
-		auto value = node->m_value;
-		if (!value) continue;
-
-		auto player = node->m_value->getEntityInstance<Pl0000>();
-		if (!player) continue;
-
-		bool alreadyInit = false;
-		for (int i = 0; i < 5; i++) {
-			if (players[i] == player)
-				alreadyInit = true;
-		}
-		if (alreadyInit) continue;
-
-		for (int i = 0; i < 5; i++) {
-			if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
-				players[i] = player;
-				break;
+			bool alreadyInit = false;
+			for (int i = 0; i < 5; i++) {
+				if (players[i] == player)
+					alreadyInit = true;
 			}
+			if (alreadyInit) continue;
+
+			for (int i = 0; i < 5; i++) {
+				if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
+					players[i] = player;
+					break;
+				}
+			}
+
 		}
 
-	}
+		for (int i = 0; i < 5; i++) {
+			Pl0000* player = players[i];
+			if (!player) continue;
 
-	for (int i = 0; i < 5; i++) {
-		Pl0000* player = players[i];
-		if (!player) continue;
+			BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
+			int controllerNumber = i - 1;
 
-		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
-		int controllerNumber = i - 1;
+			if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && (PlayAsArmstrong))
+
+				|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && (PlayAsSam))
+				) {
 
 		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && PlayAsArmstrong)
-
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
 			) {
+				bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
-			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
-
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-				CanDamagePlayer = BossSamCanDamagePlayer;
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
-				CanDamagePlayer = SundownerCanDamagePlayer;
+			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
+				    CanDamagePlayer = BossSamCanDamagePlayer;
+			  if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
+				    CanDamagePlayer = SundownerCanDamagePlayer;
 			
-			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+			  FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+    }
 
-		}
-		
+			if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
+				&& modelItems) {
+				modelItems->m_nHair = originalModelItems.m_nHair;
+				modelItems->m_nVisor = originalModelItems.m_nVisor;
+				modelItems->m_nSheath = originalModelItems.m_nSheath;
+				modelItems->m_nHead = originalModelItems.m_nHead;
+				FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 
-		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
-			&& modelItems) {
-			modelItems->m_nHair = originalModelItems.m_nHair;
-			modelItems->m_nVisor = originalModelItems.m_nVisor;
-			modelItems->m_nSheath = originalModelItems.m_nSheath;
-			modelItems->m_nHead = originalModelItems.m_nHead;
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
-
+			}
 		}
 	}
-
-
 }
 
 
@@ -508,7 +518,29 @@ public:
 
 
 
+void SpawnCharacter(int id, int controller) {
 
+	if (id == 0)
+		Spawner((eObjID)0x11400, controller);
+	else if (id == 1)
+		Spawner((eObjID)0x11500, controller);
+	else if (id == 4) {
+		Spawner((eObjID)0x20700, controller);
+		PlayAsArmstrong = true;
+	}
+	else if (id == 3) {
+		Spawner((eObjID)0x20310, controller);
+		PlayAsSundowner = true;
+	}
+	else if (id == 2) {
+		Spawner((eObjID)0x20020, controller);
+		PlayAsSam = true;
+	}
+	RecalibrateBossCode();
+	//camera back to Raiden
+	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+
+}
 
 void gui::RenderWindow()
 {
@@ -674,5 +706,6 @@ void gui::RenderWindow()
 		ImGui::End();
 		ImGui::EndFrame();
 		ImGui::Render();
+		
 	}
 }
