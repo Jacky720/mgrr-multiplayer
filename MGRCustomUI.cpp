@@ -21,6 +21,7 @@ void __cdecl Se_PlayEvent(const char* event)
 
 int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+bool gotTrueScreenSize = false;
 
 int selection_ids[6] = { 0, 0, 0, 0, 0, 0 };
 int controller_flag[5] = { 0, 0, 0, 0, 0 };
@@ -262,42 +263,32 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 
 void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 	// Render character selection
-	string numbername = "";
-	
-	if (controller_id == 0) {
-		numbername = "zero";
-	}
-	else if (controller_id == 1) {
-		numbername = "one";
-	}
-	else if (controller_id == 2) {
-		numbername = "two";
-	}
-	else if (controller_id == 3) {
-		numbername = "three";
-	}
-	else if (controller_id == 4) {
-		numbername = "four";
-	}
-	else if (controller_id == 5) {
-		numbername = "five";
-	}
-	else if (controller_id == 6) {
-		numbername = "six";
-	}
-	else if (controller_id == 7) {
-		numbername = "seven";
-	}
-	else if (controller_id == 8) {
-		numbername = "eight";
-	}
-	else if (controller_id == 9) {
-		numbername = "nine";
-	}
-	else {
-		numbername = "unknown";
+	if (!gotTrueScreenSize) {
+		RECT rect;
+		if (GetWindowRect(FindWindowA(NULL, "METAL GEAR RISING: REVENGEANCE"), &rect))
+		{
+			screenWidth = rect.right - rect.left;
+			screenHeight = rect.bottom - rect.top;
+			gotTrueScreenSize = true;
+		}
 	}
 
+
+	string numbername;
+	switch (controller_id) {
+	case 0: numbername = "zero"; break;
+	case 1: numbername = "one"; break;
+	case 2: numbername = "two"; break;
+	case 3: numbername = "three"; break;
+	case 4: numbername = "four"; break;
+	case 5: numbername = "five"; break;
+	case 6: numbername = "six"; break;
+	case 7: numbername = "seven"; break;
+	case 8: numbername = "eight"; break;
+	case 9: numbername = "nine"; break;
+	default: numbername = "unknown";
+	}
+	
 	if (IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_UP") && !dpad_up_pressed[controller_id]) {
 		dpad_up_pressed[controller_id] = true;
 		selection_ids[controller_id]--;
