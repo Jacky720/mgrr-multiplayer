@@ -21,7 +21,7 @@ void __cdecl Se_PlayEvent(const char* event)
 
 int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-bool gotTrueScreenSize = false;
+int checkScreenSizeTimer = 60;
 
 int selection_ids[4] = { 0, 0, 0, 0 };
 int controller_flag[4] = { 0, 0, 0, 0 };
@@ -264,14 +264,18 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 // Hey, this "controller_id" is actually a player ID (1-4 for controllers, not 0-3)
 void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 	// Render character selection
-	if (!gotTrueScreenSize) {
+	if (checkScreenSizeTimer > 0) {
 		RECT rect;
-		if (GetWindowRect(FindWindowA(NULL, "METAL GEAR RISING: REVENGEANCE"), &rect))
+		checkScreenSizeTimer--;
+		if (checkScreenSizeTimer == 0
+		    && GetWindowRect(FindWindowA(NULL, "METAL GEAR RISING: REVENGEANCE"), &rect))
 		{
 			screenWidth = rect.right - rect.left;
 			screenHeight = rect.bottom - rect.top;
-			gotTrueScreenSize = true;
+			checkScreenSizeTimer = -1;
 		}
+
+		if (checkScreenSizeTimer == 0) checkScreenSizeTimer = 60;
 	}
 
 
