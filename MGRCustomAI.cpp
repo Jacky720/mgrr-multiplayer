@@ -110,7 +110,7 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	}
 	*/
 
-	if ((controllerNumber == 0 && GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
+	if (CheckControlPressed(controllerNumber, Pause2, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
 

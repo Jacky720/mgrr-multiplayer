@@ -188,13 +188,12 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nSheath = 0x11404;
 		modelItems->m_nHead = 0x11405;
 		*modelSword = 0x11403;
-		m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
 	}
-	else {
-		m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
-	}
+
+	m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
+	
 	// Frame counter, if it hits zero and the player does not exist, resets playertype
-	playerSpawnCheck[controllerIndex + 1] = 5;
+	playerSpawnCheck[controllerIndex + 1] = 30;
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 
@@ -333,6 +332,7 @@ void Update()
 			playerTypes[i] = (eObjID)0;
 		}
 		ResetControllerAllFlags();
+		isPlayerAtOnce = false;
 		return;
 	}
 
@@ -352,7 +352,7 @@ void Update()
 		MainPlayer->field_640 = 1;
 
 	if (!isPlayerAtOnce) {
-		for (int itemToRequest = 0x11400; itemToRequest <= 0x11405; itemToRequest++) {
+		for (int itemToRequest = 0x11400; itemToRequest <= 0x11406; itemToRequest++) {
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
 		}
 		for (int itemToRequest = 0x11500; itemToRequest <= 0x11506; itemToRequest++) {
