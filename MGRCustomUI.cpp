@@ -380,12 +380,16 @@ void Present() {
 			if (controller_flag[ctrlr] == 1) {
 				DrawCharacterSelector(60, (draw_offset * 140), ctrlr + 1);
 				draw_offset++;
-			}
 
-			if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A") && controller_flag[ctrlr] == 1) {
-				controller_flag[ctrlr] = 2;
-				Se_PlayEvent("core_se_sys_decide_l");
-				SpawnCharacter(selection_ids[ctrlr + 1], ctrlr);
+				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
+					controller_flag[ctrlr] = 2;
+					Se_PlayEvent("core_se_sys_decide_l");
+					SpawnCharacter(selection_ids[ctrlr + 1], ctrlr);
+				}
+				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
+					controller_flag[ctrlr] = 0;
+					selection_ids[ctrlr + 1] = 0;
+				}
 			}
 
 		}
