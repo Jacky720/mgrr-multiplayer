@@ -110,6 +110,8 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	}
 	*/
 
+	if ((controllerNumber == 0 && GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
+		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
 
 
@@ -268,7 +270,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	if ((GetKeyState('8') & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadLockon))
 		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(player);
 
-	if ((GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
+	if ((controllerNumber == 0 && GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
 
