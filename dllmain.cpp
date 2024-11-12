@@ -458,7 +458,7 @@ void Update()
 	for (int i = 0; i < 5; i++) {
 		if (!playerSpawnCheck[i] && playerTypes[i] && !players[i]) {
 			playerTypes[i] = (eObjID)0;
-			controller_flag[i] = 1;
+			controller_flag[i - 1] = 1;
 		}
 	}
 
