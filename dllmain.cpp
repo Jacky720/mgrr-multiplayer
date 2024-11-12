@@ -166,6 +166,7 @@ bool isPlayerAtOnce = false;
 
 Pl0000* players[5] = { nullptr };
 eObjID playerTypes[5] = { (eObjID)0 };
+int playerSpawnCheck[5] = { 0 };
 
 void Spawner(eObjID id, int controllerIndex = -1) {
 	if (controllerIndex > -1) {
@@ -175,6 +176,7 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		for (int i = 0; i < 5; i++) {
 			if (!playerTypes[i]) {
 				playerTypes[i] = id;
+				controllerIndex = i - 1;
 				break;
 			}
 		}
@@ -191,6 +193,8 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 	else {
 		m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
 	}
+	// Frame counter, if it hits zero and the player does not exist, resets playertype
+	playerSpawnCheck[controllerIndex + 1] = 5;
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 
@@ -296,7 +300,9 @@ Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 void Update()
 {
-
+	for (int i = 0; i < 5; i++) {
+		if (playerSpawnCheck[i]) playerSpawnCheck[i]--;
+	}
 
 
 	if (!configLoaded) {
@@ -414,14 +420,16 @@ void Update()
 		}*/
 	}
 
+	// MainPlayer take camera control
 	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
 		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
-	Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
+	//Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
-	auto& pos = matrix[0];
-	auto& rotate = matrix[1];
+	//auto& pos = matrix[0];
+	//auto& rotate = matrix[1];
 
+	// Detect newly-spawned players
 	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 
 		auto value = node->m_value;
@@ -446,6 +454,15 @@ void Update()
 
 	}
 
+	// Reset players who fail to spawn
+	for (int i = 0; i < 5; i++) {
+		if (!playerSpawnCheck[i] && playerTypes[i] && !players[i]) {
+			playerTypes[i] = (eObjID)0;
+			controller_flag[i] = 1;
+		}
+	}
+
+	// Player control overrides
 	for (int i = 0; i < 5; i++) {
 		Pl0000* player = players[i];
 		if (!player) continue;
