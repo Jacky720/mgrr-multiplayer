@@ -23,8 +23,8 @@ int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 bool gotTrueScreenSize = false;
 
-int selection_ids[6] = { 0, 0, 0, 0, 0, 0 };
-int controller_flag[5] = { 0, 0, 0, 0, 0 };
+int selection_ids[4] = { 0, 0, 0, 0 };
+int controller_flag[4] = { 0, 0, 0, 0 };
 // 0 - Unknown/Not Connected
 // 1 - Requires selection
 // 2 - Character selected, ready
@@ -261,6 +261,7 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 
 }
 
+// Hey, this "controller_id" is actually a player ID (1-4 for controllers, not 0-3)
 void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 	// Render character selection
 	if (!gotTrueScreenSize) {
@@ -275,7 +276,7 @@ void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 
 
 	string numbername;
-	switch (controller_id) {
+	switch (controller_id + 1) {
 	case 0: numbername = "zero"; break;
 	case 1: numbername = "one"; break;
 	case 2: numbername = "two"; break;
@@ -289,27 +290,27 @@ void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 	default: numbername = "unknown";
 	}
 	
-	if (IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_UP") && !dpad_up_pressed[controller_id]) {
+	if (IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_UP") && !dpad_up_pressed[controller_id]) {
 		dpad_up_pressed[controller_id] = true;
 		selection_ids[controller_id]--;
 		if (selection_ids[controller_id] < 0) {
-			selection_ids[controller_id] = character_titles->length() + 1;
+			selection_ids[controller_id] = sizeof(character_titles) / sizeof(std::string) - 1;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
-	else if (!IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_UP")) {
+	else if (!IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_UP")) {
 		dpad_up_pressed[controller_id] = false;
 	}
-	if (IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_DOWN") && !dpad_down_pressed[controller_id]) {
+	if (IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_DOWN") && !dpad_down_pressed[controller_id]) {
 		dpad_down_pressed[controller_id] = true;
 
 		selection_ids[controller_id]++;
-		if (selection_ids[controller_id] > character_titles->length() + 1) {
+		if (selection_ids[controller_id] >= sizeof(character_titles)/sizeof(std::string)) {
 			selection_ids[controller_id] = 0;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
-	else if (!IsGamepadButtonPressed(controller_id - 1, "XINPUT_GAMEPAD_DPAD_DOWN")) {
+	else if (!IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_DOWN")) {
 		dpad_down_pressed[controller_id] = false;
 	}
 	
@@ -336,7 +337,6 @@ void ResetControllerAllFlags() {
 	controller_flag[1] = 0;
 	controller_flag[2] = 0;
 	controller_flag[3] = 0;
-	controller_flag[4] = 0;
 }
 
 
@@ -370,7 +370,7 @@ void Present() {
 		}
 
 		int draw_offset = 0;
-		for (int ctrlr = 0; ctrlr < 5; ctrlr++) {
+		for (int ctrlr = 0; ctrlr < 4; ctrlr++) {
 
 
 			if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START") && controller_flag[ctrlr] == 0) {
@@ -378,17 +378,17 @@ void Present() {
 			}
 
 			if (controller_flag[ctrlr] == 1) {
-				DrawCharacterSelector(60, (draw_offset * 140), ctrlr + 1);
+				DrawCharacterSelector(60, (draw_offset * 140), ctrlr);
 				draw_offset++;
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
 					controller_flag[ctrlr] = 2;
 					Se_PlayEvent("core_se_sys_decide_l");
-					SpawnCharacter(selection_ids[ctrlr + 1], ctrlr);
+					SpawnCharacter(selection_ids[ctrlr], ctrlr);
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
 					controller_flag[ctrlr] = 0;
-					selection_ids[ctrlr + 1] = 0;
+					selection_ids[ctrlr] = 0;
 				}
 			}
 
