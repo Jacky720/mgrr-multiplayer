@@ -34,11 +34,10 @@ bool isObjExists(eObjID objId)
 	char buffer[128];
 
 	char* folder = nullptr;
+	std::pair<int, char*>* pFolderNames = (std::pair<int, char*>*)(shared::base + 0x1490198);
 
 	for (int i = 0; i < 12; i++)
 	{
-		std::pair<int, char*>* pFolderNames = (std::pair<int, char*>*)(shared::base + 0x1490198);
-
 		if (pFolderNames[i].first == (objId & 0xF0000))
 		{
 			folder = pFolderNames[i].second;
@@ -118,8 +117,8 @@ public:
 
 						if (elem.bWorkFail)
 							m_EntQueue.remove(elem);
-
-						if (!elem.bWorkFail && elem.bDone && !elem.m_Entity) 
+						
+						else if (elem.bDone && !elem.m_Entity)
 							elem.m_Entity = EntitySystem::Instance.createEntity("SpawnedObject", elem.mObjId, nullptr);
 					}
 				}

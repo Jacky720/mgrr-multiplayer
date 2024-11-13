@@ -249,7 +249,7 @@ void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg,
 
 void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
-	RenderTextWithShadow(to_string((int)round((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, 1);
+	RenderTextWithShadow(to_string((int)floor((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, 1);
 	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, 0);
 
 	RenderTextWithShadow(name, x, y);

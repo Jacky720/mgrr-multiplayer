@@ -352,10 +352,10 @@ void Update()
 		MainPlayer->field_640 = 1;
 
 	if (!isPlayerAtOnce) {
-		for (int itemToRequest = 0x11400; itemToRequest <= 0x11406; itemToRequest++) {
+		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++) {
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
 		}
-		for (int itemToRequest = 0x11500; itemToRequest <= 0x11506; itemToRequest++) {
+		for (int itemToRequest = 0x11501; itemToRequest <= 0x11506; itemToRequest++) {
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
 		}
 
