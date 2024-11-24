@@ -34,7 +34,7 @@ int memory_address = 0x0;
 #include <Camera.h>
 
 
-std::string character_titles[5] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong"};
+std::string character_titles[6] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden"};
 
 
 bool configLoaded = false;
@@ -307,6 +307,7 @@ void Update()
 	if (!configLoaded) {
 
 		injector::WriteMemory<unsigned short>(shared::base + 0x69A516, 0x9090, true); // F3 A5 // Disable normal input Sam and Wolf
+		injector::WriteMemory<unsigned short>(shared::base + 0x7937E6, 0x9090, true); // Disable normal input Raiden
 		injector::WriteMemory<unsigned int>(shared::base + 0x9DB430, 0x909090, true); // E8 1B FF FF FF // Disable normal controller input
 		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
 		//injector::WriteMemory<unsigned char>(shared::base + 0x6C7EC3, 0xEB, true); // Disable vanilla enemy targeting (broken)
@@ -484,7 +485,8 @@ void Update()
 			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
 		}
 
-		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
+		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400
+			|| player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
 			&& modelItems) {
 			modelItems->m_nHair = originalModelItems.m_nHair;
 			modelItems->m_nVisor = originalModelItems.m_nVisor;
@@ -493,6 +495,10 @@ void Update()
 			*modelSword = originalModelSword;
 			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 
+		}
+
+		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x10010) {
+			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 		}
 	}
 }
@@ -545,6 +551,9 @@ void SpawnCharacter(int id, int controller) {
 	else if (id == 2) {
 		Spawner((eObjID)0x20020, controller);
 		PlayAsSam = true;
+	}
+	else if (id == 5) {
+		Spawner((eObjID)0x10010, controller);
 	}
 	RecalibrateBossCode();
 	//camera back to Raiden

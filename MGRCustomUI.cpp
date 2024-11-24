@@ -33,7 +33,7 @@ int controller_flag[4] = { 0, 0, 0, 0 };
 extern void SpawnCharacter(int, int);
 
 extern bool configLoaded;
-extern std::string character_titles[5];
+extern std::string character_titles[6];
 extern Pl0000* players[5];
 
 bool dpad_up_pressed[6] = { false, false, false, false, false, false };
@@ -321,7 +321,7 @@ void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 
 	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, 1);
 
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < sizeof(character_titles) / sizeof(std::string); i++) {
 		if (i == selection_ids[controller_id]) {
 			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAY, 0, 1);
 		}
