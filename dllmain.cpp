@@ -189,6 +189,13 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nHead = 0x11405;
 		*modelSword = 0x11403;
 	}
+	else if (id == (eObjID)0x10010) {
+		modelItems->m_nHair = 0x11011;
+		modelItems->m_nVisor = 0x11014;
+		modelItems->m_nSheath = 0x11013;
+		modelItems->m_nHead = 0x11017;
+		*modelSword = 0x11012;
+	}
 
 	m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
 	
@@ -353,14 +360,20 @@ void Update()
 		MainPlayer->field_640 = 1;
 
 	if (!isPlayerAtOnce) {
-		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++) {
+		// Sam
+		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++)
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		}
-		for (int itemToRequest = 0x11501; itemToRequest <= 0x11506; itemToRequest++) {
-			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		}
-
 		cObjReadManager::Instance.requestWork((eObjID)0x3D070, 0); // Sam projectile
+		
+		// Wolf
+		for (int itemToRequest = 0x11501; itemToRequest <= 0x11506; itemToRequest++)
+			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
+		
+		// Raiden
+		for (int itemToRequest = 0x11011; itemToRequest <= 0x11014; itemToRequest++)
+			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
+		cObjReadManager::Instance.requestWork((eObjID)0x11017, 0);
+
 
 		isPlayerAtOnce = true;
 	}
