@@ -66,6 +66,9 @@ bool ArmstrongCanDamagePlayer = false;
 
 bool EnableDamageToPlayers = false;
 
+bool p1IsKeyboard = true;
+bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
+
 //unsigned int sword = 0x0;
 //unsigned int originalSword = 0x0;
 
@@ -344,14 +347,25 @@ void Update()
 		return;
 	}
 
-	// if (MainPlayer) // early return removes need for this indent
-	if (players[0] != MainPlayer) {
+#define p1Index (p1IsKeyboard ? 0 : 1)
+
+	if (p1IsKeyboard != p1WasKeyboard) { // swap
+		p1WasKeyboard = p1IsKeyboard;
+		Pl0000* temp = players[0];
+		players[0] = players[1];
+		players[1] = temp;
+		eObjID temp2 = playerTypes[0];
+		playerTypes[0] = playerTypes[1];
+		playerTypes[1] = temp2;
+	}
+
+	if (players[p1Index] != MainPlayer) {
 		for (int i = 0; i < 5; i++) {
 			players[i] = nullptr;
 			playerTypes[i] = (eObjID)0;
 		}
-		players[0] = MainPlayer;
-		playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+		players[p1Index] = MainPlayer;
+		playerTypes[p1Index] = MainPlayer->m_pEntity->m_nEntityIndex;
 	}
 
 	if (EnableDamageToPlayers)
@@ -472,7 +486,8 @@ void Update()
 	for (int i = 0; i < 5; i++) {
 		if (!playerSpawnCheck[i] && playerTypes[i] && !players[i]) {
 			playerTypes[i] = (eObjID)0;
-			controller_flag[i - 1] = 1;
+			if (i > 0)
+				controller_flag[i - 1] = 1;
 		}
 	}
 
@@ -613,6 +628,12 @@ void gui::RenderWindow()
 			{
 				Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
+				if (ImGui::Button("Spawn Raiden as next player") && MainPlayer) {
+					Spawner((eObjID)0x11010);
+					//camera back to P1
+					((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+				}
+
 				if (ImGui::Button("Spawn Sam as next player") && MainPlayer) {
 					Spawner((eObjID)0x11400);
 					//camera back to Raiden
@@ -651,7 +672,7 @@ void gui::RenderWindow()
 
 
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
-
+				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 				
 
 				// Sundowner's Head: 1581929

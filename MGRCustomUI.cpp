@@ -377,7 +377,7 @@ void Present() {
 		for (int ctrlr = 0; ctrlr < 4; ctrlr++) {
 
 
-			if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START") && controller_flag[ctrlr] == 0) {
+			if (IsGamepadButtonPressed(ctrlr, GamepadSpawn) && controller_flag[ctrlr] == 0) {
 				controller_flag[ctrlr] = 1;
 			}
 
