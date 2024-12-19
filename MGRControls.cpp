@@ -526,10 +526,9 @@ std::string GamepadPause2 = "XINPUT_GAMEPAD_BACK";
 std::string GamepadAbility = "XINPUT_GAMEPAD_LEFT_THUMB";
 std::string GamepadCamReset = "XINPUT_GAMEPAD_RIGHT_THUMB";
 
-std::string GamepadSpawnSam = "XINPUT_GAMEPAD_START";
-std::string GamepadSpawnWolf = "XINPUT_GAMEPAD_BACK";
-std::string GamepadSpawnArmstrong = "XINPUT_GAMEPAD_LEFT_TRIGGER";
-std::string GamepadSpawnBossSam = "XINPUT_GAMEPAD_RIGHT_TRIGGER";
+std::string GamepadSpawn = "XINPUT_GAMEPAD_START";
+
+extern bool p1IsKeyboard;
 
 
 void LoadControl(CIniReader iniReader, std::string* Control, std::string* GamepadControl, std::string name) {
@@ -567,10 +566,9 @@ void LoadConfig() noexcept
 	LoadControl(iniReader, &Ability, &GamepadAbility, "Ability");
 	LoadControl(iniReader, &CamReset, &GamepadCamReset, "CamReset");
 
-	GamepadSpawnSam = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnSam", GamepadSpawnSam);
-	GamepadSpawnWolf = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnWolf", GamepadSpawnWolf);
-	GamepadSpawnBossSam = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnBossSam", GamepadSpawnBossSam);
-	GamepadSpawnArmstrong = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawnArmstrong", GamepadSpawnArmstrong);
+	GamepadSpawn = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawn", GamepadSpawn);
+
+	p1IsKeyboard = iniReader.ReadBoolean("MGRRMultiplayerControls", "PlayerOneKeyboard", true);
 
 }
 

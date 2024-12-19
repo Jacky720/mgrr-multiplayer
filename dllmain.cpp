@@ -34,7 +34,7 @@ int memory_address = 0x0;
 #include <Camera.h>
 
 
-std::string character_titles[5] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong"};
+std::string character_titles[6] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden"};
 
 
 bool configLoaded = false;
@@ -65,6 +65,9 @@ bool ArmstrongCanDamagePlayer = false;
 
 
 bool EnableDamageToPlayers = false;
+
+bool p1IsKeyboard = true;
+bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
 
 //unsigned int sword = 0x0;
 //unsigned int originalSword = 0x0;
@@ -189,6 +192,13 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nHead = 0x11405;
 		*modelSword = 0x11403;
 	}
+	else if (id == (eObjID)0x10010) {
+		modelItems->m_nHair = 0x11011;
+		modelItems->m_nVisor = 0x11014;
+		modelItems->m_nSheath = 0x11013;
+		modelItems->m_nHead = 0x11017;
+		*modelSword = 0x11012;
+	}
 
 	m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
 	
@@ -307,6 +317,7 @@ void Update()
 	if (!configLoaded) {
 
 		injector::WriteMemory<unsigned short>(shared::base + 0x69A516, 0x9090, true); // F3 A5 // Disable normal input Sam and Wolf
+		injector::WriteMemory<unsigned short>(shared::base + 0x7937E6, 0x9090, true); // Disable normal input Raiden
 		injector::WriteMemory<unsigned int>(shared::base + 0x9DB430, 0x909090, true); // E8 1B FF FF FF // Disable normal controller input
 		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
 		//injector::WriteMemory<unsigned char>(shared::base + 0x6C7EC3, 0xEB, true); // Disable vanilla enemy targeting (broken)
@@ -336,14 +347,25 @@ void Update()
 		return;
 	}
 
-	// if (MainPlayer) // early return removes need for this indent
-	if (players[0] != MainPlayer) {
+#define p1Index (p1IsKeyboard ? 0 : 1)
+
+	if (p1IsKeyboard != p1WasKeyboard) { // swap
+		p1WasKeyboard = p1IsKeyboard;
+		Pl0000* temp = players[0];
+		players[0] = players[1];
+		players[1] = temp;
+		eObjID temp2 = playerTypes[0];
+		playerTypes[0] = playerTypes[1];
+		playerTypes[1] = temp2;
+	}
+
+	if (players[p1Index] != MainPlayer) {
 		for (int i = 0; i < 5; i++) {
 			players[i] = nullptr;
 			playerTypes[i] = (eObjID)0;
 		}
-		players[0] = MainPlayer;
-		playerTypes[0] = MainPlayer->m_pEntity->m_nEntityIndex;
+		players[p1Index] = MainPlayer;
+		playerTypes[p1Index] = MainPlayer->m_pEntity->m_nEntityIndex;
 	}
 
 	if (EnableDamageToPlayers)
@@ -352,14 +374,20 @@ void Update()
 		MainPlayer->field_640 = 1;
 
 	if (!isPlayerAtOnce) {
-		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++) {
+		// Sam
+		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++)
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		}
-		for (int itemToRequest = 0x11501; itemToRequest <= 0x11506; itemToRequest++) {
-			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		}
-
 		cObjReadManager::Instance.requestWork((eObjID)0x3D070, 0); // Sam projectile
+		
+		// Wolf
+		for (int itemToRequest = 0x11501; itemToRequest <= 0x11506; itemToRequest++)
+			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
+		
+		// Raiden
+		for (int itemToRequest = 0x11011; itemToRequest <= 0x11014; itemToRequest++)
+			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
+		cObjReadManager::Instance.requestWork((eObjID)0x11017, 0);
+
 
 		isPlayerAtOnce = true;
 	}
@@ -458,7 +486,8 @@ void Update()
 	for (int i = 0; i < 5; i++) {
 		if (!playerSpawnCheck[i] && playerTypes[i] && !players[i]) {
 			playerTypes[i] = (eObjID)0;
-			controller_flag[i - 1] = 1;
+			if (i > 0)
+				controller_flag[i - 1] = 1;
 		}
 	}
 
@@ -484,7 +513,8 @@ void Update()
 			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
 		}
 
-		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400 || player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
+		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400
+			|| player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
 			&& modelItems) {
 			modelItems->m_nHair = originalModelItems.m_nHair;
 			modelItems->m_nVisor = originalModelItems.m_nVisor;
@@ -493,6 +523,10 @@ void Update()
 			*modelSword = originalModelSword;
 			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 
+		}
+
+		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x10010) {
+			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 		}
 	}
 }
@@ -546,6 +580,9 @@ void SpawnCharacter(int id, int controller) {
 		Spawner((eObjID)0x20020, controller);
 		PlayAsSam = true;
 	}
+	else if (id == 5) {
+		Spawner((eObjID)0x10010, controller);
+	}
 	RecalibrateBossCode();
 	//camera back to Raiden
 	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
@@ -591,6 +628,12 @@ void gui::RenderWindow()
 			{
 				Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
+				if (ImGui::Button("Spawn Raiden as next player") && MainPlayer) {
+					Spawner((eObjID)0x11010);
+					//camera back to P1
+					((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+				}
+
 				if (ImGui::Button("Spawn Sam as next player") && MainPlayer) {
 					Spawner((eObjID)0x11400);
 					//camera back to Raiden
@@ -629,7 +672,7 @@ void gui::RenderWindow()
 
 
 				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
-
+				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 				
 
 				// Sundowner's Head: 1581929

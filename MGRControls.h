@@ -37,8 +37,7 @@ extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump,
 	GamepadJump, GamepadInteract, GamepadCamUp, GamepadCamDown, GamepadCamLeft,
 	GamepadCamRight, GamepadHeal, GamepadTaunt, GamepadWeaponMenu, GamepadWeaponMenu2,
 	GamepadRun, GamepadBladeMode, GamepadSubweapon, GamepadLockon, GamepadPause, GamepadPause2,
-	GamepadAbility, GamepadCamReset, GamepadSpawnSam, GamepadSpawnWolf, GamepadSpawnArmstrong,
-	GamepadSpawnBossSam;
+	GamepadAbility, GamepadCamReset, GamepadSpawn;
 
 float GetGamepadAnalog(int controllerIndex, const std::string& button);
 
