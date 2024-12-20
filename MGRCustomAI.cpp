@@ -8,13 +8,26 @@ extern Pl0000* MainPlayer;
 extern Pl0000* players[5];
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
+int prevPressed[5] = { 0 };
 bool EveryHeal = true;
 
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+	int playerIndex = -1;
+	for (int i = 0; i < 5; i++) {
+		if (players[i] == player)
+			playerIndex = i;
+	}
+
 	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
 		player->m_nKeyHoldingFlag |= bit;
-		player->m_nKeyPressedFlag |= bit;
+		if (!(prevPressed[playerIndex] & bit)) {
+			player->m_nKeyPressedFlag |= bit;
+		}
+		else {
+			player->m_nKeyPressedFlag &= ~bit;
+		}
+		prevPressed[playerIndex] |= bit;
 		if (altField1) *altField1 |= bit;
 		if (altField2) *altField2 |= bit;
 		return true;
@@ -22,6 +35,7 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 	else {
 		player->m_nKeyHoldingFlag &= ~bit;
 		player->m_nKeyPressedFlag &= ~bit;
+		prevPressed[playerIndex] &= ~bit;
 		if (altField1) *altField1 &= ~bit;
 		if (altField2) *altField2 &= ~bit;
 		return false;
@@ -285,9 +299,6 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	player->field_D10 = 0;
 	player->field_D14 = 0;
 
-	static bool wasJumpSam[5] = { false }; // For Sam, whether jump was already pressed on the previous frame
-	static bool wasCrouchWolf[5] = { false }; // For Wolf, whether Ability was already pressed
-
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, originalSword, true);
 
@@ -312,35 +323,6 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 
 
 	bool isAny = false;
-
-	// Special cases where keyPressedFlag is important
-	if (player->m_nModelIndex == 0x11400) {
-		if (wasJumpSam[i]) {
-			wasJumpSam[i] = SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-			player->m_nKeyPressedFlag &= ~JumpBit;
-		}
-		else {
-			wasJumpSam[i] = SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-		}
-		isAny |= wasJumpSam[i];
-	}
-	else {
-		isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-	}
-
-	if (player->m_nModelIndex == 0x11500) {
-		if (wasCrouchWolf[i]) {
-			wasCrouchWolf[i] = SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-			player->m_nKeyPressedFlag &= ~AbilityBit;
-		}
-		else {
-			wasCrouchWolf[i] = SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-		}
-		isAny |= wasCrouchWolf[i];
-	}
-	else {
-		isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-	}
 
 	// Left stick
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->field_D0C, true);
@@ -394,6 +376,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
 	// Triggers and bumpers (lock-on takes camera control instead)
 	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->field_D00, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04);
@@ -412,6 +395,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu, GamepadWeaponMenu, WeaponMenuBit);
 	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu2, GamepadWeaponMenu2, WeaponMenu2Bit);
 	// Other
+	isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
 	isAny |= SetFlagsForAction(player, controllerNumber, CamReset, GamepadCamReset, CamResetBit);
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause, GamepadPause, PauseBit); // Does not work
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
