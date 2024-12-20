@@ -5,6 +5,7 @@
 
 extern void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
 extern Pl0000* MainPlayer;
+extern Pl0000* players[5];
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 bool EveryHeal = true;
@@ -252,6 +253,25 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 
 }
 
+float getDistance(Pl0000* player1, Pl0000* player2) {
+	cVec4 *p1pos = player1->getTransPos();
+	cVec4* p2pos = player2->getTransPos();
+	float xDist = p1pos->x - p2pos->x;
+	float yDist = p1pos->y - p2pos->y;
+	float zDist = p1pos->z - p2pos->z;
+	return sqrt(xDist*xDist + yDist*yDist + zDist*zDist);
+}
+
+float getAngle(Pl0000* player1, Pl0000* player2) {
+	cVec4* p1pos = player1->getTransPos();
+	cVec4* p2pos = player2->getTransPos();
+	float xDist = p1pos->x - p2pos->x;
+	float zDist = p1pos->z - p2pos->z;
+	return atan2(xDist, zDist) + PI;
+}
+
+#define RADIANS(x) (x * PI / 180)
+
 void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageToPlayers) {
 	int i = controllerNumber + 1;
 	if (EnableDamageToPlayers)
@@ -327,6 +347,44 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->field_D0C, false);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->field_D08, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->field_D08, false);
+
+	// PVP Homing
+	if (!isAny && EnableDamageToPlayers && !player->isIdle()) {
+		Pl0000* nearestPlayer = nullptr;
+		float nearestPlayerDist = INFINITY;
+		for (Pl0000* player2 : players) {
+			if (player2 == player || !player2)
+				continue;
+			float dist = getDistance(player, player2);
+			if (dist < nearestPlayerDist) {
+				nearestPlayer = player2;
+				nearestPlayerDist = dist;
+			}
+		}
+
+		if (nearestPlayer != nullptr) {
+			static float turnSpeed = RADIANS(5);
+			float curAngle = player->m_vecRotation.y;
+			float targetAngle = getAngle(player, nearestPlayer);
+			float diffAngle = targetAngle - curAngle;
+			if (diffAngle < 0) diffAngle += 2 * PI;
+			if (diffAngle >= 2 * PI) diffAngle -= 2 * PI;
+
+			// Very close-- lock perfectly
+			if (diffAngle < turnSpeed || diffAngle > 2*PI - turnSpeed)
+				player->m_vecRotation.y = targetAngle;
+
+			// "< PI" means it's faster to turn positively
+			else if (diffAngle < PI) {
+				player->m_vecRotation.y += turnSpeed;
+				if (player->m_vecRotation.y >= 2 * PI) player->m_vecRotation.y -= 2 * PI;
+			}
+			else { // and vice versa
+				player->m_vecRotation.y -= turnSpeed;
+				if (player->m_vecRotation.y < 0) player->m_vecRotation.y += 2 * PI;
+			}
+		}
+	}
 	// Right stick
 	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->field_D14, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->field_D14, false);
