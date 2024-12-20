@@ -5,15 +5,29 @@
 
 extern void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
 extern Pl0000* MainPlayer;
+extern Pl0000* players[5];
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
+int prevPressed[5] = { 0 };
 bool EveryHeal = true;
 
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+	int playerIndex = -1;
+	for (int i = 0; i < 5; i++) {
+		if (players[i] == player)
+			playerIndex = i;
+	}
+
 	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
 		player->m_nKeyHoldingFlag |= bit;
-		player->m_nKeyPressedFlag |= bit;
+		if (!(prevPressed[playerIndex] & bit)) {
+			player->m_nKeyPressedFlag |= bit;
+		}
+		else {
+			player->m_nKeyPressedFlag &= ~bit;
+		}
+		prevPressed[playerIndex] |= bit;
 		if (altField1) *altField1 |= bit;
 		if (altField2) *altField2 |= bit;
 		return true;
@@ -21,6 +35,7 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 	else {
 		player->m_nKeyHoldingFlag &= ~bit;
 		player->m_nKeyPressedFlag &= ~bit;
+		prevPressed[playerIndex] &= ~bit;
 		if (altField1) *altField1 &= ~bit;
 		if (altField2) *altField2 &= ~bit;
 		return false;
@@ -39,41 +54,67 @@ bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind
 	return false;
 }
 
-void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int controllerNumber = -1) {
+typedef struct actionList {
+	unsigned int Idle;
+	unsigned int Walking;
+	unsigned int LightAttack;
+	unsigned int HeavyAttack;
+	unsigned int StartRun;
+	unsigned int Interaction;
+	unsigned int Jumping;
+	unsigned int Taunting;
+	unsigned int Special;
+	unsigned int EndSpecial;
+	unsigned int EndRun;
+	unsigned int MidRun;
+} ActionList;
+
+void UpdateBossActions(BehaviorEmBase* Enemy, ActionList* BossActions, int controllerNumber = -1) {
 
 	if (CheckControlPressed(controllerNumber, NormalAttack, GamepadNormalAttack)
-		&& Enemy->m_nCurrentAction != BossActions[2]) { // Two punches (four strikes)
-		Enemy->setState(BossActions[2], 0, 0, 0);
+		&& Enemy->m_nCurrentAction != BossActions->LightAttack) { // Two punches (four strikes)
+		Enemy->setState(BossActions->LightAttack, 0, 0, 0);
 	}
 
 	if (CheckControlPressed(controllerNumber, StrongAttack, GamepadStrongAttack)
-		&& Enemy->m_nCurrentAction != BossActions[3]) { // Two punches, kick, punch (four strike w/ sheath)
-		Enemy->setState(BossActions[3], 0, 0, 0);
+		&& Enemy->m_nCurrentAction != BossActions->HeavyAttack) { // Two punches, kick, punch (four strike w/ sheath)
+		Enemy->setState(BossActions->HeavyAttack, 0, 0, 0);
 	}
 
 	if (CheckControlPressed(controllerNumber, Run, GamepadRun)
-		&& Enemy->m_nCurrentAction != BossActions[4]) { // Run QTE (Assault Rush)
-		Enemy->setState(BossActions[4], 0, 0, 0);
+		&& (
+			CheckControlPressed(controllerNumber, Forward, GamepadForward)
+		    || CheckControlPressed(controllerNumber, Back, GamepadBack)
+		    || CheckControlPressed(controllerNumber, Left, GamepadLeft)
+		    || CheckControlPressed(controllerNumber, Right, GamepadRight))) { // Run QTE (Assault Rush)
+		if (Enemy->m_nCurrentAction != BossActions->StartRun && Enemy->m_nCurrentAction != BossActions->MidRun)
+			Enemy->setState(BossActions->StartRun, 0, 0, 0);
+	}
+	else if (Enemy->m_nCurrentAction == BossActions->MidRun) { // Running should end
+		Enemy->setState(BossActions->EndRun, 0, 0, 0);
 	}
 
 	if (CheckControlPressed(controllerNumber, Interact, GamepadInteract)
-		&& Enemy->m_nCurrentAction != BossActions[5]) { // Overhead with AOE (unblockable QTE)
-		Enemy->setState(BossActions[5], 0, 0, 0);
+		&& Enemy->m_nCurrentAction != BossActions->Interaction) { // Overhead with AOE (unblockable QTE)
+		Enemy->setState(BossActions->Interaction, 0, 0, 0);
 	}
 
 	if (CheckControlPressed(controllerNumber, Jump, GamepadJump)
-		&& Enemy->m_nCurrentAction != BossActions[6]) { // Uppercut (perfect parry QTE fail)
-		Enemy->setState(BossActions[6], 0, 0, 0);
+		&& Enemy->m_nCurrentAction != BossActions->Jumping) { // Uppercut (perfect parry QTE fail)
+		Enemy->setState(BossActions->Jumping, 0, 0, 0);
 	}
 
 	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)
-		&& Enemy->m_nCurrentAction != BossActions[7]) { // Explode (taunt)
-		Enemy->setState(BossActions[7], 0, 0, 0);
+		&& Enemy->m_nCurrentAction != BossActions->Taunting) { // Explode (taunt)
+		Enemy->setState(BossActions->Taunting, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)
-		&& Enemy->m_nCurrentAction != BossActions[8]) { // Heal (un-perfect-parryable four strike)
-		Enemy->setState(BossActions[8], 0, 0, 0);
+	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)) { // Heal (un-perfect-parryable four strike)
+		if (Enemy->m_nCurrentAction != BossActions->Special)
+			Enemy->setState(BossActions->Special, 0, 0, 0);
+	}
+	else if (Enemy->m_nCurrentAction == BossActions->Special) { // Blade Mode should end 
+		Enemy->setState(BossActions->EndSpecial, 0, 0, 0);
 	}
 }
 
@@ -120,18 +161,18 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	//UpdateMovement(Enemy, &camera);
 
 
-	// Buttons: Idle, Walking, X, Y, RT, B, A, up, LT
-	static unsigned int ArmstrongBossActions[] = { 0x10000, 0x10001, 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
-	static unsigned int SamBossActions[] = { 0x20000, 0x10002, 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005 };
-	static unsigned int SundownerBossActions[] = { 0x10000, 0x10001, 0x20001, 0x20000, 0x20008, 0x20002, 0x20007, 0x10006, 0x20009 };
+	// Buttons: Idle, Walking, X, Y, RT, B, A, up, LT, end LT, end RT, alt RT
+	static ActionList ArmstrongBossActions = { 0x10000, 0x10001, 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010, 0x2000F, 0x10000, 0x20007 };
+	static ActionList SamBossActions = { 0x20000, 0x10002, 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005, 0x20000, 0x30009, 0x30008 };
+	static ActionList SundownerBossActions = { 0x10000, 0x10001, 0x20001, 0x20000, 0x20008, 0x20002, 0x20007, 0x10006, 0x20009, 0x10000, 0x10000, 0x20008 };
 	// Default here for Armstrong (em0700)
-	unsigned int* BossActions = ArmstrongBossActions;
+	ActionList* BossActions = &ArmstrongBossActions;
 
 	if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) {
-		BossActions = SamBossActions;
+		BossActions = &SamBossActions;
 	}
 	if (Enemy->m_pEntity->m_nEntityIndex == 0x20310) {
-		BossActions = SundownerBossActions;
+		BossActions = &SundownerBossActions;
 	}
 
 	UpdateBossActions(Enemy, BossActions, controllerNumber);
@@ -174,13 +215,13 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	}
 
 	if (field_X != 0 || field_Y != 0) {
-		if (Enemy->m_nCurrentAction == BossActions[0]) Enemy->setState(BossActions[1], 0, 0, 0);
+		if (Enemy->m_nCurrentAction == BossActions->Idle) Enemy->setState(BossActions->Walking, 0, 0, 0);
 		float angle = atan2(field_X, field_Y);
 		angle += camera.cCameraTypes::field_4 + PI;
 		Enemy->m_vecRotation.y = angle;
 	}
 	else {
-		if (Enemy->m_nCurrentAction == BossActions[1]) Enemy->setState(BossActions[0], 0, 0, 0);
+		if (Enemy->m_nCurrentAction == BossActions->Walking) Enemy->setState(BossActions->Idle, 0, 0, 0);
 	}
 
 
@@ -226,6 +267,25 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 
 }
 
+float getDistance(Pl0000* player1, Pl0000* player2) {
+	cVec4 *p1pos = player1->getTransPos();
+	cVec4* p2pos = player2->getTransPos();
+	float xDist = p1pos->x - p2pos->x;
+	float yDist = p1pos->y - p2pos->y;
+	float zDist = p1pos->z - p2pos->z;
+	return sqrt(xDist*xDist + yDist*yDist + zDist*zDist);
+}
+
+float getAngle(Pl0000* player1, Pl0000* player2) {
+	cVec4* p1pos = player1->getTransPos();
+	cVec4* p2pos = player2->getTransPos();
+	float xDist = p1pos->x - p2pos->x;
+	float zDist = p1pos->z - p2pos->z;
+	return atan2(xDist, zDist) + PI;
+}
+
+#define RADIANS(x) (x * PI / 180)
+
 void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageToPlayers) {
 	int i = controllerNumber + 1;
 	if (EnableDamageToPlayers)
@@ -238,9 +298,6 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	player->field_D08 = 0;
 	player->field_D10 = 0;
 	player->field_D14 = 0;
-
-	static bool wasJumpSam[5] = { false }; // For Sam, whether jump was already pressed on the previous frame
-	static bool wasCrouchWolf[5] = { false }; // For Wolf, whether Ability was already pressed
 
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, originalSword, true);
@@ -267,40 +324,49 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 
 	bool isAny = false;
 
-	// Special cases where keyPressedFlag is important
-	if (player->m_nModelIndex == 0x11400) {
-		if (wasJumpSam[i]) {
-			wasJumpSam[i] = SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-			player->m_nKeyPressedFlag &= ~JumpBit;
-		}
-		else {
-			wasJumpSam[i] = SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-		}
-		isAny |= wasJumpSam[i];
-	}
-	else {
-		isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
-	}
-
-	if (player->m_nModelIndex == 0x11500) {
-		if (wasCrouchWolf[i]) {
-			wasCrouchWolf[i] = SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-			player->m_nKeyPressedFlag &= ~AbilityBit;
-		}
-		else {
-			wasCrouchWolf[i] = SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-		}
-		isAny |= wasCrouchWolf[i];
-	}
-	else {
-		isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-	}
-
 	// Left stick
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->field_D0C, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->field_D0C, false);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->field_D08, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->field_D08, false);
+
+	// PVP Homing
+	if (!isAny && EnableDamageToPlayers && !player->isIdle()) {
+		Pl0000* nearestPlayer = nullptr;
+		float nearestPlayerDist = INFINITY;
+		for (Pl0000* player2 : players) {
+			if (player2 == player || !player2)
+				continue;
+			float dist = getDistance(player, player2);
+			if (dist < nearestPlayerDist) {
+				nearestPlayer = player2;
+				nearestPlayerDist = dist;
+			}
+		}
+
+		if (nearestPlayer != nullptr) {
+			static float turnSpeed = RADIANS(5);
+			float curAngle = player->m_vecRotation.y;
+			float targetAngle = getAngle(player, nearestPlayer);
+			float diffAngle = targetAngle - curAngle;
+			if (diffAngle < 0) diffAngle += 2 * PI;
+			if (diffAngle >= 2 * PI) diffAngle -= 2 * PI;
+
+			// Very close-- lock perfectly
+			if (diffAngle < turnSpeed || diffAngle > 2*PI - turnSpeed)
+				player->m_vecRotation.y = targetAngle;
+
+			// "< PI" means it's faster to turn positively
+			else if (diffAngle < PI) {
+				player->m_vecRotation.y += turnSpeed;
+				if (player->m_vecRotation.y >= 2 * PI) player->m_vecRotation.y -= 2 * PI;
+			}
+			else { // and vice versa
+				player->m_vecRotation.y -= turnSpeed;
+				if (player->m_vecRotation.y < 0) player->m_vecRotation.y += 2 * PI;
+			}
+		}
+	}
 	// Right stick
 	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->field_D14, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->field_D14, false);
@@ -310,6 +376,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
 	// Triggers and bumpers (lock-on takes camera control instead)
 	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->field_D00, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04);
@@ -328,6 +395,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu, GamepadWeaponMenu, WeaponMenuBit);
 	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu2, GamepadWeaponMenu2, WeaponMenu2Bit);
 	// Other
+	isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
 	isAny |= SetFlagsForAction(player, controllerNumber, CamReset, GamepadCamReset, CamResetBit);
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause, GamepadPause, PauseBit); // Does not work
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
