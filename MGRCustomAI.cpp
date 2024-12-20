@@ -4,15 +4,6 @@
 #include <Pl0000.h>
 
 extern void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
-extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump, Interact,
-	CamUp, CamDown, CamLeft, CamRight, Heal, Taunt, WeaponMenu, WeaponMenu2, Run,
-	BladeMode, Subweapon, Lockon, Pause, Pause2, Ability, CamReset, GamepadForward,
-	GamepadBack, GamepadLeft, GamepadRight, GamepadNormalAttack, GamepadStrongAttack,
-	GamepadJump, GamepadInteract, GamepadCamUp, GamepadCamDown, GamepadCamLeft,
-	GamepadCamRight, GamepadHeal, GamepadTaunt, GamepadWeaponMenu, GamepadWeaponMenu2,
-	GamepadRun, GamepadBladeMode, GamepadSubweapon, GamepadLockon, GamepadPause, GamepadPause2,
-	GamepadAbility, GamepadCamReset, GamepadSpawnSam, GamepadSpawnWolf, GamepadSpawnArmstrong,
-	GamepadSpawnBossSam;
 extern Pl0000* MainPlayer;
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
