@@ -242,7 +242,7 @@ void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, 
 
 
 
-void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
+void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
 
 	DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
 	DrawLine(Hw::GraphicDevice, x, y, ((value / maxvalue) * 400), fg, 4);
@@ -252,7 +252,7 @@ void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg,
 
 
 
-void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
+void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
 	RenderTextWithShadow(to_string((int)floor((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
@@ -390,11 +390,18 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x20310) name = "sundowner";
 
-			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x20000)
-				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->m_nHealth, player->m_nMaxHealth, 0, 0, name);
-			else
-				DrawFalseMGRUI(75.0f, 105.0f + 60.0 * i, player->getHealth(), player->getMaxHealth(),
-				player->getFuelContainer(), player->getFuelCapacity(false), name);
+			float fcCur = 0;
+			float fcMax = 0;
+			float hpCur = player->m_nHealth;
+			float hpMax = player->m_nMaxHealth;
+			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x10000) // Enemies have no FC
+			{
+				fcCur = player->getFuelContainer();
+				fcMax = player->getFuelCapacity(false);
+				hpCur = player->getHealth();
+				hpMax = player->getMaxHealth();
+			}
+			DrawFalseMGRUI(75, 105 + 60 * i, hpCur, hpMax, fcCur, fcMax, name);
 			i++;
 
 		}
