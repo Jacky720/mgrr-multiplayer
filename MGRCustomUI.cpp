@@ -35,6 +35,8 @@ extern void SpawnCharacter(int, int);
 extern bool configLoaded;
 extern std::string character_titles[6];
 extern Pl0000* players[5];
+extern eObjID playerTypes[5];
+extern bool p1IsKeyboard;
 
 bool dpad_up_pressed[6] = { false, false, false, false, false, false };
 bool dpad_down_pressed[6] = { false, false, false, false, false, false };
@@ -261,7 +263,6 @@ void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue,
 
 }
 
-// Hey, this "controller_id" is actually a player ID (1-4 for controllers, not 0-3)
 void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 	// Render character selection
 	if (checkScreenSizeTimer > 0) {
@@ -336,6 +337,27 @@ void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 
 }
 
+void DrawDropMenu(float offset_x, float y, int controller_id) {
+	string numbername;
+	switch (controller_id + 1) {
+	case 0: numbername = "zero"; break;
+	case 1: numbername = "one"; break;
+	case 2: numbername = "two"; break;
+	case 3: numbername = "three"; break;
+	case 4: numbername = "four"; break;
+	case 5: numbername = "five"; break;
+	case 6: numbername = "six"; break;
+	case 7: numbername = "seven"; break;
+	case 8: numbername = "eight"; break;
+	case 9: numbername = "nine"; break;
+	default: numbername = "unknown";
+	}
+
+	RenderTextWithShadow("player_" + numbername + "_pause", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, 1);
+
+	RenderTextWithShadow("drop", screenWidth - offset_x, y + 40, C_BLACK, C_LTGRAY, 0, 1);
+}
+
 void ResetControllerAllFlags() {
 	controller_flag[0] = 0;
 	controller_flag[1] = 0;
@@ -393,6 +415,27 @@ void Present() {
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
 					controller_flag[ctrlr] = 0;
 					selection_ids[ctrlr] = 0;
+				}
+			}
+
+			if (controller_flag[ctrlr] == 2 && IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START")
+				&& !(ctrlr == 0 && !p1IsKeyboard))
+				controller_flag[ctrlr] = 3;
+			
+			if (controller_flag[ctrlr] == 3) {
+				DrawDropMenu(60, (draw_offset * 140), ctrlr);
+				draw_offset++;
+
+				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
+					controller_flag[ctrlr] = 0;
+					selection_ids[ctrlr] = 0;
+					Se_PlayEvent("core_se_sys_decide_l");
+					players[ctrlr + 1]->m_pEntity->~Entity();
+					players[ctrlr + 1] = nullptr;
+					playerTypes[ctrlr + 1] = (eObjID)0;
+				}
+				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
+					controller_flag[ctrlr] = 2;
 				}
 			}
 
