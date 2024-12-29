@@ -347,6 +347,18 @@ void Update()
 		return;
 	}
 
+	// Quick check to cancel execution in the customize menu. Thanks Frouk.
+	int* gScenarioManagerImplement = *(int**)(shared::base + 0x17E9A30);
+
+	if (gScenarioManagerImplement && gScenarioManagerImplement[45])
+	{
+		int* phase = (int*)gScenarioManagerImplement[45];
+		if (phase[1] == 0xf05) // customize menu
+		{
+			return;
+		}
+	}
+
 #define p1Index (p1IsKeyboard ? 0 : 1)
 
 	if (p1IsKeyboard != p1WasKeyboard) { // swap
