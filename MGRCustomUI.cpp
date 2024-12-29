@@ -204,8 +204,10 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 #define C_CYAN D3DCOLOR_XRGB(0, 255, 255)
 #define C_DKGRAY D3DCOLOR_XRGB(30, 30, 30)
 #define C_HPYELLOW D3DCOLOR_XRGB(255, 227, 66)
+#define LEFT_JUSTIFIED 0
+#define RIGHT_JUSTIFIED 1
 
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = 0) {
+void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = LEFT_JUSTIFIED) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
@@ -218,20 +220,21 @@ void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, 
 	{1, 1},
 	};
 
+	// Draw shadow
 	for (int i = 0; i < 8; i++) {
-		if (justification_flag == 0) {
+		if (justification_flag == LEFT_JUSTIFIED) {
 			RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
 		}
-		else if (justification_flag == 1) {
+		else if (justification_flag == RIGHT_JUSTIFIED) {
 			RenderTextMGR_RightLeft(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
 		}
-
-
 	}
-	if (justification_flag == 0) {
+
+	// Draw text
+	if (justification_flag == LEFT_JUSTIFIED) {
 		RenderTextMGR(text, x, y, fg, fontid);
 	}
-	else if (justification_flag == 1) {
+	else if (justification_flag == RIGHT_JUSTIFIED) {
 		RenderTextMGR_RightLeft(text, x, y, fg, fontid);
 	}
 
@@ -251,8 +254,9 @@ void DrawProgressBar(float x, float y, float value, float maxvalue, D3DCOLOR bg,
 
 void DrawFalseMGRUI(float x, float y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
-	RenderTextWithShadow(to_string((int)floor((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, 1);
-	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, 0);
+	// e.g. [100.][0 %], with coordinates justified between the ][
+	RenderTextWithShadow(to_string((int)floor((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
 
 	RenderTextWithShadow(name, x, y);
 	DrawProgressBar(x, y + 23, hpvalue, hpmax, C_DKGRAY, C_HPYELLOW);
@@ -320,14 +324,14 @@ void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 	}
 	
 
-	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, 1);
+	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
 	for (int i = 0; i < sizeof(character_titles) / sizeof(std::string); i++) {
 		if (i == selection_ids[controller_id]) {
-			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAY, 0, 1);
+			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
 		}
 		else {
-			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAYFADE,  0, 1);
+			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAYFADE,  0, RIGHT_JUSTIFIED);
 		}
 		
 	}
@@ -353,9 +357,9 @@ void DrawDropMenu(float offset_x, float y, int controller_id) {
 	default: numbername = "unknown";
 	}
 
-	RenderTextWithShadow("player_" + numbername + "_pause", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, 1);
+	RenderTextWithShadow("player_" + numbername + "_pause", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
-	RenderTextWithShadow("drop", screenWidth - offset_x, y + 40, C_BLACK, C_LTGRAY, 0, 1);
+	RenderTextWithShadow("drop", screenWidth - offset_x, y + 40, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
 }
 
 void ResetControllerAllFlags() {
