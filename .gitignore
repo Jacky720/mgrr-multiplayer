@@ -1,7 +1,6 @@
 # Gaming with Portals
 *.asi
 *.zip
-*.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
 
@@ -408,4 +407,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Individual project formatting
-*.vcxproj
+*.sln

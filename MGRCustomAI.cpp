@@ -217,7 +217,7 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	if (field_X != 0 || field_Y != 0) {
 		if (Enemy->m_nCurrentAction == BossActions->Idle) Enemy->setState(BossActions->Walking, 0, 0, 0);
 		float angle = atan2(field_X, field_Y);
-		angle += camera.cCameraTypes::field_4 + PI;
+		angle += camera.m_fHorizontalAngle + PI;
 		Enemy->m_vecRotation.y = angle;
 	}
 	else {
