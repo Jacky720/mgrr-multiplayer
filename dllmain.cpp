@@ -629,7 +629,7 @@ void gui::RenderWindow()
 				Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 				if (ImGui::Button("Spawn Raiden as next player") && MainPlayer) {
-					Spawner((eObjID)0x11010);
+					Spawner((eObjID)0x10010);
 					//camera back to P1
 					((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 				}
