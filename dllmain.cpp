@@ -22,6 +22,7 @@
 #include <Windows.h>
 #include "MGRCustomAI.h"
 #include "MGRCustomUI.h"
+#include "ModelItems.h"
 int memory_address = 0x0;
 
 
@@ -105,18 +106,6 @@ KeysStruct* m_pKeysStruct;
 KeysStruct m_nKeysStruct;*/
 
 
-struct ModelItems
-{
-	unsigned int m_nModel;
-	unsigned int m_nHair;
-	unsigned int m_nVisor;
-	unsigned int m_nSheath;
-	unsigned int m_nHead;
-};
-
-
-
-
 ModelItems* modelItems;
 ModelItems originalModelItems;
 unsigned int* modelSword;
@@ -166,6 +155,7 @@ Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);*/
 //KeysStruct currentKey;
 
 bool isPlayerAtOnce = false;
+bool gotOriginalModelItems = false;
 
 Pl0000* players[5] = { nullptr };
 eObjID playerTypes[5] = { (eObjID)0 };
@@ -190,6 +180,7 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nVisor = 0x11402;
 		modelItems->m_nSheath = 0x11404;
 		modelItems->m_nHead = 0x11405;
+		modelItems->m_nModel = 0x11406;
 		*modelSword = 0x11403;
 	}
 	else if (id == (eObjID)0x10010) {
@@ -197,7 +188,11 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nVisor = 0x11014;
 		modelItems->m_nSheath = 0x11013;
 		modelItems->m_nHead = 0x11017;
+		modelItems->m_nModel = 0x11010;
 		*modelSword = 0x11012;
+	}
+	else if (id == (eObjID)0x11500) {
+		modelItems->m_nModel = 0x11505;
 	}
 
 	m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
@@ -396,12 +391,13 @@ void Update()
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
 		
 		// Raiden
-		for (int itemToRequest = 0x11011; itemToRequest <= 0x11014; itemToRequest++)
+		for (int itemToRequest = 0x11010; itemToRequest <= 0x11014; itemToRequest++)
 			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
 		cObjReadManager::Instance.requestWork((eObjID)0x11017, 0);
 
 
 		isPlayerAtOnce = true;
+		gotOriginalModelItems = false;
 	}
 
 
@@ -412,11 +408,15 @@ void Update()
 	//originalSword = injector::ReadMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, true);
 
 	if (modelItems) {
-		if (modelItems->m_nHair != 0x11401) originalModelItems.m_nHair = modelItems->m_nHair;
-		if (modelItems->m_nVisor != 0x11402) originalModelItems.m_nVisor = modelItems->m_nVisor;
-		if (modelItems->m_nSheath != 0x11404) originalModelItems.m_nSheath = modelItems->m_nSheath;
-		if (modelItems->m_nHead != 0x11405) originalModelItems.m_nHead = modelItems->m_nHead;
-		if (*modelSword != 0x11403) originalModelSword = *modelSword;
+		if (!gotOriginalModelItems) {
+			gotOriginalModelItems = true;
+			originalModelItems.m_nHair = modelItems->m_nHair;
+			originalModelItems.m_nVisor = modelItems->m_nVisor;
+			originalModelItems.m_nSheath = modelItems->m_nSheath;
+			originalModelItems.m_nHead = modelItems->m_nHead;
+			originalModelItems.m_nModel = modelItems->m_nModel;
+			originalModelSword = *modelSword;
+		}
 
 		if (getKeyState('6').isPressed) {
 			Spawner((eObjID)0x11400);
@@ -470,7 +470,7 @@ void Update()
 	//auto& rotate = matrix[1];
 
 	// Detect newly-spawned players
-	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pLast; node = node->m_next) {
 
 		auto value = node->m_value;
 		if (!value) continue;
@@ -488,6 +488,14 @@ void Update()
 		for (int i = 0; i < 5; i++) {
 			if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
 				players[i] = player;
+				if (gotOriginalModelItems) {
+					modelItems->m_nHair = originalModelItems.m_nHair;
+					modelItems->m_nVisor = originalModelItems.m_nVisor;
+					modelItems->m_nSheath = originalModelItems.m_nSheath;
+					modelItems->m_nHead = originalModelItems.m_nHead;
+					modelItems->m_nModel = originalModelItems.m_nModel;
+					*modelSword = originalModelSword;
+				}
 				break;
 			}
 		}
@@ -528,11 +536,6 @@ void Update()
 		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400
 			|| player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
 			&& modelItems) {
-			modelItems->m_nHair = originalModelItems.m_nHair;
-			modelItems->m_nVisor = originalModelItems.m_nVisor;
-			modelItems->m_nSheath = originalModelItems.m_nSheath;
-			modelItems->m_nHead = originalModelItems.m_nHead;
-			*modelSword = originalModelSword;
 			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 
 		}

@@ -60,6 +60,9 @@
     <ClInclude Include="MGRCustomUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ModelItems.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
