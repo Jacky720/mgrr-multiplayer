@@ -232,7 +232,7 @@ void RecalibrateBossCode() {
 	}
 	else {
 		injector::WriteMemory<unsigned int>(shared::base + 0x39C32, 0xFFEE49E8, true);
-		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0xFFEE49E8, true);
+		injector::WriteMemory<unsigned int>(shared::base + 0x39CC5, 0xFFEDB6E8, true);
 	}
 
 	/*
@@ -421,43 +421,16 @@ void Update()
 		if (getKeyState('6').isPressed) {
 			Spawner((eObjID)0x11400);
 			//camera back to Raiden
-			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+			//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
 
 		if (getKeyState('5').isPressed) {
 			Spawner((eObjID)0x11500);
 			//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 			//camera back to Raiden
-			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+			//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 		}
 
-		// Disables summoning code
-		/*for (int i = 0; i < 4; i++) {
-			if (playerTypes[i + 1]) continue;
-
-			if (IsGamepadButtonPressed(i, GamepadSpawnSam))
-				Spawner((eObjID)0x11400, i);
-			else if (IsGamepadButtonPressed(i, GamepadSpawnWolf))
-				Spawner((eObjID)0x11500, i);
-			else if (IsGamepadButtonPressed(i, GamepadSpawnArmstrong)) {
-				Spawner((eObjID)0x20700, i);
-				PlayAsArmstrong = true;
-			}
-			else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
-				Spawner((eObjID)0x20310, i);
-				PlayAsSundowner = true;
-			}
-			//else if (IsGamepadButtonPressed(i, GamepadSpawnBossSam)) {
-			//	Spawner((eObjID)0x20020, i);
-			//	PlayAsSam = true;
-			//}
-			else {
-				continue;
-			}
-			RecalibrateBossCode();
-			//camera back to Raiden
-			((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-		}*/
 	}
 
 	// MainPlayer take camera control
@@ -600,7 +573,7 @@ void SpawnCharacter(int id, int controller) {
 	}
 	RecalibrateBossCode();
 	//camera back to Raiden
-	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
 }
 
@@ -646,20 +619,20 @@ void gui::RenderWindow()
 				if (ImGui::Button("Spawn Raiden as next player") && MainPlayer) {
 					Spawner((eObjID)0x10010);
 					//camera back to P1
-					((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 				}
 
 				if (ImGui::Button("Spawn Sam as next player") && MainPlayer) {
 					Spawner((eObjID)0x11400);
 					//camera back to Raiden
-					((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 				}
 
 
 				if (ImGui::Button("Spawn Wolf as next player") && MainPlayer) {
 					Spawner((eObjID)0x11500);
 					//camera back to Raiden
-					((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 				}
 
 				ImGui::Checkbox("Armstrong is player-controlled", &PlayAsArmstrong);
