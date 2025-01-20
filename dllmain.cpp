@@ -443,36 +443,44 @@ void Update()
 	//auto& rotate = matrix[1];
 
 	// Detect newly-spawned players
-	for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pLast; node = node->m_next) {
+	bool needNewPlayer = false;
+	for (int i = 0; i < 5; i++) {
+		if (playerTypes[i] && !players[i])
+			needNewPlayer = true;
+	}
 
-		auto value = node->m_value;
-		if (!value) continue;
+	if (needNewPlayer) {
+		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pLast; node = node->m_next) {
 
-		auto player = value->getEntityInstance<Pl0000>();
-		if (!player) continue;
+			auto value = node->m_value;
+			if (!value) continue;
 
-		bool alreadyInit = false;
-		for (int i = 0; i < 5; i++) {
-			if (players[i] == player)
-				alreadyInit = true;
-		}
-		if (alreadyInit) continue;
+			auto player = value->getEntityInstance<Pl0000>();
+			if (!player) continue;
 
-		for (int i = 0; i < 5; i++) {
-			if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
-				players[i] = player;
-				if (gotOriginalModelItems) {
-					modelItems->m_nHair = originalModelItems.m_nHair;
-					modelItems->m_nVisor = originalModelItems.m_nVisor;
-					modelItems->m_nSheath = originalModelItems.m_nSheath;
-					modelItems->m_nHead = originalModelItems.m_nHead;
-					modelItems->m_nModel = originalModelItems.m_nModel;
-					*modelSword = originalModelSword;
-				}
-				break;
+			bool alreadyInit = false;
+			for (int i = 0; i < 5; i++) {
+				if (players[i] == player)
+					alreadyInit = true;
 			}
-		}
+			if (alreadyInit) continue;
 
+			for (int i = 0; i < 5; i++) {
+				if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
+					players[i] = player;
+					if (gotOriginalModelItems) {
+						modelItems->m_nHair = originalModelItems.m_nHair;
+						modelItems->m_nVisor = originalModelItems.m_nVisor;
+						modelItems->m_nSheath = originalModelItems.m_nSheath;
+						modelItems->m_nHead = originalModelItems.m_nHead;
+						modelItems->m_nModel = originalModelItems.m_nModel;
+						*modelSword = originalModelSword;
+					}
+					break;
+				}
+			}
+
+		}
 	}
 
 	// Reset players who fail to spawn
