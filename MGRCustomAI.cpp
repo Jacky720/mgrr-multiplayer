@@ -10,6 +10,8 @@ extern Pl0000* players[5];
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 int prevPressed[5] = { 0 };
 bool EveryHeal = true;
+bool isARPressed = false;
+bool wasARPressed = false;
 
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
@@ -383,7 +385,32 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	isAny |= SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04);
 	isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
 	// D-pad
-	isAny |= SetFlagsForAction(player, controllerNumber, Taunt, GamepadTaunt, TauntBit);
+	if (player->m_nModelIndex == 0x11400) {
+		isAny |= SetFlagsForAction(player, controllerNumber, Taunt, GamepadTaunt, TauntBit);
+	}
+	else {
+		// Synchronize AR vision for Wolf and Raiden
+		isARPressed |= CheckControlPressed(controllerNumber, Taunt, GamepadTaunt);
+		isAny |= isARPressed;
+		if (player == MainPlayer) {
+			if (isARPressed) {
+				if (!wasARPressed) {
+					player->m_nKeyPressedFlag |= TauntBit;
+				}
+				else {
+					player->m_nKeyPressedFlag &= ~TauntBit;
+				}
+				player->m_nKeyHoldingFlag |= TauntBit;
+			}
+			else {
+				player->m_nKeyHoldingFlag &= ~TauntBit;
+				player->m_nKeyPressedFlag &= ~TauntBit;
+			}
+			wasARPressed = isARPressed;
+			isARPressed = false;
+		}
+	}
+
 	if (SetFlagsForAction(player, controllerNumber, Heal, GamepadHeal, HealBit)) { // Plays effect, does not heal
 		isAny |= true;
 		if (EveryHeal && healTimers[i] <= 0) {
