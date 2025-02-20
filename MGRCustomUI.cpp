@@ -389,12 +389,14 @@ void Present() {
 			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
 			if (player->m_pEntity->m_nEntityIndex == 0x20310) name = "sundowner";
+			if (player->m_pEntity->m_nEntityIndex == 0x12040) name = "dwarf_gekko";
 
 			float fcCur = 0;
 			float fcMax = 0;
 			float hpCur = player->m_nHealth;
 			float hpMax = player->m_nMaxHealth;
-			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x10000) // Enemies have no FC
+			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x10000 // Enemies have no FC
+				&& (player->m_pEntity->m_nEntityIndex != 0x12040)) // Neither does Dwarf Gekko
 			{
 				fcCur = player->getFuelContainer();
 				fcMax = player->getFuelCapacity(false);

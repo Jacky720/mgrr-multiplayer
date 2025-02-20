@@ -376,10 +376,6 @@ void Update()
 	}
 
 	if (EnableDamageToPlayers)
-		MainPlayer->field_640 = 0;
-	else
-		MainPlayer->field_640 = 1;
-
 	if (!isPlayerAtOnce) {
 		// Sam
 		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++)
