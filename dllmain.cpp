@@ -375,7 +375,6 @@ void Update()
 		playerTypes[p1Index] = MainPlayer->m_pEntity->m_nEntityIndex;
 	}
 
-	if (EnableDamageToPlayers)
 	if (!isPlayerAtOnce) {
 		// Sam
 		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++)
