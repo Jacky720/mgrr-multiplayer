@@ -364,6 +364,7 @@ void Update()
 		eObjID temp2 = playerTypes[0];
 		playerTypes[0] = playerTypes[1];
 		playerTypes[1] = temp2;
+		controller_flag[0] = (players[1] ? 2 : 0);
 	}
 
 	if (players[p1Index] != MainPlayer) {
