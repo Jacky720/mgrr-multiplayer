@@ -544,7 +544,11 @@ void Update()
 
 	overrideCamera = true;
 	cCameraGame* camera = &cCameraGame::Instance;
-	float curXDiff = camera->m_TranslationMatrix.m_vecPosition.x - camera->m_TranslationMatrix.m_vecLookAtPosition.x;
+	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
+	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
+
+#define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
+	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);
 	float maxDist = 0.0;
 	cVec4 maxDistCenter = { 0.0, INFINITY, 0.0, 1.0 };
 	cVec4 cameraPos = { 0.0, 0.0, 0.0, 1.0 };
@@ -559,7 +563,15 @@ void Update()
 				maxDistCenter.z = playerPos[j].z / 2 + playerPos[i].z / 2;
 				newDirection[0] = -(playerPos[j].z - playerPos[i].z);
 				newDirection[1] = (playerPos[j].x - playerPos[i].x);
-				if (newDirection[0] > 0.0 && curXDiff < 0.0) {
+				float newYaw = getYaw(newDirection[0], newDirection[1]);
+				float yawDiff = newYaw - curYaw;
+				if (yawDiff < 0.0) {
+					yawDiff += 2 * PI;
+				}
+				else if (yawDiff >= 2 * PI) {
+					yawDiff -= 2 * PI;
+				}
+				if (yawDiff > PI / 2 && yawDiff < 3 * PI / 2) {
 					newDirection[0] *= -1.0;
 					newDirection[1] *= -1.0;
 				}
@@ -581,8 +593,6 @@ void Update()
 	cameraPos.z = maxDistCenter.z + newDirection[1];
 	//cameraPos.z -= 1.0;
 	//cameraPos.y += 15.0;
-	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
-	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
 #define posUpdateSpeed 0.2
 	oldPos->x = oldPos->x * (1 - posUpdateSpeed) + cameraPos.x * posUpdateSpeed;
 	oldPos->y = oldPos->y * (1 - posUpdateSpeed) + cameraPos.y * posUpdateSpeed;
