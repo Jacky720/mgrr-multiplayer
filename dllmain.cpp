@@ -204,6 +204,17 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 
 }
 
+bool overrideCamera = false;
+
+int __fastcall CameraHacked(void* ecx, void* edx, float a2) {
+	if (overrideCamera) {
+		return ((INT(__thiscall*)(void*))(shared::base + 0x9d03e0))(ecx);
+	}
+	else {
+		return ((INT(__thiscall*)(void*, float))(shared::base + 0x9d1a30))(ecx, a2);
+	}
+}
+
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
@@ -308,6 +319,7 @@ void Update()
 		if (playerSpawnCheck[i]) playerSpawnCheck[i]--;
 	}
 
+	overrideCamera = false;
 
 	if (!configLoaded) {
 
@@ -316,6 +328,8 @@ void Update()
 		injector::WriteMemory<unsigned int>(shared::base + 0x9DB430, 0x909090, true); // E8 1B FF FF FF // Disable normal controller input
 		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
 		//injector::WriteMemory<unsigned char>(shared::base + 0x6C7EC3, 0xEB, true); // Disable vanilla enemy targeting (broken)
+		injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
+		//injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
 
 		// Load image data
 		LoadUIData();
@@ -488,10 +502,16 @@ void Update()
 		}
 	}
 
+	cVec4 playerPos[5];
+	int playerCount = 0;
+
 	// Player control overrides
 	for (int i = 0; i < 5; i++) {
 		Pl0000* player = players[i];
 		if (!player) continue;
+
+		playerPos[playerCount] = player->m_vecTransPos;
+		playerCount++;
 
 		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
 		int controllerNumber = i - 1;
@@ -521,6 +541,56 @@ void Update()
 			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 		}
 	}
+
+	overrideCamera = true;
+	cCameraGame* camera = &cCameraGame::Instance;
+	float curXDiff = camera->m_TranslationMatrix.m_vecPosition.x - camera->m_TranslationMatrix.m_vecLookAtPosition.x;
+	float maxDist = 0.0;
+	cVec4 maxDistCenter = { 0.0, INFINITY, 0.0, 1.0 };
+	cVec4 cameraPos = { 0.0, 0.0, 0.0, 1.0 };
+	float newDirection[2];
+	for (int i = 0; i < playerCount; i++) {
+		for (int j = i; j < playerCount; j++) {
+			float dist = sqrt((playerPos[j].x - playerPos[i].x) * (playerPos[j].x - playerPos[i].x)
+				+ (playerPos[j].z - playerPos[i].z) * (playerPos[j].z - playerPos[i].z));
+			if (dist >= maxDist) {
+				maxDist = dist;
+				maxDistCenter.x = playerPos[j].x / 2 + playerPos[i].x / 2;
+				maxDistCenter.z = playerPos[j].z / 2 + playerPos[i].z / 2;
+				newDirection[0] = -(playerPos[j].z - playerPos[i].z);
+				newDirection[1] = (playerPos[j].x - playerPos[i].x);
+				if (newDirection[0] > 0.0 && curXDiff < 0.0) {
+					newDirection[0] *= -1.0;
+					newDirection[1] *= -1.0;
+				}
+			}
+		}
+		maxDistCenter.y = min(maxDistCenter.y, playerPos[i].y + 1.0);
+	}
+	cameraPos.y = maxDistCenter.y + 2.0;
+
+	//cameraPos.x -= 10.0 * playerCount;
+	if (maxDist <= 0.2) { // Don't die
+		newDirection[0] = 0.0;
+		newDirection[1] = -3.0;
+	} else if (maxDist <= 3.0) { // Limit zoom
+		newDirection[0] *= 3.0 / maxDist;
+		newDirection[1] *= 3.0 / maxDist;
+	}
+	cameraPos.x = maxDistCenter.x + newDirection[0];
+	cameraPos.z = maxDistCenter.z + newDirection[1];
+	//cameraPos.z -= 1.0;
+	//cameraPos.y += 15.0;
+	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
+	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
+#define posUpdateSpeed 0.2
+	oldPos->x = oldPos->x * (1 - posUpdateSpeed) + cameraPos.x * posUpdateSpeed;
+	oldPos->y = oldPos->y * (1 - posUpdateSpeed) + cameraPos.y * posUpdateSpeed;
+	oldPos->z = oldPos->z * (1 - posUpdateSpeed) + cameraPos.z * posUpdateSpeed;
+
+	oldTarget->x = oldTarget->x * (1 - posUpdateSpeed) + maxDistCenter.x * posUpdateSpeed;
+	oldTarget->y = oldTarget->y * (1 - posUpdateSpeed) + maxDistCenter.y * posUpdateSpeed;
+	oldTarget->z = oldTarget->z * (1 - posUpdateSpeed) + maxDistCenter.z * posUpdateSpeed;
 }
 
 
