@@ -205,6 +205,9 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 }
 
 bool overrideCamera = false;
+float camLateralScale = 1.0;
+float camHeightScale = 1.0;
+float camYaw = 0.0;
 
 int __fastcall CameraHacked(void* ecx, void* edx, float a2) {
 	if (overrideCamera) {
@@ -502,16 +505,16 @@ void Update()
 		}
 	}
 
-	cVec4 playerPos[5];
-	int playerCount = 0;
+	//cVec4 playerPos[5];
+	//int playerCount = 0;
 
 	// Player control overrides
 	for (int i = 0; i < 5; i++) {
 		Pl0000* player = players[i];
 		if (!player) continue;
 
-		playerPos[playerCount] = player->m_vecTransPos;
-		playerCount++;
+		//playerPos[playerCount] = player->m_vecTransPos;
+		//playerCount++;
 
 		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
 		int controllerNumber = i - 1;
@@ -547,11 +550,45 @@ void Update()
 	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
 	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
 
-#define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
-	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);
 	float maxDist = 0.0;
-	cVec4 maxDistCenter = { 0.0, INFINITY, 0.0, 1.0 };
+	cVec4 targetCenter = { 0.0, INFINITY, 0.0, 1.0 };
 	cVec4 cameraPos = { 0.0, 0.0, 0.0, 1.0 };
+
+#define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
+
+	for (Pl0000* player : players) {
+		if (!player) continue;
+		cVec4 p1Pos = player->m_vecTransPos;
+		for (Pl0000* player2 : players) {
+			if (!player2) continue;
+			cVec4 p2Pos = player2->m_vecTransPos;
+			float dist = sqrt((p2Pos.x - p1Pos.x) * (p2Pos.x - p1Pos.x)
+				+ (p2Pos.z - p1Pos.z) * (p2Pos.z - p1Pos.z));
+			if (dist >= 15.0) {
+				// Move players closer
+				float distMoveBack = (dist - 15.0) / 2;
+				float xVecNrm = (p2Pos.x - p1Pos.x) / dist;
+				float zVecNrm = (p2Pos.z - p1Pos.z) / dist;
+				player->m_vecTransPos.x += distMoveBack * xVecNrm;
+				player->m_vecTransPos.z += distMoveBack * zVecNrm;
+
+				player2->m_vecTransPos.x -= distMoveBack * xVecNrm;
+				player2->m_vecTransPos.z -= distMoveBack * zVecNrm;
+			}
+			if (dist >= maxDist) {
+				maxDist = dist;
+				targetCenter.x = p1Pos.x / 2 + p2Pos.x / 2;
+				targetCenter.z = p1Pos.z / 2 + p2Pos.z / 2;
+			}
+		}
+		targetCenter.y = min(targetCenter.y, p1Pos.y + 1.0);
+	}
+	cameraPos.x = targetCenter.x + camLateralScale * sin(camYaw);
+	cameraPos.y = targetCenter.y + max(maxDist, 5.0) * camHeightScale;
+	cameraPos.z = targetCenter.z + camLateralScale * cos(camYaw);
+
+	/* // Old implementation, more horizontal
+	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);
 	float newDirection[2];
 	for (int i = 0; i < playerCount; i++) {
 		for (int j = i; j < playerCount; j++) {
@@ -559,8 +596,8 @@ void Update()
 				+ (playerPos[j].z - playerPos[i].z) * (playerPos[j].z - playerPos[i].z));
 			if (dist >= maxDist) {
 				maxDist = dist;
-				maxDistCenter.x = playerPos[j].x / 2 + playerPos[i].x / 2;
-				maxDistCenter.z = playerPos[j].z / 2 + playerPos[i].z / 2;
+				targetCenter.x = playerPos[j].x / 2 + playerPos[i].x / 2;
+				targetCenter.z = playerPos[j].z / 2 + playerPos[i].z / 2;
 				newDirection[0] = -(playerPos[j].z - playerPos[i].z);
 				newDirection[1] = (playerPos[j].x - playerPos[i].x);
 				float newYaw = getYaw(newDirection[0], newDirection[1]);
@@ -577,9 +614,10 @@ void Update()
 				}
 			}
 		}
-		maxDistCenter.y = min(maxDistCenter.y, playerPos[i].y + 1.0);
+		targetCenter.y = min(targetCenter.y, playerPos[i].y + 1.0);
 	}
-	cameraPos.y = maxDistCenter.y + 2.0;
+	cameraPos.y = targetCenter.y + 2.0 * camHeightScale;
+	
 
 	//cameraPos.x -= 10.0 * playerCount;
 	if (maxDist <= 0.2) { // Don't die
@@ -589,18 +627,27 @@ void Update()
 		newDirection[0] *= 3.0 / maxDist;
 		newDirection[1] *= 3.0 / maxDist;
 	}
-	cameraPos.x = maxDistCenter.x + newDirection[0];
-	cameraPos.z = maxDistCenter.z + newDirection[1];
+	// Screw you, top down only
+	newDirection[0] = 0.0;
+	newDirection[1] = -3.0;
+	cameraPos.y += maxDist * camHeightScale;
+	newDirection[0] *= camLateralScale;
+	newDirection[1] *= camLateralScale;
+
+	cameraPos.x = targetCenter.x + newDirection[0];
+	cameraPos.z = targetCenter.z + newDirection[1];
 	//cameraPos.z -= 1.0;
 	//cameraPos.y += 15.0;
+	*/
+
 #define posUpdateSpeed 0.2
 	oldPos->x = oldPos->x * (1 - posUpdateSpeed) + cameraPos.x * posUpdateSpeed;
 	oldPos->y = oldPos->y * (1 - posUpdateSpeed) + cameraPos.y * posUpdateSpeed;
 	oldPos->z = oldPos->z * (1 - posUpdateSpeed) + cameraPos.z * posUpdateSpeed;
 
-	oldTarget->x = oldTarget->x * (1 - posUpdateSpeed) + maxDistCenter.x * posUpdateSpeed;
-	oldTarget->y = oldTarget->y * (1 - posUpdateSpeed) + maxDistCenter.y * posUpdateSpeed;
-	oldTarget->z = oldTarget->z * (1 - posUpdateSpeed) + maxDistCenter.z * posUpdateSpeed;
+	oldTarget->x = oldTarget->x * (1 - posUpdateSpeed) + targetCenter.x * posUpdateSpeed;
+	oldTarget->y = oldTarget->y * (1 - posUpdateSpeed) + targetCenter.y * posUpdateSpeed;
+	oldTarget->z = oldTarget->z * (1 - posUpdateSpeed) + targetCenter.z * posUpdateSpeed;
 }
 
 
@@ -822,6 +869,8 @@ void gui::RenderWindow()
 				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
 					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
 				}
+				ImGui::InputFloat("Camera lateral scale", &camLateralScale);
+				ImGui::InputFloat("Camera vertical scale", &camHeightScale);
 				ImGui::EndTabItem();
 			}
 

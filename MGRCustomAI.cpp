@@ -6,6 +6,7 @@
 extern void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
 extern Pl0000* MainPlayer;
 extern Pl0000* players[5];
+extern float camYaw;
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 int prevPressed[5] = { 0 };
@@ -54,6 +55,28 @@ bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind
 		return true;
 	}
 	return false;
+}
+
+void GetCameraInput(int controllerNumber) {
+	// Camera handling
+	float deltaYaw = 0.0;
+	//left
+	if (CheckControlPressed(controllerNumber, CamLeft, GamepadCamLeft)) {
+		deltaYaw = -1;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadCamLeft))
+			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamLeft);
+	}
+
+	//right
+	if (CheckControlPressed(controllerNumber, CamRight, GamepadCamRight)) {
+		deltaYaw = 1;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadCamRight))
+			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamRight);
+	}
+
+	camYaw -= deltaYaw / (2 * PI) / 3;
+	if (camYaw < 0) camYaw += 2 * PI;
+	if (camYaw > 2 * PI) camYaw -= 2 * PI;
 }
 
 typedef struct actionList {
@@ -219,13 +242,14 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	if (field_X != 0 || field_Y != 0) {
 		if (Enemy->m_nCurrentAction == BossActions->Idle) Enemy->setState(BossActions->Walking, 0, 0, 0);
 		float angle = atan2(field_X, field_Y);
-		angle += camera.m_fHorizontalAngle + PI;
+		angle += camYaw;
 		Enemy->m_vecRotation.y = angle;
 	}
 	else {
 		if (Enemy->m_nCurrentAction == BossActions->Walking) Enemy->setState(BossActions->Idle, 0, 0, 0);
 	}
 
+	GetCameraInput(controllerNumber);
 
 	//v9 = field_X * field_X + field_Y * field_Y;
 
@@ -382,7 +406,12 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	// Triggers and bumpers (lock-on takes camera control also)
 	isAny |= SetFlagsForAction(player, controllerNumber, Lockon, GamepadLockon, LockOnBit);
 	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->field_D00, &player->field_D04);
-	isAny |= SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04);
+	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04)) {
+		GetCameraInput(controllerNumber); // No camera control in Blade Mode
+	}
+	else {
+		isAny |= true;
+	}
 	isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
 	// D-pad
 	if (player->m_nModelIndex == 0x11400) {
