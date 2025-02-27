@@ -218,6 +218,23 @@ int __fastcall CameraHacked(void* ecx, void* edx, float a2) {
 	}
 }
 
+Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
+	float minDist = INFINITY;
+	Entity* closestPlayer = PlayerManagerImplement::pInstance->GetEntity(0);
+	cVec4 ePos = ecx->m_vecTransPos;
+	for (Pl0000* player : players) {
+		if (!player) continue;
+		cVec4 pPos = player->m_vecTransPos;
+		float dist = sqrt((pPos.x - ePos.x) * (pPos.x - ePos.x) + (pPos.y - ePos.y) * (pPos.y - ePos.y) + (pPos.z - ePos.z) * (pPos.z - ePos.z));
+		if (dist < minDist) {
+			closestPlayer = player->m_pEntity;
+			minDist = dist;
+		}
+	}
+
+	return closestPlayer;
+}
+
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
@@ -330,9 +347,10 @@ void Update()
 		injector::WriteMemory<unsigned short>(shared::base + 0x7937E6, 0x9090, true); // Disable normal input Raiden
 		injector::WriteMemory<unsigned int>(shared::base + 0x9DB430, 0x909090, true); // E8 1B FF FF FF // Disable normal controller input
 		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
-		//injector::WriteMemory<unsigned char>(shared::base + 0x6C7EC3, 0xEB, true); // Disable vanilla enemy targeting (broken)
 		injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
 		//injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
+		injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
+		injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
 
 		// Load image data
 		LoadUIData();
