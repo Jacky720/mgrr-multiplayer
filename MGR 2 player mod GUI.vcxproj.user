@@ -4,13 +4,13 @@
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommand>F:\SteamLibrary\steamapps\common\METAL GEAR RISING REVENGEANCE\METAL GEAR RISING REVENGEANCE.exe</LocalDebuggerCommand>
-    <LocalDebuggerWorkingDirectory>F:\SteamLibrary\steamapps\common\METAL GEAR RISING REVENGEANCE</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand>$(MGR_PLUGIN_SDK_GAME_PATH)METAL GEAR RISING REVENGEANCE.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(MGR_PLUGIN_SDK_GAME_PATH)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommand>F:\SteamLibrary\steamapps\common\METAL GEAR RISING REVENGEANCE\METAL GEAR RISING REVENGEANCE.exe</LocalDebuggerCommand>
-    <LocalDebuggerWorkingDirectory>F:\SteamLibrary\steamapps\common\METAL GEAR RISING REVENGEANCE</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand>$(MGR_PLUGIN_SDK_GAME_PATH)METAL GEAR RISING REVENGEANCE.exe</LocalDebuggerCommand>
+    <LocalDebuggerWorkingDirectory>$(MGR_PLUGIN_SDK_GAME_PATH)</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

@@ -45,10 +45,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetExt>.asi</TargetExt>
-    <OutDir>F:\SteamLibrary\steamapps\common\METAL GEAR RISING REVENGEANCE\ExcelsusModLoader\ASI Loader</OutDir>
+    <OutDir>$(MGR_PLUGIN_SDK_SCRIPT_OUTPUT_DIR)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>F:\SteamLibrary\steamapps\common\METAL GEAR RISING REVENGEANCE\ExcelsusModLoader\ASI Loader</OutDir>
+    <OutDir>$(MGR_PLUGIN_SDK_SCRIPT_OUTPUT_DIR)</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
