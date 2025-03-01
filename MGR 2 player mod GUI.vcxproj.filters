@@ -48,9 +48,6 @@
     <ClInclude Include="gui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IniReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MGRControls.h">
       <Filter>Header Files</Filter>
     </ClInclude>

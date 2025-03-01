@@ -25,6 +25,21 @@
 #include "ModelItems.h"
 int memory_address = 0x0;
 
+static WNDPROC oWndProc = NULL;
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+LRESULT CALLBACK hkWindowProc(
+	_In_ HWND   hwnd,
+	_In_ UINT   uMsg,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam) > 0)
+		return 1L;
+	return ::CallWindowProcA(oWndProc, hwnd, uMsg, wParam, lParam);
+}
 
 #pragma comment(lib, "d3dx9.lib")
 #ifdef _MSC_VER < 1700 //pre 2012
@@ -33,6 +48,8 @@ int memory_address = 0x0;
 #pragma comment(lib,"Xinput9_1_0.lib")
 #endif
 #include <Camera.h>
+#include "imgui/imgui_impl_dx9.h"
+#include "imgui/imgui_impl_win32.h"
 
 
 std::string character_titles[6] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden"};
@@ -671,6 +688,7 @@ void Update()
 }
 
 
+static bool GUIinit = false;
 class Plugin
 {
 public:
@@ -683,7 +701,34 @@ public:
 		Events::OnPresent += gui::OnEndScene;
 		*/
 		Events::OnPresent += []() {
+			if (!GUIinit)
+			{
+				oWndProc = (WNDPROC)::SetWindowLongPtr(Hw::OSWindow, GWLP_WNDPROC, (LONG)hkWindowProc);
+
+				ImGui::CreateContext();
+				ImGui_ImplWin32_Init(Hw::OSWindow);
+				ImGui_ImplDX9_Init(Hw::GraphicDevice);
+
+				gui::LoadStyle();
+
+				GUIinit = true;
+			}
+
+			ImGui_ImplDX9_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+			ImGui::NewFrame();
+
 			Present();
+
+
+
+
+
+			gui::RenderWindow();
+
+			ImGui::EndFrame();
+			ImGui::Render();
+			ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		};
 
 		Events::OnTickEvent += []()
