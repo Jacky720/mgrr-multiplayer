@@ -211,10 +211,12 @@ float camYaw = 0.0;
 
 int __fastcall CameraHacked(void* ecx, void* edx, float a2) {
 	if (overrideCamera) {
-		return ((INT(__thiscall*)(void*))(shared::base + 0x9d03e0))(ecx);
+		//return ((INT(__thiscall*)(void*))(shared::base + 0x9d03e0))(ecx);
+		return ((INT(__thiscall*)())(shared::base + 0x9d03e0))();
 	}
 	else {
-		return ((INT(__thiscall*)(void*, float))(shared::base + 0x9d1a30))(ecx, a2);
+		//return ((INT(__thiscall*)(void*, float))(shared::base + 0x9d1a30))(ecx, a2);
+		return ((INT(__thiscall*)())(shared::base + 0x9d1a30))();
 	}
 }
 

@@ -294,19 +294,19 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 }
 
 float getDistance(Pl0000* player1, Pl0000* player2) {
-	cVec4 *p1pos = player1->getTransPos();
-	cVec4* p2pos = player2->getTransPos();
-	float xDist = p1pos->x - p2pos->x;
-	float yDist = p1pos->y - p2pos->y;
-	float zDist = p1pos->z - p2pos->z;
+	cVec4 p1pos = player1->getTransPos();
+	cVec4 p2pos = player2->getTransPos();
+	float xDist = p1pos.x - p2pos.x;
+	float yDist = p1pos.y - p2pos.y;
+	float zDist = p1pos.z - p2pos.z;
 	return sqrt(xDist*xDist + yDist*yDist + zDist*zDist);
 }
 
 float getAngle(Pl0000* player1, Pl0000* player2) {
-	cVec4* p1pos = player1->getTransPos();
-	cVec4* p2pos = player2->getTransPos();
-	float xDist = p1pos->x - p2pos->x;
-	float zDist = p1pos->z - p2pos->z;
+	cVec4 p1pos = player1->getTransPos();
+	cVec4 p2pos = player2->getTransPos();
+	float xDist = p1pos.x - p2pos.x;
+	float zDist = p1pos.z - p2pos.z;
 	return atan2(xDist, zDist) + PI;
 }
 
