@@ -17,3 +17,5 @@ void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int co
 void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamagePlayer);
 
 void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageToPlayers);
+
+void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToPlayers);

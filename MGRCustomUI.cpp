@@ -33,7 +33,7 @@ int controller_flag[4] = { 0, 0, 0, 0 };
 extern void SpawnCharacter(int, int);
 
 extern bool configLoaded;
-extern std::string character_titles[6];
+extern std::string character_titles[7];
 extern Pl0000* players[5];
 extern eObjID playerTypes[5];
 extern bool p1IsKeyboard;

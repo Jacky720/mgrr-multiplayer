@@ -52,7 +52,7 @@ LRESULT CALLBACK hkWindowProc(
 #include "imgui/imgui_impl_win32.h"
 
 
-std::string character_titles[6] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden"};
+std::string character_titles[7] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden", "dwarf_gekko"};
 
 
 bool configLoaded = false;
@@ -212,7 +212,11 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nModel = 0x11505;
 	}
 
-	m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
+	int setType = 0;
+	if (id == (eObjID)0x12040)
+		setType = 1;
+
+	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
 	
 	// Frame counter, if it hits zero and the player does not exist, resets playertype
 	playerSpawnCheck[controllerIndex + 1] = 30;
@@ -362,9 +366,13 @@ void Update()
 
 	if (!configLoaded) {
 
-		injector::WriteMemory<unsigned short>(shared::base + 0x69A516, 0x9090, true); // F3 A5 // Disable normal input Sam and Wolf
-		injector::WriteMemory<unsigned short>(shared::base + 0x7937E6, 0x9090, true); // Disable normal input Raiden
-		injector::WriteMemory<unsigned int>(shared::base + 0x9DB430, 0x909090, true); // E8 1B FF FF FF // Disable normal controller input
+		injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
+		injector::MakeNOP(shared::base + 0x7937E6, 2, true); // Disable normal input Raiden
+		injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable normal input Dwarf Gekko
+		injector::MakeNOP(shared::base + 0x1F5E35, 6, true); // Disable joystick reset Dwarf Gekko (1)
+		injector::MakeNOP(shared::base + 0x1F5E3C, 6, true); // Disable joystick reset Dwarf Gekko (2)
+		injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
+		injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF // Disable normal controller input
 		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
 		injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
 		//injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
@@ -580,6 +588,10 @@ void Update()
 		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x10010) {
 			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
 		}
+
+		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x12040) { // Not Pl0000*
+			FullHandleDGPlayer(player, controllerNumber, EnableDamageToPlayers);
+		}
 	}
 
 	overrideCamera = true;
@@ -752,20 +764,23 @@ void SpawnCharacter(int id, int controller) {
 		Spawner((eObjID)0x11400, controller);
 	else if (id == 1)
 		Spawner((eObjID)0x11500, controller);
-	else if (id == 4) {
-		Spawner((eObjID)0x20700, controller);
-		PlayAsArmstrong = true;
+	else if (id == 2) {
+		Spawner((eObjID)0x20020, controller);
+		PlayAsSam = true;
 	}
 	else if (id == 3) {
 		Spawner((eObjID)0x20310, controller);
 		PlayAsSundowner = true;
 	}
-	else if (id == 2) {
-		Spawner((eObjID)0x20020, controller);
-		PlayAsSam = true;
+	else if (id == 4) {
+		Spawner((eObjID)0x20700, controller);
+		PlayAsArmstrong = true;
 	}
 	else if (id == 5) {
 		Spawner((eObjID)0x10010, controller);
+	}
+	else if (id == 6) {
+		Spawner((eObjID)0x12040, controller);
 	}
 	RecalibrateBossCode();
 	//camera back to Raiden
@@ -866,11 +881,13 @@ void gui::RenderWindow()
 //#define PRINTSAM
 //#define PRINTENEMY
 //#define SHOWBOSSACTION
+#define PRINTBMs
 				
 				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+					if (!node) break;
 
 					auto value = node->m_value;
-					if (!value) continue;
+					if (!value || value == (Entity*)0xEFEFEFEF) continue;
 #ifdef PRINTSAM
 					auto player = value->getEntityInstance<Pl0000>();
 					if (!player) continue;
@@ -897,6 +914,11 @@ void gui::RenderWindow()
 					if (!Enemy) continue;
 					if (value->m_nEntityIndex == 0x20020 || value->m_nEntityIndex == 0x20700) {
 						ImGui::Text("Entity %x has state %x", value->m_nEntityIndex, Enemy->m_nCurrentAction);
+					}
+#endif
+#ifdef PRINTBMs
+					if ((value->m_nEntityIndex & 0xf0000) == 0xD0000) {
+						ImGui::Text("Entity %x", value->m_nEntityIndex);
 					}
 #endif
 				}
@@ -936,6 +958,8 @@ void gui::RenderWindow()
 				}
 				ImGui::InputFloat("Camera lateral scale", &camLateralScale);
 				ImGui::InputFloat("Camera vertical scale", &camHeightScale);
+				auto firstEnt = EntitySystem::Instance.m_EntityList.m_pFirst;
+				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
 				ImGui::EndTabItem();
 			}
 
