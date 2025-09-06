@@ -237,8 +237,13 @@ public:
 								}
 								elem.m_Entity = EntitySystem::Instance.createEntity(&myEntity);
 
-							} else
-								elem.m_Entity = EntitySystem::Instance.createEntity("SpawnedObject", elem.mObjId, nullptr);
+							}
+							else {
+								EntitySystem::ObjectInfo objInfo;
+								objInfo.m_nSetType = elem.iSetType;
+								objInfo.m_vecSize = { 1.0, 1.0, 1.0 };
+								elem.m_Entity = EntitySystem::Instance.createEntity("SpawnedObject", elem.mObjId, &objInfo);
+							}
 						}
 					}
 				}

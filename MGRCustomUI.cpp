@@ -8,7 +8,7 @@
 #include <string>
 #include <XInput.h>
 #include "MGRControls.h"
-
+#include "imgui/imgui.h"
 using namespace std;
 
 
@@ -33,7 +33,7 @@ int controller_flag[4] = { 0, 0, 0, 0 };
 extern void SpawnCharacter(int, int);
 
 extern bool configLoaded;
-extern std::string character_titles[6];
+extern std::string character_titles[7];
 extern Pl0000* players[5];
 extern eObjID playerTypes[5];
 extern bool p1IsKeyboard;
@@ -63,6 +63,10 @@ LPD3DXSPRITE pSprite = NULL;
 void LoadFont(fs::path directory_path, int id) {
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
 	int loaded_font_textures = 0;
+	if (!fs::exists(directory_path)) {
+		MessageBoxA(nullptr, "Failed to load GameData\\rising_multiplayer!\nPlease ensure you copied to required folders and try again.", "Rising Multiplayer", MB_ICONERROR | MB_OK);
+	}
+
 	for (const auto& entry : fs::directory_iterator(directory_path)) {
 		if (entry.is_regular_file()) {
 
@@ -369,10 +373,16 @@ void ResetControllerAllFlags() {
 	controller_flag[3] = 0;
 }
 
+BOOL __stdcall WorldToScreen(const cVec4& worldPosition, cVec4& screenPos)
+{
+	return ((BOOL(__stdcall*)(const cVec4&, cVec4&))(shared::base + 0x8B76D0))(worldPosition, screenPos);
+}
 
 void Present() {
 
-
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(screenWidth, screenHeight));
+	ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground);
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
@@ -404,10 +414,19 @@ void Present() {
 				hpMax = player->getMaxHealth();
 			}
 			DrawFalseMGRUI(75, 105 + 60 * i, hpCur, hpMax, fcCur, fcMax, name);
+			auto pDrawList = ImGui::GetWindowDrawList();
+			cVec4 player_pos = player->getTransPos();
+			player_pos.y += 2.5f;
+			cVec4 temporary_projection = cVec4(0, 0, 0, 0);
+			WorldToScreen(player_pos, temporary_projection);
+			//pDrawList->AddText(ImVec2(temporary_projection.x, temporary_projection.y), ImColor(255, 255, 255), std::to_string(i).c_str());
+
+			RenderTextWithShadow("controller", temporary_projection.x - 50.0f, temporary_projection.y - 10.0f);
+			RenderTextWithShadow(std::to_string(i), temporary_projection.x - 50.0f, temporary_projection.y);
 			i++;
 
 		}
-
+		
 		int draw_offset = 0;
 		for (int ctrlr = 0; ctrlr < 4; ctrlr++) {
 
@@ -453,6 +472,8 @@ void Present() {
 			}
 
 		}
+		
 
 	}
+	ImGui::End();
 }

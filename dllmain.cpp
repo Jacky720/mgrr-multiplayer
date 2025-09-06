@@ -25,6 +25,21 @@
 #include "ModelItems.h"
 int memory_address = 0x0;
 
+static WNDPROC oWndProc = NULL;
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+LRESULT CALLBACK hkWindowProc(
+	_In_ HWND   hwnd,
+	_In_ UINT   uMsg,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam) > 0)
+		return 1L;
+	return ::CallWindowProcA(oWndProc, hwnd, uMsg, wParam, lParam);
+}
 
 #pragma comment(lib, "d3dx9.lib")
 #ifdef _MSC_VER < 1700 //pre 2012
@@ -33,9 +48,11 @@ int memory_address = 0x0;
 #pragma comment(lib,"Xinput9_1_0.lib")
 #endif
 #include <Camera.h>
+#include "imgui/imgui_impl_dx9.h"
+#include "imgui/imgui_impl_win32.h"
 
 
-std::string character_titles[6] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden"};
+std::string character_titles[7] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden", "dwarf_gekko"};
 
 
 bool configLoaded = false;
@@ -58,14 +75,11 @@ bool SamAtOnce = false;
 bool PlayAsMistral = false;
 bool PlayAsMonsoon = false;
 bool PlayAsSundowner = false;
-bool SundownerCanDamagePlayer = false;
 bool PlayAsSam = false;
-bool BossSamCanDamagePlayer = false;
 bool PlayAsArmstrong = false;
-bool ArmstrongCanDamagePlayer = false;
 
 
-bool EnableDamageToPlayers = false;
+bool EnableFriendlyFire = false;
 
 bool p1IsKeyboard = true;
 bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
@@ -195,13 +209,50 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nModel = 0x11505;
 	}
 
-	m_EntQueue.push_back({ .mObjId = id, .iSetType = 0,.bWorkFail = !isObjExists(id) });
+	int setType = 0;
+	if (id == (eObjID)0x12040)
+		setType = 1;
+
+	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
 	
 	// Frame counter, if it hits zero and the player does not exist, resets playertype
 	playerSpawnCheck[controllerIndex + 1] = 30;
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 
+}
+
+bool overrideCamera = false;
+float camLateralScale = 1.0;
+float camHeightScale = 1.0;
+float camYaw = 0.0;
+
+int __fastcall CameraHacked(void* ecx) {
+	if (overrideCamera) {
+		//return ((INT(__thiscall*)(void*))(shared::base + 0x9d03e0))(ecx);
+		return ((INT(__thiscall*)())(shared::base + 0x9d03e0))();
+	}
+	else {
+		//return ((INT(__thiscall*)(void*, float))(shared::base + 0x9d1a30))(ecx, a2);
+		return ((INT(__thiscall*)())(shared::base + 0x9d1a30))();
+	}
+}
+
+Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
+	float minDist = INFINITY;
+	Entity* closestPlayer = PlayerManagerImplement::pInstance->GetEntity(0);
+	cVec4 ePos = ecx->m_vecTransPos;
+	for (Pl0000* player : players) {
+		if (!player) continue;
+		cVec4 pPos = player->m_vecTransPos;
+		float dist = sqrt((pPos.x - ePos.x) * (pPos.x - ePos.x) + (pPos.y - ePos.y) * (pPos.y - ePos.y) + (pPos.z - ePos.z) * (pPos.z - ePos.z));
+		if (dist < minDist) {
+			closestPlayer = player->m_pEntity;
+			minDist = dist;
+		}
+	}
+
+	return closestPlayer;
 }
 
 
@@ -308,14 +359,35 @@ void Update()
 		if (playerSpawnCheck[i]) playerSpawnCheck[i]--;
 	}
 
+	overrideCamera = false;
 
 	if (!configLoaded) {
 
-		injector::WriteMemory<unsigned short>(shared::base + 0x69A516, 0x9090, true); // F3 A5 // Disable normal input Sam and Wolf
-		injector::WriteMemory<unsigned short>(shared::base + 0x7937E6, 0x9090, true); // Disable normal input Raiden
-		injector::WriteMemory<unsigned int>(shared::base + 0x9DB430, 0x909090, true); // E8 1B FF FF FF // Disable normal controller input
-		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
-		//injector::WriteMemory<unsigned char>(shared::base + 0x6C7EC3, 0xEB, true); // Disable vanilla enemy targeting (broken)
+		injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
+		injector::MakeNOP(shared::base + 0x7937E6, 2, true); // Disable normal input Raiden
+		// Dwarf Gekko has some more complex code
+		injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable normal input Dwarf Gekko
+		injector::MakeNOP(shared::base + 0x1F5E35, 6, true); // Disable joystick reset Dwarf Gekko (1)
+		injector::MakeNOP(shared::base + 0x1F5E3C, 6, true); // Disable joystick reset Dwarf Gekko (2)
+		//injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable input copy Dwarf Gekko
+		// Disable fixRotation on Em0040_0015.mot
+		injector::WriteMemory<unsigned short>(shared::base + 0x1FA661, 0xEED9, true); // FLDZ
+		injector::MakeNOP(shared::base + 0x1FA663, 4, true);
+		//injector::MakeNOP(shared::base + 0x1FA64E, 42, true); // BEGONE
+
+		// idk what exactly this is for, actually
+		injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
+		// Disable normal controller input
+		injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
+		// Remove need for custom pl1400 and pl1500
+		injector::MakeNOP(shared::base + 0x69E313, 6, true);
+
+		// Camera override
+		//injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
+		injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
+		// Enemy targeting
+		injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
+		injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
 
 		// Load image data
 		LoadUIData();
@@ -430,8 +502,8 @@ void Update()
 	}
 
 	// MainPlayer take camera control
-	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	//if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
+	//	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
 	//Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
@@ -488,10 +560,16 @@ void Update()
 		}
 	}
 
+	//cVec4 playerPos[5];
+	//int playerCount = 0;
+
 	// Player control overrides
 	for (int i = 0; i < 5; i++) {
 		Pl0000* player = players[i];
 		if (!player) continue;
+
+		//playerPos[playerCount] = player->m_vecTransPos;
+		//playerCount++;
 
 		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
 		int controllerNumber = i - 1;
@@ -500,30 +578,133 @@ void Update()
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
 			) {
-			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-				CanDamagePlayer = BossSamCanDamagePlayer;
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
-				CanDamagePlayer = SundownerCanDamagePlayer;
-
-			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+			FullHandleAIBoss(Enemy, controllerNumber, EnableFriendlyFire);
 		}
 
 		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400
 			|| player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
 			&& modelItems) {
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
 
 		}
 
 		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x10010) {
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
+		}
+
+		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x12040) { // Not Pl0000*
+			FullHandleDGPlayer(player, controllerNumber, EnableFriendlyFire);
 		}
 	}
+
+	overrideCamera = true;
+	cCameraGame* camera = &cCameraGame::Instance;
+	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
+	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
+
+	float maxDist = 0.0;
+	cVec4 targetCenter = { 0.0, INFINITY, 0.0, 1.0 };
+	cVec4 cameraPos = { 0.0, 0.0, 0.0, 1.0 };
+
+#define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
+
+	for (Pl0000* player : players) {
+		if (!player) continue;
+		cVec4 p1Pos = player->m_vecTransPos;
+		for (Pl0000* player2 : players) {
+			if (!player2) continue;
+			cVec4 p2Pos = player2->m_vecTransPos;
+			float dist = sqrt((p2Pos.x - p1Pos.x) * (p2Pos.x - p1Pos.x)
+				+ (p2Pos.z - p1Pos.z) * (p2Pos.z - p1Pos.z));
+			if (dist >= 15.0) {
+				// Move players closer
+				float distMoveBack = (dist - 15.0) / 2;
+				float xVecNrm = (p2Pos.x - p1Pos.x) / dist;
+				float zVecNrm = (p2Pos.z - p1Pos.z) / dist;
+				player->m_vecTransPos.x += distMoveBack * xVecNrm;
+				player->m_vecTransPos.z += distMoveBack * zVecNrm;
+
+				player2->m_vecTransPos.x -= distMoveBack * xVecNrm;
+				player2->m_vecTransPos.z -= distMoveBack * zVecNrm;
+			}
+			if (dist >= maxDist) {
+				maxDist = dist;
+				targetCenter.x = p1Pos.x / 2 + p2Pos.x / 2;
+				targetCenter.z = p1Pos.z / 2 + p2Pos.z / 2;
+			}
+		}
+		targetCenter.y = min(targetCenter.y, p1Pos.y + 1.0);
+	}
+	cameraPos.x = targetCenter.x + camLateralScale * sin(camYaw);
+	cameraPos.y = targetCenter.y + max(maxDist, 5.0) * camHeightScale;
+	cameraPos.z = targetCenter.z + camLateralScale * cos(camYaw);
+
+	/* // Old implementation, more horizontal
+	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);
+	float newDirection[2];
+	for (int i = 0; i < playerCount; i++) {
+		for (int j = i; j < playerCount; j++) {
+			float dist = sqrt((playerPos[j].x - playerPos[i].x) * (playerPos[j].x - playerPos[i].x)
+				+ (playerPos[j].z - playerPos[i].z) * (playerPos[j].z - playerPos[i].z));
+			if (dist >= maxDist) {
+				maxDist = dist;
+				targetCenter.x = playerPos[j].x / 2 + playerPos[i].x / 2;
+				targetCenter.z = playerPos[j].z / 2 + playerPos[i].z / 2;
+				newDirection[0] = -(playerPos[j].z - playerPos[i].z);
+				newDirection[1] = (playerPos[j].x - playerPos[i].x);
+				float newYaw = getYaw(newDirection[0], newDirection[1]);
+				float yawDiff = newYaw - curYaw;
+				if (yawDiff < 0.0) {
+					yawDiff += 2 * PI;
+				}
+				else if (yawDiff >= 2 * PI) {
+					yawDiff -= 2 * PI;
+				}
+				if (yawDiff > PI / 2 && yawDiff < 3 * PI / 2) {
+					newDirection[0] *= -1.0;
+					newDirection[1] *= -1.0;
+				}
+			}
+		}
+		targetCenter.y = min(targetCenter.y, playerPos[i].y + 1.0);
+	}
+	cameraPos.y = targetCenter.y + 2.0 * camHeightScale;
+	
+
+	//cameraPos.x -= 10.0 * playerCount;
+	if (maxDist <= 0.2) { // Don't die
+		newDirection[0] = 0.0;
+		newDirection[1] = -3.0;
+	} else if (maxDist <= 3.0) { // Limit zoom
+		newDirection[0] *= 3.0 / maxDist;
+		newDirection[1] *= 3.0 / maxDist;
+	}
+	// Screw you, top down only
+	newDirection[0] = 0.0;
+	newDirection[1] = -3.0;
+	cameraPos.y += maxDist * camHeightScale;
+	newDirection[0] *= camLateralScale;
+	newDirection[1] *= camLateralScale;
+
+	cameraPos.x = targetCenter.x + newDirection[0];
+	cameraPos.z = targetCenter.z + newDirection[1];
+	//cameraPos.z -= 1.0;
+	//cameraPos.y += 15.0;
+	*/
+
+#define posUpdateSpeed 0.2
+	oldPos->x = oldPos->x * (1 - posUpdateSpeed) + cameraPos.x * posUpdateSpeed;
+	oldPos->y = oldPos->y * (1 - posUpdateSpeed) + cameraPos.y * posUpdateSpeed;
+	oldPos->z = oldPos->z * (1 - posUpdateSpeed) + cameraPos.z * posUpdateSpeed;
+
+	oldTarget->x = oldTarget->x * (1 - posUpdateSpeed) + targetCenter.x * posUpdateSpeed;
+	oldTarget->y = oldTarget->y * (1 - posUpdateSpeed) + targetCenter.y * posUpdateSpeed;
+	oldTarget->z = oldTarget->z * (1 - posUpdateSpeed) + targetCenter.z * posUpdateSpeed;
 }
 
 
+static bool GUIinit = false;
 class Plugin
 {
 public:
@@ -536,7 +717,34 @@ public:
 		Events::OnPresent += gui::OnEndScene;
 		*/
 		Events::OnPresent += []() {
+			if (!GUIinit)
+			{
+				oWndProc = (WNDPROC)::SetWindowLongPtr(Hw::OSWindow, GWLP_WNDPROC, (LONG)hkWindowProc);
+
+				ImGui::CreateContext();
+				ImGui_ImplWin32_Init(Hw::OSWindow);
+				ImGui_ImplDX9_Init(Hw::GraphicDevice);
+
+				gui::LoadStyle();
+
+				GUIinit = true;
+			}
+
+			ImGui_ImplDX9_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+			ImGui::NewFrame();
+
 			Present();
+
+
+
+
+
+			gui::RenderWindow();
+
+			ImGui::EndFrame();
+			ImGui::Render();
+			ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		};
 
 		Events::OnTickEvent += []()
@@ -560,20 +768,23 @@ void SpawnCharacter(int id, int controller) {
 		Spawner((eObjID)0x11400, controller);
 	else if (id == 1)
 		Spawner((eObjID)0x11500, controller);
-	else if (id == 4) {
-		Spawner((eObjID)0x20700, controller);
-		PlayAsArmstrong = true;
+	else if (id == 2) {
+		Spawner((eObjID)0x20020, controller);
+		PlayAsSam = true;
 	}
 	else if (id == 3) {
 		Spawner((eObjID)0x20310, controller);
 		PlayAsSundowner = true;
 	}
-	else if (id == 2) {
-		Spawner((eObjID)0x20020, controller);
-		PlayAsSam = true;
+	else if (id == 4) {
+		Spawner((eObjID)0x20700, controller);
+		PlayAsArmstrong = true;
 	}
 	else if (id == 5) {
 		Spawner((eObjID)0x10010, controller);
+	}
+	else if (id == 6) {
+		Spawner((eObjID)0x12040, controller);
 	}
 	RecalibrateBossCode();
 	//camera back to Raiden
@@ -620,50 +831,14 @@ void gui::RenderWindow()
 			{
 				Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
-				if (ImGui::Button("Spawn Raiden as next player") && MainPlayer) {
-					Spawner((eObjID)0x10010);
-					//camera back to P1
-					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-				}
-
-				if (ImGui::Button("Spawn Sam as next player") && MainPlayer) {
-					Spawner((eObjID)0x11400);
-					//camera back to Raiden
-					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-				}
-
-
-				if (ImGui::Button("Spawn Wolf as next player") && MainPlayer) {
-					Spawner((eObjID)0x11500);
-					//camera back to Raiden
-					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-				}
-
 				ImGui::Checkbox("Armstrong is player-controlled", &PlayAsArmstrong);
-				ImGui::Checkbox("Armstrong can damage player", &ArmstrongCanDamagePlayer);
-				if (ImGui::Button("Spawn Armstrong as next player") && MainPlayer) {
-					Spawner((eObjID)0x20700);
-					PlayAsArmstrong = true;
-				}
 
 				ImGui::Checkbox("Boss Sam is player-controlled", &PlayAsSam);
-				ImGui::Checkbox("Boss Sam can damage player", &BossSamCanDamagePlayer);
-				if (ImGui::Button("Spawn boss Sam as next player") && MainPlayer) {
-					Spawner((eObjID)0x20020);
-					PlayAsSam = true;
-				}
 
 
 				ImGui::Checkbox("Sundowner is player-controlled", &PlayAsSundowner);
-				ImGui::Checkbox("Sundowner can damage player", &SundownerCanDamagePlayer);
-				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
-					Spawner((eObjID)0x20310);
-					PlayAsSundowner = true;
-				}
 
-
-
-				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
+				ImGui::Checkbox("Allow damage to another player", &EnableFriendlyFire);
 				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 				
 
@@ -674,11 +849,13 @@ void gui::RenderWindow()
 //#define PRINTSAM
 //#define PRINTENEMY
 //#define SHOWBOSSACTION
+//#define PRINTBMs
 				
 				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+					if (!node) break;
 
 					auto value = node->m_value;
-					if (!value) continue;
+					if (!value || value == (Entity*)0xEFEFEFEF) continue;
 #ifdef PRINTSAM
 					auto player = value->getEntityInstance<Pl0000>();
 					if (!player) continue;
@@ -705,6 +882,11 @@ void gui::RenderWindow()
 					if (!Enemy) continue;
 					if (value->m_nEntityIndex == 0x20020 || value->m_nEntityIndex == 0x20700) {
 						ImGui::Text("Entity %x has state %x", value->m_nEntityIndex, Enemy->m_nCurrentAction);
+					}
+#endif
+#ifdef PRINTBMs
+					if ((value->m_nEntityIndex & 0xf0000) == 0xD0000) {
+						ImGui::Text("Entity %x", value->m_nEntityIndex);
 					}
 #endif
 				}
@@ -742,6 +924,10 @@ void gui::RenderWindow()
 				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
 					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
 				}
+				ImGui::InputFloat("Camera lateral scale", &camLateralScale);
+				ImGui::InputFloat("Camera vertical scale", &camHeightScale);
+				auto firstEnt = EntitySystem::Instance.m_EntityList.m_pFirst;
+				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
 				ImGui::EndTabItem();
 			}
 
