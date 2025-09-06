@@ -75,14 +75,11 @@ bool SamAtOnce = false;
 bool PlayAsMistral = false;
 bool PlayAsMonsoon = false;
 bool PlayAsSundowner = false;
-bool SundownerCanDamagePlayer = false;
 bool PlayAsSam = false;
-bool BossSamCanDamagePlayer = false;
 bool PlayAsArmstrong = false;
-bool ArmstrongCanDamagePlayer = false;
 
 
-bool EnableDamageToPlayers = false;
+bool EnableFriendlyFire = false;
 
 bool p1IsKeyboard = true;
 bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
@@ -230,7 +227,7 @@ float camLateralScale = 1.0;
 float camHeightScale = 1.0;
 float camYaw = 0.0;
 
-int __fastcall CameraHacked(void* ecx, void* edx, float a2) {
+int __fastcall CameraHacked(void* ecx) {
 	if (overrideCamera) {
 		//return ((INT(__thiscall*)(void*))(shared::base + 0x9d03e0))(ecx);
 		return ((INT(__thiscall*)())(shared::base + 0x9d03e0))();
@@ -368,14 +365,27 @@ void Update()
 
 		injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
 		injector::MakeNOP(shared::base + 0x7937E6, 2, true); // Disable normal input Raiden
+		// Dwarf Gekko has some more complex code
 		injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable normal input Dwarf Gekko
 		injector::MakeNOP(shared::base + 0x1F5E35, 6, true); // Disable joystick reset Dwarf Gekko (1)
 		injector::MakeNOP(shared::base + 0x1F5E3C, 6, true); // Disable joystick reset Dwarf Gekko (2)
+		//injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable input copy Dwarf Gekko
+		// Disable fixRotation on Em0040_0015.mot
+		injector::WriteMemory<unsigned short>(shared::base + 0x1FA661, 0xEED9, true); // FLDZ
+		injector::MakeNOP(shared::base + 0x1FA663, 4, true);
+		//injector::MakeNOP(shared::base + 0x1FA64E, 42, true); // BEGONE
+
+		// idk what exactly this is for, actually
 		injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
-		injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF // Disable normal controller input
-		injector::MakeNOP(shared::base + 0x69E313, 6, true); // Remove need for custom pl1400 and pl1500
-		injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
-		//injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
+		// Disable normal controller input
+		injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
+		// Remove need for custom pl1400 and pl1500
+		injector::MakeNOP(shared::base + 0x69E313, 6, true);
+
+		// Camera override
+		//injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
+		injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
+		// Enemy targeting
 		injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
 		injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
 
@@ -492,8 +502,8 @@ void Update()
 	}
 
 	// MainPlayer take camera control
-	if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	//if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
+	//	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
 	//Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
@@ -568,29 +578,23 @@ void Update()
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
 			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
 			) {
-			bool CanDamagePlayer = ArmstrongCanDamagePlayer;
 
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20020)
-				CanDamagePlayer = BossSamCanDamagePlayer;
-			if (Enemy->m_pEntity->m_nEntityIndex == 0x20310)
-				CanDamagePlayer = SundownerCanDamagePlayer;
-
-			FullHandleAIBoss(Enemy, controllerNumber, CanDamagePlayer);
+			FullHandleAIBoss(Enemy, controllerNumber, EnableFriendlyFire);
 		}
 
 		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400
 			|| player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
 			&& modelItems) {
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
 
 		}
 
 		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x10010) {
-			FullHandleAIPlayer(player, controllerNumber, EnableDamageToPlayers);
+			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
 		}
 
 		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x12040) { // Not Pl0000*
-			FullHandleDGPlayer(player, controllerNumber, EnableDamageToPlayers);
+			FullHandleDGPlayer(player, controllerNumber, EnableFriendlyFire);
 		}
 	}
 
@@ -827,50 +831,14 @@ void gui::RenderWindow()
 			{
 				Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
-				if (ImGui::Button("Spawn Raiden as next player") && MainPlayer) {
-					Spawner((eObjID)0x10010);
-					//camera back to P1
-					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-				}
-
-				if (ImGui::Button("Spawn Sam as next player") && MainPlayer) {
-					Spawner((eObjID)0x11400);
-					//camera back to Raiden
-					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-				}
-
-
-				if (ImGui::Button("Spawn Wolf as next player") && MainPlayer) {
-					Spawner((eObjID)0x11500);
-					//camera back to Raiden
-					//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-				}
-
 				ImGui::Checkbox("Armstrong is player-controlled", &PlayAsArmstrong);
-				ImGui::Checkbox("Armstrong can damage player", &ArmstrongCanDamagePlayer);
-				if (ImGui::Button("Spawn Armstrong as next player") && MainPlayer) {
-					Spawner((eObjID)0x20700);
-					PlayAsArmstrong = true;
-				}
 
 				ImGui::Checkbox("Boss Sam is player-controlled", &PlayAsSam);
-				ImGui::Checkbox("Boss Sam can damage player", &BossSamCanDamagePlayer);
-				if (ImGui::Button("Spawn boss Sam as next player") && MainPlayer) {
-					Spawner((eObjID)0x20020);
-					PlayAsSam = true;
-				}
 
 
 				ImGui::Checkbox("Sundowner is player-controlled", &PlayAsSundowner);
-				ImGui::Checkbox("Sundowner can damage player", &SundownerCanDamagePlayer);
-				if (ImGui::Button("Spawn Sundowner as next player") && MainPlayer) {
-					Spawner((eObjID)0x20310);
-					PlayAsSundowner = true;
-				}
 
-
-
-				ImGui::Checkbox("Allow damage to another player", &EnableDamageToPlayers);
+				ImGui::Checkbox("Allow damage to another player", &EnableFriendlyFire);
 				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 				
 
@@ -881,7 +849,7 @@ void gui::RenderWindow()
 //#define PRINTSAM
 //#define PRINTENEMY
 //#define SHOWBOSSACTION
-#define PRINTBMs
+//#define PRINTBMs
 				
 				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
 					if (!node) break;

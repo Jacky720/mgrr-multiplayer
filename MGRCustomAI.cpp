@@ -7,6 +7,8 @@ extern void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
 extern Pl0000* MainPlayer;
 extern Pl0000* players[5];
 extern float camYaw;
+extern float camHeightScale;
+extern float camLateralScale;
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 int prevPressed[5] = { 0 };
@@ -85,6 +87,28 @@ void GetCameraInput(int controllerNumber) {
 	camYaw -= deltaYaw / (2 * PI) / 3;
 	if (camYaw < 0) camYaw += 2 * PI;
 	if (camYaw > 2 * PI) camYaw -= 2 * PI;
+
+	float deltaPitch = 0.0;
+	//up
+	if (CheckControlPressed(controllerNumber, CamUp, GamepadCamUp)) {
+		deltaPitch = -1;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadCamUp))
+			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamUp);
+	}
+
+	//down
+	if (CheckControlPressed(controllerNumber, CamDown, GamepadCamDown)) {
+		deltaPitch = 1;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadCamDown))
+			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamDown);
+	}
+
+	camHeightScale += deltaPitch * 0.03;
+	if (camHeightScale < 0.1) camHeightScale = 0.1;
+	if (camHeightScale > 2) camHeightScale = 2.0;
+	camLateralScale -= deltaPitch * 0.1;
+	if (camLateralScale < 1.0) camLateralScale = 1.0;
+	if (camLateralScale > 6.0) camLateralScale = 6.0;
 }
 
 typedef struct actionList {
@@ -104,6 +128,7 @@ typedef struct actionList {
 
 void UpdateBossActions(BehaviorEmBase* Enemy, ActionList* BossActions, int controllerNumber = -1) {
 
+	// Armstrong move (Sam move)
 	if (CheckControlPressed(controllerNumber, NormalAttack, GamepadNormalAttack)
 		&& Enemy->m_nCurrentAction != BossActions->LightAttack) { // Two punches (four strikes)
 		Enemy->setState(BossActions->LightAttack, 0, 0, 0);
@@ -158,7 +183,7 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 		unsigned int BossActions[] = { 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010 };
 		UpdateBossActions(Enemy, BossActions, controllerNumber);
 
-		if (ArmstrongCanDamagePlayer)
+		if (EnableFriendlyFire)
 			Enemy->field_640 = 2;
 		else
 			Enemy->field_640 = 1;
@@ -168,7 +193,7 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 		unsigned int BossActions[] = { 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x30005, 0x10006 };
 		UpdateBossActions(Enemy, BossActions, controllerNumber);
 
-		if (BossSamCanDamagePlayer)
+		if (EnableFriendlyFire)
 			Enemy->field_640 = 2;
 		else
 			Enemy->field_640 = 1;
@@ -216,18 +241,15 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 		Enemy->field_640 = 1;
 
 
+	//forward
 	if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
 		field_Y = -1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadForward))
 			field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
 	}
 
-
-
-
 	//back
 	if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
-		//if (GetAsyncKeyState(0x4B)) {
 		field_Y = 1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadBack))
 			field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
@@ -472,6 +494,8 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 
 }
 
+float angleOfFuckYou[5]; // idk why this is needed but apparently it keeps the DG from making everything AR vision
+
 void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToPlayers) {
 	int i = controllerNumber + 1;
 	//if (EnableDamageToPlayers)
@@ -487,6 +511,41 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	player->field_D10 = 0;
 	player->field_D14 = 0;
 
+	// Aight we're stealing the rotation code from bosses because that locked itself up somehow
+	float field_X = 0; float field_Y = 0;
+	//forward
+	if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
+		field_Y = -1000;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadForward)) field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
+	}
+
+	//back
+	if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
+		field_Y = 1000;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadBack)) field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
+	}
+
+	//left
+	if (CheckControlPressed(controllerNumber, Left, GamepadLeft)) {
+		field_X = -1000;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadLeft)) field_X *= GetGamepadAnalog(controllerNumber, GamepadLeft);
+	}
+
+	//right
+	if (CheckControlPressed(controllerNumber, Right, GamepadRight)) {
+		field_X = 1000;
+		if (IsGamepadButtonPressed(controllerNumber, GamepadRight)) field_X *= GetGamepadAnalog(controllerNumber, GamepadRight);
+	}
+
+	if (field_X != 0 || field_Y != 0) {
+		angleOfFuckYou[controllerNumber] = atan2(field_X, field_Y);
+		angleOfFuckYou[controllerNumber] += camYaw;
+		dg->m_vecRotation.y = angleOfFuckYou[controllerNumber];
+		((float*)dg)[573] = angleOfFuckYou[controllerNumber];
+
+		//printf("%f\n", angle * 360 / 2 / PI);
+	}
+
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, originalSword, true);
 
@@ -501,11 +560,6 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 		AutoNormalAttackEnable = false;
 	}*/
 
-	//Change camera between players
-
-	if ((GetKeyState('8') & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadLockon))
-		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(player);
-
 	if ((controllerNumber == 0 && GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
@@ -518,43 +572,7 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->field_D08, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->field_D08, false);
 
-	// PVP Homing
-	if (!isAny && EnableDamageToPlayers && !player->isIdle()) {
-		Pl0000* nearestPlayer = nullptr;
-		float nearestPlayerDist = INFINITY;
-		for (Pl0000* player2 : players) {
-			if (player2 == player || !player2)
-				continue;
-			float dist = getDistance(player, player2);
-			if (dist < nearestPlayerDist) {
-				nearestPlayer = player2;
-				nearestPlayerDist = dist;
-			}
-		}
-
-		if (nearestPlayer != nullptr) {
-			static float turnSpeed = RADIANS(5);
-			float curAngle = player->m_vecRotation.y;
-			float targetAngle = getAngle(player, nearestPlayer);
-			float diffAngle = targetAngle - curAngle;
-			if (diffAngle < 0) diffAngle += 2 * PI;
-			if (diffAngle >= 2 * PI) diffAngle -= 2 * PI;
-
-			// Very close-- lock perfectly
-			if (diffAngle < turnSpeed || diffAngle > 2 * PI - turnSpeed)
-				player->m_vecRotation.y = targetAngle;
-
-			// "< PI" means it's faster to turn positively
-			else if (diffAngle < PI) {
-				player->m_vecRotation.y += turnSpeed;
-				if (player->m_vecRotation.y >= 2 * PI) player->m_vecRotation.y -= 2 * PI;
-			}
-			else { // and vice versa
-				player->m_vecRotation.y -= turnSpeed;
-				if (player->m_vecRotation.y < 0) player->m_vecRotation.y += 2 * PI;
-			}
-		}
-	}
+	// PVP Homing - disabled
 	// Right stick
 	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->field_D14, true);
 	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->field_D14, false);
@@ -595,9 +613,5 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause, GamepadPause, PauseBit); // Does not work
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
 
-	if (!isAny) {
-		player->m_nKeyPressedFlag = 0;
-		player->field_D04 = 0;
-	}
 
 }
