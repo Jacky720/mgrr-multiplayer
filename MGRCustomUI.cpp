@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <XInput.h>
+#include "dllmain.h"
 #include "MGRControls.h"
 #include "imgui/imgui.h"
 using namespace std;
@@ -29,14 +30,6 @@ int controller_flag[4] = { 0, 0, 0, 0 };
 // 1 - Requires selection
 // 2 - Character selected, ready
 
-
-extern void SpawnCharacter(int, int);
-
-extern bool configLoaded;
-extern std::string character_titles[7];
-extern Pl0000* players[5];
-extern eObjID playerTypes[5];
-extern bool p1IsKeyboard;
 
 bool dpad_up_pressed[6] = { false, false, false, false, false, false };
 bool dpad_down_pressed[6] = { false, false, false, false, false, false };
@@ -384,7 +377,7 @@ void Present() {
 	ImGui::SetNextWindowSize(ImVec2(screenWidth, screenHeight));
 	ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground);
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-	if (configLoaded && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
+	if (isInit && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
 		int i = 0;

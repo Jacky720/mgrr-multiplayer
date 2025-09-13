@@ -1,3 +1,5 @@
+#include "dllmain.h"
+
 #include "IniReader.h"
 #include <string>
 #include <XInput.h>
@@ -527,8 +529,6 @@ std::string GamepadAbility = "XINPUT_GAMEPAD_LEFT_THUMB";
 std::string GamepadCamReset = "XINPUT_GAMEPAD_RIGHT_THUMB";
 
 std::string GamepadSpawn = "XINPUT_GAMEPAD_START";
-
-extern bool p1IsKeyboard;
 
 
 void LoadControl(CIniReader iniReader, std::string* Control, std::string* GamepadControl, std::string name) {

@@ -1,6 +1,11 @@
 #include "pch.h"
-#include <assert.h>
+#include "Camera.h"
 #include "gui.h"
+#include "MGRCustomAI.h"
+#include "MGRCustomUI.h"
+#include "ModelItems.h"
+
+#include <assert.h>
 #include <Events.h>
 #include "imgui/imgui.h"
 #include "spawner.cpp"
@@ -10,6 +15,7 @@
 #include <EntitySystem.h>
 #include <Entity.h>
 #include <cGameUIManager.h>
+#include <PhaseManager.h>
 #include <injector/injector.hpp>
 #include <string>
 #include <iostream>
@@ -20,10 +26,6 @@
 #include <BehaviorEmBase.h>
 #include <math.h>
 #include <Windows.h>
-#include "MGRCustomAI.h"
-#include "MGRCustomUI.h"
-#include "ModelItems.h"
-int memory_address = 0x0;
 
 static WNDPROC oWndProc = NULL;
 
@@ -55,7 +57,7 @@ LRESULT CALLBACK hkWindowProc(
 std::string character_titles[7] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden", "dwarf_gekko"};
 
 
-bool configLoaded = false;
+bool isInit = false;
 //bool SamSpawned = false;
 //bool WolfSpawned = false;
 
@@ -203,7 +205,10 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nSheath = 0x11013;
 		modelItems->m_nHead = 0x11017;
 		modelItems->m_nModel = 0x11010;
-		*modelSword = 0x11012;
+		if (PhaseManager::Instance.IsDLCPhase())
+			*modelSword = 0x11403;
+		else
+			*modelSword = 0x11012;
 	}
 	else if (id == (eObjID)0x11500) {
 		modelItems->m_nModel = 0x11505;
@@ -220,22 +225,6 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 
-}
-
-bool overrideCamera = false;
-float camLateralScale = 1.0;
-float camHeightScale = 1.0;
-float camYaw = 0.0;
-
-int __fastcall CameraHacked(void* ecx) {
-	if (overrideCamera) {
-		//return ((INT(__thiscall*)(void*))(shared::base + 0x9d03e0))(ecx);
-		return ((INT(__thiscall*)())(shared::base + 0x9d03e0))();
-	}
-	else {
-		//return ((INT(__thiscall*)(void*, float))(shared::base + 0x9d1a30))(ecx, a2);
-		return ((INT(__thiscall*)())(shared::base + 0x9d1a30))();
-	}
 }
 
 Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
@@ -352,6 +341,44 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 
 Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
+void InitMod() {
+
+	injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
+	injector::MakeNOP(shared::base + 0x7937E6, 2, true); // Disable normal input Raiden
+	// Dwarf Gekko has some more complex code
+	injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable normal input Dwarf Gekko
+	injector::MakeNOP(shared::base + 0x1F5E35, 6, true); // Disable joystick reset Dwarf Gekko (1)
+	injector::MakeNOP(shared::base + 0x1F5E3C, 6, true); // Disable joystick reset Dwarf Gekko (2)
+	//injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable input copy Dwarf Gekko
+	// Disable fixRotation on Em0040_0015.mot
+	injector::WriteMemory<unsigned short>(shared::base + 0x1FA661, 0xEED9, true); // FLDZ
+	injector::MakeNOP(shared::base + 0x1FA663, 4, true);
+
+	// i forget what exactly this is for, actually
+	injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
+	// Disable normal controller input
+	injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
+	// Remove need for custom pl1400 and pl1500
+	injector::MakeNOP(shared::base + 0x69E313, 6, true);
+
+	// Camera override
+	injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
+	// Enemy targeting
+	injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
+	injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
+
+	// Load image data
+	LoadUIData();
+
+
+	// Absolutely required
+	if (pSprite == NULL) {
+		D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
+	}
+
+	LoadConfig();
+}
+
 
 void Update()
 {
@@ -361,45 +388,9 @@ void Update()
 
 	overrideCamera = false;
 
-	if (!configLoaded) {
-
-		injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
-		injector::MakeNOP(shared::base + 0x7937E6, 2, true); // Disable normal input Raiden
-		// Dwarf Gekko has some more complex code
-		injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable normal input Dwarf Gekko
-		injector::MakeNOP(shared::base + 0x1F5E35, 6, true); // Disable joystick reset Dwarf Gekko (1)
-		injector::MakeNOP(shared::base + 0x1F5E3C, 6, true); // Disable joystick reset Dwarf Gekko (2)
-		//injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable input copy Dwarf Gekko
-		// Disable fixRotation on Em0040_0015.mot
-		injector::WriteMemory<unsigned short>(shared::base + 0x1FA661, 0xEED9, true); // FLDZ
-		injector::MakeNOP(shared::base + 0x1FA663, 4, true);
-		//injector::MakeNOP(shared::base + 0x1FA64E, 42, true); // BEGONE
-
-		// idk what exactly this is for, actually
-		injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
-		// Disable normal controller input
-		injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
-		// Remove need for custom pl1400 and pl1500
-		injector::MakeNOP(shared::base + 0x69E313, 6, true);
-
-		// Camera override
-		//injector::WriteMemory<unsigned int>(shared::base + 0x823766, *(unsigned int*)(shared::base + 0x823766) - 5712, true); // Disable camera
-		injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
-		// Enemy targeting
-		injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
-		injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
-
-		// Load image data
-		LoadUIData();
-
-
-		// Absolutely required
-		if (pSprite == NULL) {
-			D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
-		}
-
-		LoadConfig();
-		configLoaded = true;
+	if (!isInit) {
+		InitMod();
+		isInit = true;
 	}
 
 	MainPlayer = cGameUIManager::Instance.m_pPlayer;
@@ -475,30 +466,14 @@ void Update()
 
 	//originalSword = injector::ReadMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, true);
 
-	if (modelItems) {
-		if (!gotOriginalModelItems) {
-			gotOriginalModelItems = true;
-			originalModelItems.m_nHair = modelItems->m_nHair;
-			originalModelItems.m_nVisor = modelItems->m_nVisor;
-			originalModelItems.m_nSheath = modelItems->m_nSheath;
-			originalModelItems.m_nHead = modelItems->m_nHead;
-			originalModelItems.m_nModel = modelItems->m_nModel;
-			originalModelSword = *modelSword;
-		}
-
-		if (getKeyState('6').isPressed) {
-			Spawner((eObjID)0x11400);
-			//camera back to Raiden
-			//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-		}
-
-		if (getKeyState('5').isPressed) {
-			Spawner((eObjID)0x11500);
-			//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
-			//camera back to Raiden
-			//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-		}
-
+	if (modelItems && !gotOriginalModelItems) {
+		gotOriginalModelItems = true;
+		originalModelItems.m_nHair = modelItems->m_nHair;
+		originalModelItems.m_nVisor = modelItems->m_nVisor;
+		originalModelItems.m_nSheath = modelItems->m_nSheath;
+		originalModelItems.m_nHead = modelItems->m_nHead;
+		originalModelItems.m_nModel = modelItems->m_nModel;
+		originalModelSword = *modelSword;
 	}
 
 	// MainPlayer take camera control
@@ -574,133 +549,18 @@ void Update()
 		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
 		int controllerNumber = i - 1;
 
-		if (((Enemy->m_pEntity->m_nEntityIndex == 0x20700 || Enemy->m_pEntity->m_nEntityIndex == 0x2070A) && PlayAsArmstrong)
-			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20020 && PlayAsSam)
-			|| (Enemy->m_pEntity->m_nEntityIndex == 0x20310 && PlayAsSundowner)
-			) {
-
+		if ((Enemy->m_pEntity->m_nEntityIndex & 0xF0000) == 0x20000) {
 			FullHandleAIBoss(Enemy, controllerNumber, EnableFriendlyFire);
 		}
-
-		if ((player->m_pEntity->m_nEntityIndex == (eObjID)0x11400
-			|| player->m_pEntity->m_nEntityIndex == (eObjID)0x11500)
-			&& modelItems) {
-			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
-
-		}
-
-		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x10010) {
-			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
-		}
-
-		if (player->m_pEntity->m_nEntityIndex == (eObjID)0x12040) { // Not Pl0000*
+		else if (player->m_pEntity->m_nEntityIndex == (eObjID)0x12040) { // Not actually Pl0000*
 			FullHandleDGPlayer(player, controllerNumber, EnableFriendlyFire);
 		}
-	}
-
-	overrideCamera = true;
-	cCameraGame* camera = &cCameraGame::Instance;
-	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
-	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
-
-	float maxDist = 0.0;
-	cVec4 targetCenter = { 0.0, INFINITY, 0.0, 1.0 };
-	cVec4 cameraPos = { 0.0, 0.0, 0.0, 1.0 };
-
-#define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
-
-	for (Pl0000* player : players) {
-		if (!player) continue;
-		cVec4 p1Pos = player->m_vecTransPos;
-		for (Pl0000* player2 : players) {
-			if (!player2) continue;
-			cVec4 p2Pos = player2->m_vecTransPos;
-			float dist = sqrt((p2Pos.x - p1Pos.x) * (p2Pos.x - p1Pos.x)
-				+ (p2Pos.z - p1Pos.z) * (p2Pos.z - p1Pos.z));
-			if (dist >= 15.0) {
-				// Move players closer
-				float distMoveBack = (dist - 15.0) / 2;
-				float xVecNrm = (p2Pos.x - p1Pos.x) / dist;
-				float zVecNrm = (p2Pos.z - p1Pos.z) / dist;
-				player->m_vecTransPos.x += distMoveBack * xVecNrm;
-				player->m_vecTransPos.z += distMoveBack * zVecNrm;
-
-				player2->m_vecTransPos.x -= distMoveBack * xVecNrm;
-				player2->m_vecTransPos.z -= distMoveBack * zVecNrm;
-			}
-			if (dist >= maxDist) {
-				maxDist = dist;
-				targetCenter.x = p1Pos.x / 2 + p2Pos.x / 2;
-				targetCenter.z = p1Pos.z / 2 + p2Pos.z / 2;
-			}
+		else { // Raiden, Sam, Wolf
+			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
 		}
-		targetCenter.y = min(targetCenter.y, p1Pos.y + 1.0);
 	}
-	cameraPos.x = targetCenter.x + camLateralScale * sin(camYaw);
-	cameraPos.y = targetCenter.y + max(maxDist, 5.0) * camHeightScale;
-	cameraPos.z = targetCenter.z + camLateralScale * cos(camYaw);
 
-	/* // Old implementation, more horizontal
-	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);
-	float newDirection[2];
-	for (int i = 0; i < playerCount; i++) {
-		for (int j = i; j < playerCount; j++) {
-			float dist = sqrt((playerPos[j].x - playerPos[i].x) * (playerPos[j].x - playerPos[i].x)
-				+ (playerPos[j].z - playerPos[i].z) * (playerPos[j].z - playerPos[i].z));
-			if (dist >= maxDist) {
-				maxDist = dist;
-				targetCenter.x = playerPos[j].x / 2 + playerPos[i].x / 2;
-				targetCenter.z = playerPos[j].z / 2 + playerPos[i].z / 2;
-				newDirection[0] = -(playerPos[j].z - playerPos[i].z);
-				newDirection[1] = (playerPos[j].x - playerPos[i].x);
-				float newYaw = getYaw(newDirection[0], newDirection[1]);
-				float yawDiff = newYaw - curYaw;
-				if (yawDiff < 0.0) {
-					yawDiff += 2 * PI;
-				}
-				else if (yawDiff >= 2 * PI) {
-					yawDiff -= 2 * PI;
-				}
-				if (yawDiff > PI / 2 && yawDiff < 3 * PI / 2) {
-					newDirection[0] *= -1.0;
-					newDirection[1] *= -1.0;
-				}
-			}
-		}
-		targetCenter.y = min(targetCenter.y, playerPos[i].y + 1.0);
-	}
-	cameraPos.y = targetCenter.y + 2.0 * camHeightScale;
-	
-
-	//cameraPos.x -= 10.0 * playerCount;
-	if (maxDist <= 0.2) { // Don't die
-		newDirection[0] = 0.0;
-		newDirection[1] = -3.0;
-	} else if (maxDist <= 3.0) { // Limit zoom
-		newDirection[0] *= 3.0 / maxDist;
-		newDirection[1] *= 3.0 / maxDist;
-	}
-	// Screw you, top down only
-	newDirection[0] = 0.0;
-	newDirection[1] = -3.0;
-	cameraPos.y += maxDist * camHeightScale;
-	newDirection[0] *= camLateralScale;
-	newDirection[1] *= camLateralScale;
-
-	cameraPos.x = targetCenter.x + newDirection[0];
-	cameraPos.z = targetCenter.z + newDirection[1];
-	//cameraPos.z -= 1.0;
-	//cameraPos.y += 15.0;
-	*/
-
-#define posUpdateSpeed 0.2
-	oldPos->x = oldPos->x * (1 - posUpdateSpeed) + cameraPos.x * posUpdateSpeed;
-	oldPos->y = oldPos->y * (1 - posUpdateSpeed) + cameraPos.y * posUpdateSpeed;
-	oldPos->z = oldPos->z * (1 - posUpdateSpeed) + cameraPos.z * posUpdateSpeed;
-
-	oldTarget->x = oldTarget->x * (1 - posUpdateSpeed) + targetCenter.x * posUpdateSpeed;
-	oldTarget->y = oldTarget->y * (1 - posUpdateSpeed) + targetCenter.y * posUpdateSpeed;
-	oldTarget->z = oldTarget->z * (1 - posUpdateSpeed) + targetCenter.z * posUpdateSpeed;
+	OverrideCameraPos();
 }
 
 
@@ -708,7 +568,7 @@ static bool GUIinit = false;
 class Plugin
 {
 public:
-	static inline void InitGUI()
+	Plugin()
 	{
 		Events::OnDeviceReset.before += gui::OnReset::Before;
 		Events::OnDeviceReset.after += gui::OnReset::After;
@@ -736,10 +596,6 @@ public:
 
 			Present();
 
-
-
-
-
 			gui::RenderWindow();
 
 			ImGui::EndFrame();
@@ -747,20 +603,9 @@ public:
 			ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		};
 
-		Events::OnTickEvent += []()
-		{
-			Update();
-		};
-	}
-
-	Plugin()
-	{
-		InitGUI();
+		Events::OnTickEvent += Update;
 	}
 } plugin;
-
-
-
 
 void SpawnCharacter(int id, int controller) {
 
@@ -790,153 +635,4 @@ void SpawnCharacter(int id, int controller) {
 	//camera back to Raiden
 	//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
 
-}
-
-void gui::RenderWindow()
-{
-	isMenuShow = handleKeyPress(HotKey, &isMenuShow);
-
-	static bool paused = false;
-
-	if (isMenuShow && g_GameMenuStatus == InGame)
-	{
-		Trigger::StaFlags.STA_PAUSE = true;
-		paused = true;
-	}
-
-	if (!isMenuShow && paused && g_GameMenuStatus == InGame)
-	{
-		Trigger::StaFlags.STA_PAUSE = false;
-		paused = false;
-	}
-
-	if (!isMenuShow)
-		Trigger::StpFlags.STP_GAME_UPDATE = false;
-
-	if (isMenuShow) {
-
-		//Trigger::StpFlags.STP_MOUSE_UPDATE = isMenuShow && g_GameMenuStatus == InGame;
-		//Trigger::StpFlags.STP_PL_CAM_KEY = isMenuShow && g_GameMenuStatus == InGame;
-		//Trigger::StpFlags.STP_PL_ATTACK_KEY = isMenuShow && g_GameMenuStatus == InGame;
-
-		Trigger::StpFlags.STP_GAME_UPDATE = g_GameMenuStatus == 1;
-		ImGui::Begin("Multiplayer mod", NULL, ImGuiWindowFlags_NoCollapse);
-		ImGui::SetNextWindowSize({ 900, 600 });
-		ImGuiIO io = ImGui::GetIO();
-		io.MouseDrawCursor = true;
-		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-		if (ImGui::BeginTabBar("##WindowTab", ImGuiTabBarFlags_NoTooltip))
-		{
-			if (ImGui::BeginTabItem("Main Menu"))
-			{
-				Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-
-				ImGui::Checkbox("Armstrong is player-controlled", &PlayAsArmstrong);
-
-				ImGui::Checkbox("Boss Sam is player-controlled", &PlayAsSam);
-
-
-				ImGui::Checkbox("Sundowner is player-controlled", &PlayAsSundowner);
-
-				ImGui::Checkbox("Allow damage to another player", &EnableFriendlyFire);
-				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
-				
-
-				// Sundowner's Head: 1581929
-
-
-				// Debug print Sam's flags
-//#define PRINTSAM
-//#define PRINTENEMY
-//#define SHOWBOSSACTION
-//#define PRINTBMs
-				
-				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
-					if (!node) break;
-
-					auto value = node->m_value;
-					if (!value || value == (Entity*)0xEFEFEFEF) continue;
-#ifdef PRINTSAM
-					auto player = value->getEntityInstance<Pl0000>();
-					if (!player) continue;
-					
-					if (player->m_pEntity->m_nEntityIndex == (eObjID)0x11400) {
-						ImGui::InputInt("La li lu le lo", &player->m_nKeyHoldingFlag, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-						ImGui::InputInt("pressed flag", &player->m_nKeyPressedFlag, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-						ImGui::InputInt("D00", &player->field_D00, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-						ImGui::InputInt("D04", &player->field_D04, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-					}
-#endif
-#ifdef PRINTENEMY
-					auto Enemy = value->getEntityInstance<BehaviorEmBase>();
-					if (!Enemy) continue;
-					if ((value->m_nEntityIndex & 0xF0000) == 0x20000) {
-						//ImGui::InputInt("the fuck?", (int*)&node->m_value->m_nEntityIndex, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-						int twerpsenemyflag = (int)&Enemy->m_pEnemy;
-						ImGui::InputInt("twerp's enemy flag", &twerpsenemyflag, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-						ImGui::InputInt("Some twerp", (int*)&(Enemy->m_pEnemy->m_pEntity->m_nEntityIndex), 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-					}
-#endif
-#ifdef SHOWBOSSACTION
-					auto Enemy = value->getEntityInstance<BehaviorEmBase>();
-					if (!Enemy) continue;
-					if (value->m_nEntityIndex == 0x20020 || value->m_nEntityIndex == 0x20700) {
-						ImGui::Text("Entity %x has state %x", value->m_nEntityIndex, Enemy->m_nCurrentAction);
-					}
-#endif
-#ifdef PRINTBMs
-					if ((value->m_nEntityIndex & 0xf0000) == 0xD0000) {
-						ImGui::Text("Entity %x", value->m_nEntityIndex);
-					}
-#endif
-				}
-
-
-				
-				//ImGui::Checkbox("Player 2 is Sundowner", &PlayAsSundowner);
-				//ImGui::Checkbox("Player 2 is Monsoon", &PlayAsMonsoon);
-				//ImGui::Checkbox("Player 2 is Mistral", &PlayAsMistral);
-
-				RecalibrateBossCode();
-
-
-				if (ImGui::Button("Teleport all players to Raiden") && MainPlayer) {
-
-					TeleportToMainPlayer(MainPlayer);
-
-				}
-
-				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
-
-				ImGui::EndTabItem();
-			}
-
-			if (ImGui::BeginTabItem("Current Players")) {
-				ImGui::Text("Player 1 (keyboard): %x\n", playerTypes[0]);
-				ImGui::Text("Player 2 (keyboard/controller): %x\n", playerTypes[1]);
-				ImGui::Text("Player 3 (controller): %x\n", playerTypes[2]);
-				ImGui::Text("Player 4 (controller): %x\n", playerTypes[3]);
-				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
-				ImGui::EndTabItem();
-			}
-			if (ImGui::BeginTabItem("Dev")) {
-				ImGui::InputInt("Memory Address:", &memory_address);
-				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
-					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
-				}
-				ImGui::InputFloat("Camera lateral scale", &camLateralScale);
-				ImGui::InputFloat("Camera vertical scale", &camHeightScale);
-				auto firstEnt = EntitySystem::Instance.m_EntityList.m_pFirst;
-				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
-				ImGui::EndTabItem();
-			}
-
-
-			ImGui::EndTabBar();
-		}
-		ImGui::End();
-		ImGui::EndFrame();
-		ImGui::Render();
-		
-	}
 }

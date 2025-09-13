@@ -1,14 +1,10 @@
+#include "Camera.h"
+#include "dllmain.h"
 #include "MGRControls.h"
+
 #include <BehaviorEmBase.h>
 #include <cCameraGame.h>
 #include <Pl0000.h>
-
-extern void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
-extern Pl0000* MainPlayer;
-extern Pl0000* players[5];
-extern float camYaw;
-extern float camHeightScale;
-extern float camLateralScale;
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 int prevPressed[5] = { 0 };
@@ -67,49 +63,6 @@ bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind
 	return false;
 }
 
-void GetCameraInput(int controllerNumber) {
-	// Camera handling
-	float deltaYaw = 0.0;
-	//left
-	if (CheckControlPressed(controllerNumber, CamLeft, GamepadCamLeft)) {
-		deltaYaw = -1;
-		if (IsGamepadButtonPressed(controllerNumber, GamepadCamLeft))
-			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamLeft);
-	}
-
-	//right
-	if (CheckControlPressed(controllerNumber, CamRight, GamepadCamRight)) {
-		deltaYaw = 1;
-		if (IsGamepadButtonPressed(controllerNumber, GamepadCamRight))
-			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamRight);
-	}
-
-	camYaw -= deltaYaw / (2 * PI) / 3;
-	if (camYaw < 0) camYaw += 2 * PI;
-	if (camYaw > 2 * PI) camYaw -= 2 * PI;
-
-	float deltaPitch = 0.0;
-	//up
-	if (CheckControlPressed(controllerNumber, CamUp, GamepadCamUp)) {
-		deltaPitch = -1;
-		if (IsGamepadButtonPressed(controllerNumber, GamepadCamUp))
-			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamUp);
-	}
-
-	//down
-	if (CheckControlPressed(controllerNumber, CamDown, GamepadCamDown)) {
-		deltaPitch = 1;
-		if (IsGamepadButtonPressed(controllerNumber, GamepadCamDown))
-			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamDown);
-	}
-
-	camHeightScale += deltaPitch * 0.03;
-	if (camHeightScale < 0.1) camHeightScale = 0.1;
-	if (camHeightScale > 2) camHeightScale = 2.0;
-	camLateralScale -= deltaPitch * 0.1;
-	if (camLateralScale < 1.0) camLateralScale = 1.0;
-	if (camLateralScale > 6.0) camLateralScale = 6.0;
-}
 
 typedef struct actionList {
 	unsigned int Idle;
@@ -219,9 +172,9 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	//UpdateMovement(Enemy, &camera);
 
 
-	// Buttons: Idle, Walking, X, Y, RT, B, A, up, LT, end LT, end RT, alt RT
+	// Buttons:                                Idle,    Walking, X,       Y,       RT,      B,       A,       Dpad up, LT,      end LT,  end RT,  alt RT
 	static ActionList ArmstrongBossActions = { 0x10000, 0x10001, 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010, 0x2000F, 0x10000, 0x20007 };
-	static ActionList SamBossActions = { 0x20000, 0x10002, 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005, 0x20000, 0x30009, 0x30008 };
+	static ActionList SamBossActions =       { 0x20000, 0x10002, 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005, 0x20000, 0x30009, 0x30008 };
 	static ActionList SundownerBossActions = { 0x10000, 0x10001, 0x20001, 0x20000, 0x20008, 0x20002, 0x20007, 0x10006, 0x20009, 0x10000, 0x10000, 0x20008 };
 	// Default here for Armstrong (em0700)
 	ActionList* BossActions = &ArmstrongBossActions;
