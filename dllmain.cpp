@@ -44,11 +44,15 @@ LRESULT CALLBACK hkWindowProc(
 }
 
 #pragma comment(lib, "d3dx9.lib")
-#ifdef _MSC_VER < 1700 //pre 2012
+
+//pre 2012
+#ifdef _MSC_VER < 1700
 #pragma comment(lib,"Xinput.lib")
+//post 2012
 #else
 #pragma comment(lib,"Xinput9_1_0.lib")
 #endif
+
 #include <Camera.h>
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
@@ -205,7 +209,7 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 		modelItems->m_nSheath = 0x11013;
 		modelItems->m_nHead = 0x11017;
 		modelItems->m_nModel = 0x11010;
-		if (PhaseManager::Instance.IsDLCPhase())
+		if (PhaseManager::ms_Instance.isDLCPhase())
 			*modelSword = 0x11403;
 		else
 			*modelSword = 0x11012;
@@ -229,7 +233,7 @@ void Spawner(eObjID id, int controllerIndex = -1) {
 
 Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
 	float minDist = INFINITY;
-	Entity* closestPlayer = PlayerManagerImplement::pInstance->GetEntity(0);
+	Entity* closestPlayer = PlayerManagerImplement::ms_Instance->getEntity(0);
 	cVec4 ePos = ecx->m_vecTransPos;
 	for (Pl0000* player : players) {
 		if (!player) continue;
@@ -436,7 +440,7 @@ void Update()
 			playerTypes[i] = (eObjID)0;
 		}
 		players[p1Index] = MainPlayer;
-		playerTypes[p1Index] = MainPlayer->m_pEntity->m_nEntityIndex;
+		playerTypes[p1Index] = MainPlayer->m_pEntity->m_EntityIndex;
 	}
 
 	if (!isPlayerAtOnce) {
@@ -493,7 +497,7 @@ void Update()
 	}
 
 	if (needNewPlayer) {
-		for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pLast; node = node->m_next) {
+		for (auto node = EntitySystem::ms_Instance.m_EntityList.m_pFirst; node != EntitySystem::ms_Instance.m_EntityList.m_pLast; node = node->m_next) {
 
 			auto value = node->m_value;
 			if (!value) continue;
@@ -509,7 +513,7 @@ void Update()
 			if (alreadyInit) continue;
 
 			for (int i = 0; i < 5; i++) {
-				if (playerTypes[i] && !players[i] && value->m_nEntityIndex == playerTypes[i]) {
+				if (playerTypes[i] && !players[i] && value->m_EntityIndex == playerTypes[i]) {
 					players[i] = player;
 					if (gotOriginalModelItems) {
 						modelItems->m_nHair = originalModelItems.m_nHair;
@@ -549,10 +553,10 @@ void Update()
 		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
 		int controllerNumber = i - 1;
 
-		if ((Enemy->m_pEntity->m_nEntityIndex & 0xF0000) == 0x20000) {
+		if ((Enemy->m_pEntity->m_EntityIndex & 0xF0000) == 0x20000) {
 			FullHandleAIBoss(Enemy, controllerNumber, EnableFriendlyFire);
 		}
-		else if (player->m_pEntity->m_nEntityIndex == (eObjID)0x12040) { // Not actually Pl0000*
+		else if (player->m_pEntity->m_EntityIndex == (eObjID)0x12040) { // Not actually Pl0000*
 			FullHandleDGPlayer(player, controllerNumber, EnableFriendlyFire);
 		}
 		else { // Raiden, Sam, Wolf

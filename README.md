@@ -11,7 +11,7 @@ An additional ple010_us.dat file included on NexusMods fixes the voice soundbank
 
 
 ## Development setup
-Install [Frouk's plugin SDK](https://github.com/Frouk3/mgr-plugin-sdk/) and modify game/Pl0000.h to the updated version included in "sdk-changes" (which renames the player fields for key pressed and key held values).
+Install [Frouk's plugin SDK](https://github.com/Frouk3/mgr-plugin-sdk/).
 Launch the solution in Visual Studio and compile as "Release x86".
 
 

@@ -97,7 +97,7 @@ void gui::RenderWindow()
 //#define SHOWBOSSACTION
 //#define PRINTBMs
 
-				for (auto node = EntitySystem::Instance.m_EntityList.m_pFirst; node != EntitySystem::Instance.m_EntityList.m_pEnd; node = node->m_next) {
+				for (auto node = EntitySystem::ms_Instance.m_EntityList.m_pFirst; node != EntitySystem::ms_Instance.m_EntityList.m_pLast; node = node->m_next) {
 					if (!node) break;
 
 					auto value = node->m_value;
@@ -163,9 +163,9 @@ void gui::RenderWindow()
 				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
 					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
 				}
-				ImGui::InputFloat("Camera lateral scale", &camLateralScale);
-				ImGui::InputFloat("Camera vertical scale", &camHeightScale);
-				auto firstEnt = EntitySystem::Instance.m_EntityList.m_pFirst;
+				ImGui::InputDouble("Camera lateral scale", &camLateralScale);
+				ImGui::InputDouble("Camera vertical scale", &camHeightScale);
+				auto firstEnt = EntitySystem::ms_Instance.m_EntityList.m_pFirst;
 				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
 				ImGui::EndTabItem();
 			}

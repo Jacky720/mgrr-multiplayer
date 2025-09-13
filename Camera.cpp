@@ -4,9 +4,9 @@
 #include <cCameraGame.h>
 
 bool overrideCamera = false;
-float camLateralScale = 1.0;
-float camHeightScale = 1.0;
-float camYaw = 0.0;
+double camLateralScale = 1.0;
+double camHeightScale = 1.0;
+double camYaw = 0.0;
 
 int __fastcall CameraHacked(void* ecx) {
 	if (overrideCamera) {

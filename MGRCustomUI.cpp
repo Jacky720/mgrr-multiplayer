@@ -143,7 +143,7 @@ void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOL
 
 }
 
-void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
+void RenderTextMGR(string text, int x, int y, D3DCOLOR color, int fontid = 0) {
 	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
 
 	int n = text.length();
@@ -153,7 +153,7 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
 	int tmp_x_shift = 0;
 	for (int i = 0; i < n + 1; i++) {
-		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
+		D3DXVECTOR3 position((float)(x + tmp_x_shift), (float)y, 0.0f);
 		if (txtarray[i] != NULL) {
 
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
@@ -172,7 +172,7 @@ void RenderTextMGR(string text, float x, float y, D3DCOLOR color, int fontid = 0
 
 }
 
-void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int fontid = 0) {
+void RenderTextMGR_RightLeft(string text, int x, int y, D3DCOLOR color, int fontid = 0) {
 	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
 	int n = text.length();
 	char* txtarray = new char[n + 1];
@@ -183,7 +183,7 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 	int tmp_x_shift = 0;
 	for (int i = n - 1; i >= 0; i--) {
 		tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8; // Shift BEFORE since we're going left, THROUGH the character's space
-		D3DXVECTOR3 position(x + tmp_x_shift, y, 0.0f);
+		D3DXVECTOR3 position((float)(x + tmp_x_shift), (float)y, 0.0f);
 		if (txtarray[i] != NULL) {
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
 		}
@@ -204,7 +204,7 @@ void RenderTextMGR_RightLeft(string text, float x, float y, D3DCOLOR color, int 
 #define LEFT_JUSTIFIED 0
 #define RIGHT_JUSTIFIED 1
 
-void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = LEFT_JUSTIFIED) {
+void RenderTextWithShadow(string text, int x, int y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = LEFT_JUSTIFIED) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
@@ -242,7 +242,7 @@ void RenderTextWithShadow(string text, float x, float y, D3DCOLOR bg = C_BLACK, 
 void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
 
 	DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
-	DrawLine(Hw::GraphicDevice, x, y, ((value / maxvalue) * 400), fg, 4);
+	DrawLine(Hw::GraphicDevice, x, y, (int)(400 * value / maxvalue), fg, 4);
 }
 
 
@@ -252,7 +252,7 @@ void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR bg, D3D
 void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
-	RenderTextWithShadow(to_string((int)floor((hpvalue / hpmax) * 100)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
 
 	RenderTextWithShadow(name, x, y);
@@ -264,7 +264,7 @@ void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float fcvalue, flo
 
 }
 
-void DrawCharacterSelector(float offset_x, float y, int controller_id) {
+void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 	// Render character selection
 	if (checkScreenSizeTimer > 0) {
 		RECT rect;
@@ -338,7 +338,7 @@ void DrawCharacterSelector(float offset_x, float y, int controller_id) {
 
 }
 
-void DrawDropMenu(float offset_x, float y, int controller_id) {
+void DrawDropMenu(int offset_x, int y, int controller_id) {
 	string numbername;
 	switch (controller_id + 1) {
 	case 0: numbername = "zero"; break;
@@ -374,7 +374,7 @@ BOOL __stdcall WorldToScreen(const cVec4& worldPosition, cVec4& screenPos)
 void Present() {
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(screenWidth, screenHeight));
+	ImGui::SetNextWindowSize(ImVec2((float)screenWidth, (float)screenHeight));
 	ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground);
 	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 	if (isInit && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
@@ -385,26 +385,26 @@ void Present() {
 			if (player == nullptr) continue;
 
 			string name = "";
-			if (player->m_pEntity->m_nEntityIndex == 0x10010) name = "raiden";
-			if (player->m_pEntity->m_nEntityIndex == 0x11400) name = "sam";
-			if (player->m_pEntity->m_nEntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_nEntityIndex == 0x20020) name = "jetstream_sam";
-			if (player->m_pEntity->m_nEntityIndex == 0x20700) name = "senator";
-			if (player->m_pEntity->m_nEntityIndex == 0x2070A) name = "senator";
-			if (player->m_pEntity->m_nEntityIndex == 0x20310) name = "sundowner";
-			if (player->m_pEntity->m_nEntityIndex == 0x12040) name = "dwarf_gekko";
+			if (player->m_pEntity->m_EntityIndex == 0x10010) name = "raiden";
+			if (player->m_pEntity->m_EntityIndex == 0x11400) name = "sam";
+			if (player->m_pEntity->m_EntityIndex == 0x11500) name = "wolf";
+			if (player->m_pEntity->m_EntityIndex == 0x20020) name = "jetstream_sam";
+			if (player->m_pEntity->m_EntityIndex == 0x20700) name = "senator";
+			if (player->m_pEntity->m_EntityIndex == 0x2070A) name = "senator";
+			if (player->m_pEntity->m_EntityIndex == 0x20310) name = "sundowner";
+			if (player->m_pEntity->m_EntityIndex == 0x12040) name = "dwarf_gekko";
 
 			float fcCur = 0;
 			float fcMax = 0;
-			float hpCur = player->m_nHealth;
-			float hpMax = player->m_nMaxHealth;
-			if ((player->m_pEntity->m_nEntityIndex & 0xF0000) == 0x10000 // Enemies have no FC
-				&& (player->m_pEntity->m_nEntityIndex != 0x12040)) // Neither does Dwarf Gekko
+			float hpCur = (float)player->m_nHealth;
+			float hpMax = (float)player->m_nMaxHealth;
+			if ((player->m_pEntity->m_EntityIndex & 0xF0000) == 0x10000 // Enemies have no FC
+				&& (player->m_pEntity->m_EntityIndex != 0x12040)) // Neither does Dwarf Gekko
 			{
 				fcCur = player->getFuelContainer();
 				fcMax = player->getFuelCapacity(false);
-				hpCur = player->getHealth();
-				hpMax = player->getMaxHealth();
+				hpCur = (float)player->getHealth();
+				hpMax = (float)player->getMaxHealth();
 			}
 			DrawFalseMGRUI(75, 105 + 60 * i, hpCur, hpMax, fcCur, fcMax, name);
 			auto pDrawList = ImGui::GetWindowDrawList();
@@ -414,8 +414,8 @@ void Present() {
 			WorldToScreen(player_pos, temporary_projection);
 			//pDrawList->AddText(ImVec2(temporary_projection.x, temporary_projection.y), ImColor(255, 255, 255), std::to_string(i).c_str());
 
-			RenderTextWithShadow("controller", temporary_projection.x - 50.0f, temporary_projection.y - 10.0f);
-			RenderTextWithShadow(std::to_string(i), temporary_projection.x - 50.0f, temporary_projection.y);
+			RenderTextWithShadow("controller", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
+			RenderTextWithShadow(std::to_string(i), (int)(temporary_projection.x - 50), (int)temporary_projection.y);
 			i++;
 
 		}

@@ -13,7 +13,7 @@ bool isARPressed = false;
 bool wasARPressed = false;
 
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
-	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr) {
+	InputBitflags bit, unsigned int* altField1 = nullptr, unsigned int* altField2 = nullptr) {
 	int playerIndex = -1;
 	for (int i = 0; i < 5; i++) {
 		if (players[i] == player)
@@ -21,28 +21,28 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 	}
 
 	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
-		player->m_nKeyHoldingFlag |= bit;
+		player->m_CurrentInput.m_nButtonsDown |= bit;
 		if (!(prevPressed[playerIndex] & bit)) {
-			player->m_nKeyPressedFlag |= bit;
+			player->m_CurrentInput.m_nButtonsPressed |= bit;
 		}
 		else {
-			player->m_nKeyPressedFlag &= ~bit;
+			player->m_CurrentInput.m_nButtonsPressed &= ~bit;
 		}
 		prevPressed[playerIndex] |= bit;
 		if (altField1) *altField1 |= bit;
 		if (altField2) *altField2 |= bit;
-		player->field_D00 |= bit;
-		player->field_D04 |= bit;
+		player->m_CurrentInput.m_nButtonsReleased |= bit;
+		player->m_CurrentInput.m_nButtonsAlternated |= bit;
 		return true;
 	}
 	else {
-		player->m_nKeyHoldingFlag &= ~bit;
-		player->m_nKeyPressedFlag &= ~bit;
+		player->m_CurrentInput.m_nButtonsDown &= ~bit;
+		player->m_CurrentInput.m_nButtonsPressed &= ~bit;
 		prevPressed[playerIndex] &= ~bit;
 		if (altField1) *altField1 &= ~bit;
 		if (altField2) *altField2 &= ~bit;
-		player->field_D00 &= ~bit;
-		player->field_D04 &= ~bit;
+		player->m_CurrentInput.m_nButtonsReleased &= ~bit;
+		player->m_CurrentInput.m_nButtonsAlternated &= ~bit;
 		return false;
 	}
 }
@@ -50,16 +50,16 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
 	InputBitflags bit, float* altField, bool invert) {
 	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
-		player->m_nKeyHoldingFlag |= bit;
-		player->field_D00 |= bit;
-		player->field_D04 |= bit;
+		player->m_CurrentInput.m_nButtonsDown |= bit;
+		player->m_CurrentInput.m_nButtonsReleased |= bit;
+		player->m_CurrentInput.m_nButtonsAlternated |= bit;
 		*altField = invert ? -1000.0f : 1000.0f;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadBind))
 			*altField *= GetGamepadAnalog(controllerNumber, GamepadBind);
 		return true;
 	}
-	player->field_D00 &= ~bit;
-	player->field_D04 &= ~bit;
+	player->m_CurrentInput.m_nButtonsReleased &= ~bit;
+	player->m_CurrentInput.m_nButtonsAlternated &= ~bit;
 	return false;
 }
 
@@ -179,10 +179,10 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	// Default here for Armstrong (em0700)
 	ActionList* BossActions = &ArmstrongBossActions;
 
-	if (Enemy->m_pEntity->m_nEntityIndex == 0x20020) {
+	if (Enemy->m_pEntity->m_EntityIndex == 0x20020) {
 		BossActions = &SamBossActions;
 	}
-	if (Enemy->m_pEntity->m_nEntityIndex == 0x20310) {
+	if (Enemy->m_pEntity->m_EntityIndex == 0x20310) {
 		BossActions = &SundownerBossActions;
 	}
 
@@ -302,11 +302,11 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	else
 		player->field_640 = 1;
 
-	player->m_nKeyHoldingFlag = 0;
-	player->field_D0C = 0;
-	player->field_D08 = 0;
-	player->field_D10 = 0;
-	player->field_D14 = 0;
+	player->m_CurrentInput.m_nButtonsDown = 0;
+	player->m_CurrentInput.m_fLeftStick.x = 0;
+	player->m_CurrentInput.m_fLeftStick.y = 0;
+	player->m_CurrentInput.m_fRightStick.x = 0;
+	player->m_CurrentInput.m_fRightStick.y = 0;
 
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, originalSword, true);
@@ -334,10 +334,10 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	bool isAny = false;
 
 	// Left stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->field_D0C, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->field_D0C, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->field_D08, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->field_D08, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->m_CurrentInput.m_fLeftStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->m_CurrentInput.m_fLeftStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->m_CurrentInput.m_fLeftStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->m_CurrentInput.m_fLeftStick.x, false);
 
 	// PVP Homing
 	if (!isAny && EnableDamageToPlayers && !player->isIdle()) {
@@ -377,19 +377,19 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 		}
 	}
 	// Right stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->field_D14, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->field_D14, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->field_D10, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->field_D10, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->m_CurrentInput.m_fRightStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->m_CurrentInput.m_fRightStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false);
 	// Face buttons
-	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->field_D04);
-	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->field_D04);
+	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
 	isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
+	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
 	// Triggers and bumpers (lock-on takes camera control also)
 	isAny |= SetFlagsForAction(player, controllerNumber, Lockon, GamepadLockon, LockOnBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->field_D00, &player->field_D04);
-	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04)) {
+	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
+	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated)) {
 		GetCameraInput(controllerNumber); // No camera control in Blade Mode
 	}
 	else {
@@ -397,7 +397,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	}
 	isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
 	// D-pad
-	if (player->m_nModelIndex == 0x11400) {
+	if (player->m_ModelIndex == 0x11400) {
 		isAny |= SetFlagsForAction(player, controllerNumber, Taunt, GamepadTaunt, TauntBit);
 	}
 	else {
@@ -407,16 +407,16 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 		if (player == MainPlayer) {
 			if (isARPressed) {
 				if (!wasARPressed) {
-					player->m_nKeyPressedFlag |= TauntBit;
+					player->m_CurrentInput.m_nButtonsPressed |= TauntBit;
 				}
 				else {
-					player->m_nKeyPressedFlag &= ~TauntBit;
+					player->m_CurrentInput.m_nButtonsPressed &= ~TauntBit;
 				}
-				player->m_nKeyHoldingFlag |= TauntBit;
+				player->m_CurrentInput.m_nButtonsDown |= TauntBit;
 			}
 			else {
-				player->m_nKeyHoldingFlag &= ~TauntBit;
-				player->m_nKeyPressedFlag &= ~TauntBit;
+				player->m_CurrentInput.m_nButtonsDown &= ~TauntBit;
+				player->m_CurrentInput.m_nButtonsPressed &= ~TauntBit;
 			}
 			wasARPressed = isARPressed;
 			isARPressed = false;
@@ -441,8 +441,8 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
 
 	if (!isAny) {
-		player->m_nKeyPressedFlag = 0;
-		player->field_D04 = 0;
+		player->m_CurrentInput.m_nButtonsPressed = 0;
+		player->m_CurrentInput.m_nButtonsAlternated = 0;
 	}
 
 }
@@ -458,11 +458,11 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 
 	Pl0000* player = (Pl0000*)((char*)dg + 0xE90 + 0xA4 - 0xCF8); // Hack to align the fields
 
-	player->m_nKeyHoldingFlag = 0;
-	player->field_D0C = 0;
-	player->field_D08 = 0;
-	player->field_D10 = 0;
-	player->field_D14 = 0;
+	player->m_CurrentInput.m_nButtonsDown = 0;
+	player->m_CurrentInput.m_fLeftStick.x = 0;
+	player->m_CurrentInput.m_fLeftStick.y = 0;
+	player->m_CurrentInput.m_fRightStick.x = 0;
+	player->m_CurrentInput.m_fRightStick.y = 0;
 
 	// Aight we're stealing the rotation code from bosses because that locked itself up somehow
 	float field_X = 0; float field_Y = 0;
@@ -520,26 +520,26 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	bool isAny = false;
 
 	// Left stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->field_D0C, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->field_D0C, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->field_D08, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->field_D08, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->m_CurrentInput.m_fLeftStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->m_CurrentInput.m_fLeftStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->m_CurrentInput.m_fLeftStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->m_CurrentInput.m_fLeftStick.x, false);
 
 	// PVP Homing - disabled
 	// Right stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->field_D14, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->field_D14, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->field_D10, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->field_D10, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->m_CurrentInput.m_fRightStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->m_CurrentInput.m_fRightStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false);
 	// Face buttons
-	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->field_D04);
-	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->field_D04);
+	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
 	isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->field_D00, &player->field_D04);
+	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
 	// Triggers and bumpers (lock-on takes camera control also)
 	isAny |= SetFlagsForAction(player, controllerNumber, Lockon, GamepadLockon, LockOnBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->field_D00, &player->field_D04);
-	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->field_D00, &player->field_D04)) {
+	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
+	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated)) {
 		GetCameraInput(controllerNumber); // No camera control in Blade Mode
 	}
 	else {

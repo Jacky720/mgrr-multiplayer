@@ -76,7 +76,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(MGR_PLUGIN_SDK)game\havok;$(MGR_PLUGIN_SDK)shared;$(MGR_PLUGIN_SDK)game;$(MGR_PLUGIN_SDK)shared\dxsdk\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MGR_PLUGIN_SDK)game\Havok\;$(MGR_PLUGIN_SDK)game\Criware\;$(MGR_PLUGIN_SDK)game\havok;$(MGR_PLUGIN_SDK)shared;$(MGR_PLUGIN_SDK)game;$(MGR_PLUGIN_SDK)shared\dxsdk\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
     </ClCompile>

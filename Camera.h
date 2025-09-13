@@ -4,6 +4,6 @@ void OverrideCameraPos();
 void GetCameraInput(int controllerNumber);
 
 extern bool overrideCamera;
-extern float camLateralScale;
-extern float camHeightScale;
-extern float camYaw;
+extern double camLateralScale;
+extern double camHeightScale;
+extern double camYaw;

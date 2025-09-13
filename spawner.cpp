@@ -39,16 +39,6 @@ struct cObjReadManager
 };
 
 // DatHolder
-struct DataArchiveEntry
-{
-	char magic[4];
-	size_t m_nAmountOfFiles;
-	size_t m_nPositionOffset;
-	size_t m_nExtensionOffset;
-	size_t m_nNamesOffset;
-	size_t m_nSizesOffset;
-	size_t m_nHashMapOffset;
-};
 
 struct DatHolder
 {
@@ -83,8 +73,9 @@ struct DatHolder
 	{
 		auto index = getAnyFileIndex(filename, 0);
 
-		if (index != -1)
+		if (index != -1) {
 			return *(int*)(m_data + asEntry()->m_nPositionOffset + index * 4);
+		}
 
 		return 0;
 	}
@@ -189,7 +180,7 @@ public:
 	{
 		Events::OnUpdateEvent.after += []()
 			{
-				if (m_EntQueue.m_nSize)
+				if (m_EntQueue.m_size)
 				{
 					for (auto& str : m_EntQueue)
 					{
@@ -202,7 +193,7 @@ public:
 						}
 					}
 
-					for (int i = 0; i < m_EntQueue.m_nSize; i++)
+					for (unsigned int i = 0; i < m_EntQueue.m_size; i++)
 					{
 						auto& elem = m_EntQueue[i];
 
@@ -215,34 +206,34 @@ public:
 								EntitySystem::EntityInfo myEntity = EntitySystem::EntityInfo();
 								DatHolder myFile[2] = { 0, 0 };
 								static char playerNameString[15] = "SpawnedPlayer";
-								myEntity.m_nModelIndex = elem.mObjId;
-								myEntity.m_nAnimIndex = elem.mObjId;
-								myEntity.m_pObjectInfo = &myObject;
+								myEntity.m_ModelIndex = elem.mObjId;
+								myEntity.m_ObjectIndex = elem.mObjId;
+								myEntity.m_ObjectInfo = &myObject;
 								myEntity.m_Name = playerNameString;
 								myEntity.field_10 = 0;
 								cObjReadManager::Instance.getDataAtSet(myFile, (eObjID)modelItems->m_nModel, 0);
 								void* wmb = myFile->getFiledataByExtension("wmb", 0);
-								myEntity.m_pModelData = (void*)((DWORD(__cdecl*)(void*, int))(shared::base + 0x619920))(wmb, 0);
-								myEntity.m_pParam = myFile->getAnyFile("_param.bxm", 0);
+								myEntity.m_ModelData = (void*)((DWORD(__cdecl*)(void*, int))(shared::base + 0x619920))(wmb, 0);
+								myEntity.m_Param = myFile->getAnyFile("_param.bxm", 0);
 								void* wtb = myFile->getFiledataByExtension("wtb", 0);
 								void* wta = myFile->getFiledataByExtension("wta", 0);
 								void* wtp = myFile->getFiledataByExtension("wtp", 0);
 								if (wtb) {
-									myEntity.field_28 = (int)wtb;
-									myEntity.field_24 = 0;
+									myEntity.m_WtbFile = wtb;
+									myEntity.m_TexturesFile = 0;
 								}
 								else {
-									myEntity.field_28 = (int)wtp;
-									myEntity.field_24 = (int)wta;
+									myEntity.m_WtbFile = wtp;
+									myEntity.m_TexturesFile = wta;
 								}
-								elem.m_Entity = EntitySystem::Instance.createEntity(&myEntity);
+								elem.m_Entity = EntitySystem::ms_Instance.createEntity(&myEntity);
 
 							}
 							else {
 								EntitySystem::ObjectInfo objInfo;
 								objInfo.m_nSetType = elem.iSetType;
 								objInfo.m_vecSize = { 1.0, 1.0, 1.0 };
-								elem.m_Entity = EntitySystem::Instance.createEntity("SpawnedObject", elem.mObjId, &objInfo);
+								elem.m_Entity = EntitySystem::ms_Instance.createEntity("SpawnedObject", elem.mObjId, &objInfo);
 							}
 						}
 					}
@@ -259,7 +250,7 @@ public:
 
 					instance->place(pos, rot);
 
-					cObjReadManager::Instance.endWork(instance->m_nObjId, instance->m_nSetType);
+					cObjReadManager::Instance.endWork(instance->m_ObjId, instance->m_nSetType);
 				}
 
 				//shared::ExPressKeyUpdate();

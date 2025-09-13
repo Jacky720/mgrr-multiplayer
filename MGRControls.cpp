@@ -575,6 +575,7 @@ void LoadConfig() noexcept
 
 
 std::string GetVanillaKeybind(InputBitflags bit) {
+#pragma warning(disable:26813) // No, in fact I do expect to use == here.
 	if (bit == WeaponMenuBit || bit == WeaponMenu2Bit)
 		return "32"; // "2"
 	if (bit == HealBit)
@@ -614,6 +615,7 @@ std::string GetVanillaKeybind(InputBitflags bit) {
 	if (bit == BackwardBit)
 		return "53"; // "S"
 	return "None"; // Camera is analog and won't really work here anyway
+#pragma warning(restore:26813)
 }
 
 std::string GetVanillaKeybind(std::string Keybind) {
