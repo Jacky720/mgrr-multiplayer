@@ -497,9 +497,7 @@ void Update()
 	}
 
 	if (needNewPlayer) {
-		for (auto node = EntitySystem::ms_Instance.m_EntityList.m_pFirst; node != EntitySystem::ms_Instance.m_EntityList.m_pLast; node = node->m_next) {
-
-			auto value = node->m_value;
+		for (auto value : EntitySystem::ms_Instance.m_EntityList) {
 			if (!value) continue;
 
 			auto player = value->getEntityInstance<Pl0000>();

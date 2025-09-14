@@ -4,8 +4,15 @@
 #include <cCameraGame.h>
 
 bool overrideCamera = false;
+bool invertCameraY = false;
+bool enableCameraY = true;
 double camLateralScale = 1.0;
 double camHeightScale = 1.0;
+double camLateralMin = 1.0;
+double camLateralMax = 6.0;
+double camHeightMin = 0.1;
+double camHeightMax = 2.0;
+double camSensitivity = 1.0;
 double camYaw = 0.0;
 
 int __fastcall CameraHacked(void* ecx) {
@@ -36,7 +43,7 @@ void GetCameraInput(int controllerNumber) {
 			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamRight);
 	}
 
-	camYaw -= deltaYaw / (2 * PI) / 3;
+	camYaw -= deltaYaw / (2 * PI) / 3 * camSensitivity;
 	if (camYaw < 0) camYaw += 2 * PI;
 	if (camYaw > 2 * PI) camYaw -= 2 * PI;
 
@@ -45,22 +52,26 @@ void GetCameraInput(int controllerNumber) {
 	if (CheckControlPressed(controllerNumber, CamUp, GamepadCamUp)) {
 		deltaPitch = -1;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadCamUp))
-			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamUp);
+			deltaPitch *= GetGamepadAnalog(controllerNumber, GamepadCamUp);
 	}
 
 	//down
 	if (CheckControlPressed(controllerNumber, CamDown, GamepadCamDown)) {
 		deltaPitch = 1;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadCamDown))
-			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamDown);
+			deltaPitch *= GetGamepadAnalog(controllerNumber, GamepadCamDown);
 	}
 
-	camHeightScale += deltaPitch * 0.03;
+	if (invertCameraY) deltaPitch *= -1;
+	if (!enableCameraY) return; // Note: also disables the limits on height/dist scale, so you can override in GUI
+
+	camHeightScale += deltaPitch * (camHeightMax - camHeightMin) * 0.015 * camSensitivity;
 	if (camHeightScale < 0.1) camHeightScale = 0.1;
 	if (camHeightScale > 2) camHeightScale = 2.0;
-	camLateralScale -= deltaPitch * 0.1;
-	if (camLateralScale < 1.0) camLateralScale = 1.0;
-	if (camLateralScale > 6.0) camLateralScale = 6.0;
+
+	camLateralScale -= deltaPitch * (camLateralMax - camLateralMin) * 0.02 * camSensitivity;
+	if (camLateralScale < camLateralMin) camLateralScale = camLateralMin;
+	if (camLateralScale > camLateralMax) camLateralScale = camLateralMax;
 }
 
 void OverrideCameraPos() {
@@ -86,7 +97,7 @@ void OverrideCameraPos() {
 				+ (p2Pos.z - p1Pos.z) * (p2Pos.z - p1Pos.z));
 			if (dist >= 15.0) {
 				// Move players closer
-				float distMoveBack = (dist - 15.0) / 2;
+				float distMoveBack = (dist - 15.0f) / 2;
 				float xVecNrm = (p2Pos.x - p1Pos.x) / dist;
 				float zVecNrm = (p2Pos.z - p1Pos.z) / dist;
 				player->m_vecTransPos.x += distMoveBack * xVecNrm;
@@ -101,11 +112,11 @@ void OverrideCameraPos() {
 				targetCenter.z = p1Pos.z / 2 + p2Pos.z / 2;
 			}
 		}
-		targetCenter.y = min(targetCenter.y, p1Pos.y + 1.0);
+		targetCenter.y = (float)min(targetCenter.y, p1Pos.y + 1.0);
 	}
-	cameraPos.x = targetCenter.x + camLateralScale * sin(camYaw);
-	cameraPos.y = targetCenter.y + max(maxDist, 5.0) * camHeightScale;
-	cameraPos.z = targetCenter.z + camLateralScale * cos(camYaw);
+	cameraPos.x = targetCenter.x + (float)(camLateralScale * sin(camYaw));
+	cameraPos.y = targetCenter.y + (float)(max(maxDist, 5.0) * camHeightScale);
+	cameraPos.z = targetCenter.z + (float)(camLateralScale * cos(camYaw));
 
 	/* // Old implementation, more horizontal
 	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);
@@ -160,7 +171,7 @@ void OverrideCameraPos() {
 	//cameraPos.y += 15.0;
 	*/
 
-#define posUpdateSpeed 0.2
+#define posUpdateSpeed 0.2f
 	oldPos->x = oldPos->x * (1 - posUpdateSpeed) + cameraPos.x * posUpdateSpeed;
 	oldPos->y = oldPos->y * (1 - posUpdateSpeed) + cameraPos.y * posUpdateSpeed;
 	oldPos->z = oldPos->z * (1 - posUpdateSpeed) + cameraPos.z * posUpdateSpeed;

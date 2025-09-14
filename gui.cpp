@@ -97,10 +97,7 @@ void gui::RenderWindow()
 //#define SHOWBOSSACTION
 //#define PRINTBMs
 
-				for (auto node = EntitySystem::ms_Instance.m_EntityList.m_pFirst; node != EntitySystem::ms_Instance.m_EntityList.m_pLast; node = node->m_next) {
-					if (!node) break;
-
-					auto value = node->m_value;
+				for (auto value : EntitySystem::ms_Instance.m_EntityList) {
 					if (!value || value == (Entity*)0xEFEFEFEF) continue;
 #ifdef PRINTSAM
 					auto player = value->getEntityInstance<Pl0000>();
@@ -116,11 +113,14 @@ void gui::RenderWindow()
 #ifdef PRINTENEMY
 					auto Enemy = value->getEntityInstance<BehaviorEmBase>();
 					if (!Enemy) continue;
-					if ((value->m_nEntityIndex & 0xF0000) == 0x20000) {
+					if ((value->m_EntityIndex & 0xF0000) == 0x20000) {
 						//ImGui::InputInt("the fuck?", (int*)&node->m_value->m_nEntityIndex, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
 						int twerpsenemyflag = (int)&Enemy->m_pEnemy;
+						ImGui::Text("Enemy: 0x%x", value->m_EntityIndex);
 						ImGui::InputInt("twerp's enemy flag", &twerpsenemyflag, 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
-						ImGui::InputInt("Some twerp", (int*)&(Enemy->m_pEnemy->m_pEntity->m_nEntityIndex), 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
+						ImGui::InputInt("enemy HP", &Enemy->m_nHealth);
+						ImGui::InputFloat("enemy x scale", &Enemy->m_vecSize.x);
+						//ImGui::InputInt("Some twerp", (int*)&(Enemy->m_pEnemy->m_pEntity->m_EntityIndex), 1, 100, ImGuiInputTextFlags_CharsHexadecimal);
 					}
 #endif
 #ifdef SHOWBOSSACTION
@@ -157,14 +157,28 @@ void gui::RenderWindow()
 				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
 				ImGui::EndTabItem();
 			}
+
+			if (ImGui::BeginTabItem("Camera")) {
+				ImGui::InputDouble("Camera sensitivity", &camSensitivity);
+				ImGui::Checkbox("Allow vertical camera movement", &enableCameraY);
+				ImGui::Checkbox("Invert vertical camera movement", &invertCameraY);
+				ImGui::InputDouble("Camera lateral distance", &camLateralScale);
+				ImGui::InputDouble("Camera vertical distance", &camHeightScale);
+				if (enableCameraY) {
+					ImGui::InputDouble("Minimum lateral distance", &camLateralMin);
+					ImGui::InputDouble("Maximum lateral distance", &camLateralMax);
+					ImGui::InputDouble("Minimum vertical distance", &camHeightMin);
+					ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
+				}
+				ImGui::EndTabItem();
+			}
+
 			if (ImGui::BeginTabItem("Dev")) {
 				static int memory_address = 0x0;
 				ImGui::InputInt("Memory Address:", &memory_address);
 				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
 					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
 				}
-				ImGui::InputDouble("Camera lateral scale", &camLateralScale);
-				ImGui::InputDouble("Camera vertical scale", &camHeightScale);
 				auto firstEnt = EntitySystem::ms_Instance.m_EntityList.m_pFirst;
 				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
 				ImGui::EndTabItem();
