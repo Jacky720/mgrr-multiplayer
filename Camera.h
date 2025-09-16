@@ -14,3 +14,4 @@ extern double camYaw;
 extern double camSensitivity;
 extern bool invertCameraY;
 extern bool enableCameraY;
+extern bool qteCamera;

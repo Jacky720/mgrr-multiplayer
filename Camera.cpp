@@ -2,8 +2,10 @@
 #include "MGRCustomAI.h"
 
 #include <cCameraGame.h>
+#include <Trigger.h>
 
 bool overrideCamera = false;
+bool qteCamera = true;
 bool invertCameraY = false;
 bool enableCameraY = true;
 double camLateralScale = 1.0;
@@ -76,7 +78,10 @@ void GetCameraInput(int controllerNumber) {
 
 void OverrideCameraPos() {
 
-	overrideCamera = true;
+	overrideCamera = !(Trigger::StaFlags.STA_QTE || MainPlayer->m_nBladeModeType == 8) || !qteCamera;
+	if (!overrideCamera)
+		return;
+
 	cCameraGame* camera = &cCameraGame::Instance;
 	cVec4* oldPos = &camera->m_TranslationMatrix.m_vecPosition;
 	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
@@ -179,4 +184,11 @@ void OverrideCameraPos() {
 	oldTarget->x = oldTarget->x * (1 - posUpdateSpeed) + targetCenter.x * posUpdateSpeed;
 	oldTarget->y = oldTarget->y * (1 - posUpdateSpeed) + targetCenter.y * posUpdateSpeed;
 	oldTarget->z = oldTarget->z * (1 - posUpdateSpeed) + targetCenter.z * posUpdateSpeed;
+
+	Hw::cVec4* cameraOffset = &camera->m_TranslationMatrix.m_vecCameraOffset;
+	// Reset roll
+	cameraOffset->x = 0.0;
+	cameraOffset->y = 0.0;
+	cameraOffset->z = 0.0;
+	cameraOffset->w = 0.0;
 }

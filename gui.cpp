@@ -159,6 +159,7 @@ void gui::RenderWindow()
 			}
 
 			if (ImGui::BeginTabItem("Camera")) {
+				ImGui::Checkbox("Vanilla camera for QTEs", &qteCamera);
 				ImGui::InputDouble("Camera sensitivity", &camSensitivity);
 				ImGui::Checkbox("Allow vertical camera movement", &enableCameraY);
 				ImGui::Checkbox("Invert vertical camera movement", &invertCameraY);
@@ -177,7 +178,7 @@ void gui::RenderWindow()
 				static int memory_address = 0x0;
 				ImGui::InputInt("Memory Address:", &memory_address);
 				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
-					injector::WriteMemory<unsigned int>(shared::base + memory_address, 0x909090, true);
+					injector::MakeNOP(shared::base + memory_address, 3, true);
 				}
 				auto firstEnt = EntitySystem::ms_Instance.m_EntityList.m_pFirst;
 				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
