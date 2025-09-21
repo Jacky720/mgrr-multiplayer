@@ -182,6 +182,7 @@ void gui::RenderWindow()
 				}
 				auto firstEnt = EntitySystem::ms_Instance.m_EntityList.m_pFirst;
 				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
+				ImGui::Text("Your action: %x %x", MainPlayer->getCurrentAction(), MainPlayer->getCurrentActionId());
 				ImGui::EndTabItem();
 			}
 

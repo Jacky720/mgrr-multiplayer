@@ -12,7 +12,7 @@ double camLateralScale = 1.0;
 double camHeightScale = 1.0;
 double camLateralMin = 1.0;
 double camLateralMax = 6.0;
-double camHeightMin = 0.1;
+double camHeightMin = -0.5;
 double camHeightMax = 2.0;
 double camSensitivity = 1.0;
 double camYaw = 0.0;
@@ -68,8 +68,8 @@ void GetCameraInput(int controllerNumber) {
 	if (!enableCameraY) return; // Note: also disables the limits on height/dist scale, so you can override in GUI
 
 	camHeightScale += deltaPitch * (camHeightMax - camHeightMin) * 0.015 * camSensitivity;
-	if (camHeightScale < 0.1) camHeightScale = 0.1;
-	if (camHeightScale > 2) camHeightScale = 2.0;
+	if (camHeightScale < camHeightMin) camHeightScale = camHeightMin;
+	if (camHeightScale > camHeightMax) camHeightScale = camHeightMax;
 
 	camLateralScale -= deltaPitch * (camLateralMax - camLateralMin) * 0.02 * camSensitivity;
 	if (camLateralScale < camLateralMin) camLateralScale = camLateralMin;
