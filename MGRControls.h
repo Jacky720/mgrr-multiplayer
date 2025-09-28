@@ -41,6 +41,8 @@ extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump,
 
 float GetGamepadAnalog(int controllerIndex, const std::string& button);
 
+float GetMouseAnalog(const std::string& button);
+
 bool IsGamepadButtonPressed(int controllerIndex, const std::string& button);
 
 std::string TryParseVKToHex(std::string in);

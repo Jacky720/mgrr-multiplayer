@@ -3,6 +3,8 @@
 
 extern LPD3DXSPRITE pSprite;
 extern int controller_flag[4];
+extern int screenWidth;
+extern int screenHeight;;
 
 void LoadUIData();
 

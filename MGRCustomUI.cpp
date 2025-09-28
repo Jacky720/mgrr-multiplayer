@@ -121,18 +121,7 @@ void LoadUIData() {
 }
 
 
-void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR)
-{
-	D3DRECT rec;
-	rec.x1 = bx;
-	rec.y1 = by;
-	rec.x2 = bx + bw;//makes line longer/shorter going right
-	rec.y2 = by + 6;//makes line one pixel tall
-	Device_Interface->Clear(1, &rec, D3DCLEAR_TARGET, COLOR, 0, 0);
-
-}
-
-void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR, int thickness)
+void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOLOR COLOR, int thickness = 6)
 {
 	D3DRECT rec;
 	rec.x1 = bx;
@@ -382,7 +371,10 @@ void Present() {
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
 		int i = 0;
 		for (Pl0000* player : players) {
-			if (player == nullptr) continue;
+			if (player == nullptr) {
+				i++; // Accurately show controller IDs
+				continue;
+			}
 
 			string name = "";
 			if (player->m_pEntity->m_EntityIndex == 0x10010) name = "raiden";
