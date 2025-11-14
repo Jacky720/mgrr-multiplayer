@@ -96,6 +96,19 @@ void gui::RenderWindow()
 //#define PRINTENEMY
 //#define SHOWBOSSACTION
 //#define PRINTBMs
+#define PRINTPHASE
+#ifdef PRINTPHASE
+				int** gScenarioManagerImplement = *(int***)(shared::base + 0x17E9A30);
+				int phase = 0;
+
+				if (gScenarioManagerImplement && gScenarioManagerImplement[45])
+				{
+					int* phaseHandle = gScenarioManagerImplement[45];
+					if (phaseHandle)
+						phase = phaseHandle[1];
+				}
+				ImGui::Text("Phase p%3x", phase);
+#endif
 
 				for (auto value : EntitySystem::ms_Instance.m_EntityList) {
 					if (!value || value == (Entity*)0xEFEFEFEF) continue;
@@ -159,17 +172,20 @@ void gui::RenderWindow()
 			}
 
 			if (ImGui::BeginTabItem("Camera")) {
-				ImGui::Checkbox("Vanilla camera for QTEs", &qteCamera);
-				ImGui::InputDouble("Camera sensitivity", &camSensitivity);
-				ImGui::Checkbox("Allow vertical camera movement", &enableCameraY);
-				ImGui::Checkbox("Invert vertical camera movement", &invertCameraY);
-				ImGui::InputDouble("Camera lateral distance", &camLateralScale);
-				ImGui::InputDouble("Camera vertical distance", &camHeightScale);
-				if (enableCameraY) {
-					ImGui::InputDouble("Minimum lateral distance", &camLateralMin);
-					ImGui::InputDouble("Maximum lateral distance", &camLateralMax);
-					ImGui::InputDouble("Minimum vertical distance", &camHeightMin);
-					ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
+				ImGui::Checkbox("Custom camera", &customCamera);
+				if (customCamera) {
+					ImGui::Checkbox("Vanilla camera for QTEs", &qteCamera);
+					ImGui::InputDouble("Camera sensitivity", &camSensitivity);
+					ImGui::Checkbox("Allow vertical camera movement", &enableCameraY);
+					ImGui::Checkbox("Invert vertical camera movement", &invertCameraY);
+					ImGui::InputDouble("Camera lateral distance", &camLateralScale);
+					ImGui::InputDouble("Camera vertical distance", &camHeightScale);
+					if (enableCameraY) {
+						ImGui::InputDouble("Minimum lateral distance", &camLateralMin);
+						ImGui::InputDouble("Maximum lateral distance", &camLateralMax);
+						ImGui::InputDouble("Minimum vertical distance", &camHeightMin);
+						ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
+					}
 				}
 				ImGui::EndTabItem();
 			}

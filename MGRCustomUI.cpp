@@ -397,6 +397,11 @@ void Present() {
 				fcMax = player->getFuelCapacity(false);
 				hpCur = (float)player->getHealth();
 				hpMax = (float)player->getMaxHealth();
+#ifdef MOUSEDEBUG
+				//hpCur = CheckControlPressed(-1, CamUp, GamepadCamUp) - CheckControlPressed(-1, CamDown, GamepadCamDown);
+				hpCur = GetMouseAnalog("MouseUp");
+				hpMax = 100;// 
+#endif
 			}
 			DrawFalseMGRUI(75, 105 + 60 * i, hpCur, hpMax, fcCur, fcMax, name);
 			auto pDrawList = ImGui::GetWindowDrawList();

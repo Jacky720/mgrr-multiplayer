@@ -1,8 +1,12 @@
 #include "dllmain.h"
+#include "MGRCustomUI.h"
 
 #include "IniReader.h"
 #include <string>
 #include <XInput.h>
+#include "imgui/imgui.h"
+
+//#define MOUSETEST
 
 enum InputBitflags {
 	WeaponMenuBit = 0x1,
@@ -68,6 +72,31 @@ float GetGamepadAnalog(int controllerIndex, const std::string& button)
 		case LeftY: return invertFactor * state.Gamepad.sThumbLY / SHRT_MAX;
 		case RightY: return invertFactor * state.Gamepad.sThumbRY / SHRT_MAX;
 		}
+	}
+	return 0.0;
+}
+
+float GetMouseAnalog(const std::string& button)
+{
+	HWND hwnd = (HWND)(ImGui::GetIO().ImeWindowHandle);
+	POINT p;
+
+	return 0.0;
+
+	if (GetCursorPos(&p))
+	{
+		POINT p2;
+		if (!ScreenToClient(hwnd, &p2)) return 0.0;
+		int x = p.x + p2.x - 1920 / 2;
+		int y = p.y + p2.y - 1080 / 2 - 10;
+
+		if ((unsigned int)(y + 1080) > 5000) y = 0; // ????
+
+		if (button == "MouseLeft") return -x / 20;
+		else if (button == "MouseRight") return x / 20;
+		else if (button == "MouseUp") return -y / 20;
+		else if (button == "MouseDown") return y / 20;
+
 	}
 	return 0.0;
 }
@@ -614,7 +643,17 @@ std::string GetVanillaKeybind(InputBitflags bit) {
 		return "57"; // "W"
 	if (bit == BackwardBit)
 		return "53"; // "S"
-	return "None"; // Camera is analog and won't really work here anyway
+#ifdef MOUSETEST
+	if (bit == CamLeftBit)
+		return "MouseLeft";
+	if (bit == CamRightBit)
+		return "MouseRight";
+	if (bit == CamUpBit)
+		return "MouseUp";
+	if (bit == CamDownBit)
+		return "MouseDown";
+#endif
+	return "None"; // Uh I thought that was all of them but still
 #pragma warning(restore:26813)
 }
 
@@ -657,15 +696,29 @@ std::string GetVanillaKeybind(std::string Keybind) {
 		return "57"; // "W"
 	if (Keybind == Back)
 		return "53"; // "S"
+#ifdef MOUSETEST
+	if (Keybind == CamLeft)
+		return "MouseLeft";
+	if (Keybind == CamRight)
+		return "MouseRight";
+	if (Keybind == CamUp)
+		return "MouseUp";
+	if (Keybind == CamDown)
+		return "MouseDown";
+#endif
 	return "None"; // Camera is analog and won't really work here anyway
 }
 
 bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind) {
 	if (controllerNumber == -1) {
 		Keybind = GetVanillaKeybind(Keybind);
+#ifdef MOUSETEST
+		if (Keybind[0] == 'M')
+			return GetMouseAnalog(Keybind) > 0.0;
+#endif
 		if (Keybind == "None")
 			return false;
 	}
-	return ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000))
+	return ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000)) // Debug feature, keyboard controls controller 1
 		|| IsGamepadButtonPressed(controllerNumber, GamepadBind));
 }

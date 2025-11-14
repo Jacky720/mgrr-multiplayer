@@ -5,6 +5,7 @@
 #include <Trigger.h>
 
 bool overrideCamera = false;
+bool customCamera = true;
 bool qteCamera = true;
 bool invertCameraY = false;
 bool enableCameraY = true;
@@ -78,7 +79,8 @@ void GetCameraInput(int controllerNumber) {
 
 void OverrideCameraPos() {
 
-	overrideCamera = !(Trigger::StaFlags.STA_QTE || MainPlayer->m_nBladeModeType == 8) || !qteCamera;
+	bool inQte = Trigger::StaFlags.STA_QTE || MainPlayer->m_nBladeModeType == 8;
+	overrideCamera = !(inQte && qteCamera) && customCamera;
 	if (!overrideCamera)
 		return;
 
