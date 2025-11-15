@@ -226,6 +226,7 @@ Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);*/
 //bool isPlayerAtOnce = false;
 bool gotOriginalModelItems = false;
 
+Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 Pl0000* players[5] = { nullptr };
 eObjID playerTypes[5] = { (eObjID)0 };
 int playerSpawnCheck[5] = { 0 };
@@ -247,6 +248,11 @@ Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
 	return closestPlayer;
 }
 
+int __cdecl ParseMenuController() {
+	if (MainPlayer)
+		return 0;
+	return ((int (__cdecl*)())(shared::base + 0x9DB350))();
+}
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
@@ -422,8 +428,6 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 }
 
 
-Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-
 void InitMod() {
 
 	injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
@@ -440,7 +444,8 @@ void InitMod() {
 	// i forget what exactly this is for, actually
 	injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
 	// Disable normal controller input
-	injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
+	//injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
+	injector::MakeCALL(shared::base + 0x9DB430, &ParseMenuController, true);
 	// Remove need for custom pl1400 and pl1500
 	injector::MakeNOP(shared::base + 0x69E313, 6, true);
 
