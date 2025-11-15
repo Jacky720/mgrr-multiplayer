@@ -433,7 +433,7 @@ void Present() {
 			DrawFalseMGRUI(75, 105 + 60 * i, hpCur, hpMax, fcCur, fcMax, name, ripper);
 			auto pDrawList = ImGui::GetWindowDrawList();
 			cVec4 player_pos = player->getTransPos();
-			player_pos.y += 2.5f;
+			player_pos.y += 2.3f;
 			cVec4 temporary_projection = cVec4(0, 0, 0, 0);
 			WorldToScreen(player_pos, temporary_projection);
 			//pDrawList->AddText(ImVec2(temporary_projection.x, temporary_projection.y), ImColor(255, 255, 255), std::to_string(i).c_str());

@@ -44,7 +44,7 @@ bool IsGamepadButtonPressed(int controllerIndex, const std::string& button);
 
 std::string TryParseVKToHex(std::string in);
 
-void LoadConfig();
+void LoadInputConfig();
 
 bool CheckControlPressed(int controllerNumber, std::string GamepadBind);
 

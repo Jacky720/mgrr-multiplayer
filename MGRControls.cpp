@@ -538,7 +538,7 @@ void LoadControl(CIniReader iniReader, std::string* GamepadControl, std::string 
 	*GamepadControl = iniReader.ReadString("MGRRMultiplayerControls", "Gamepad" + name, *GamepadControl);
 }
 
-void LoadConfig() noexcept
+void LoadInputConfig() noexcept
 {
 	// Load configuration data
 	CIniReader iniReader("MGRRMultiplayerControls.ini");

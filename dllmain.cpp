@@ -464,7 +464,7 @@ void InitMod() {
 		D3DXCreateSprite(Hw::GraphicDevice, &pSprite);
 	}
 
-	LoadConfig();
+	LoadInputConfig();
 }
 
 
@@ -484,6 +484,7 @@ void Update()
 	MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 	if (!MainPlayer) {
+		if (p1IsKeyboard != p1WasKeyboard) p1WasKeyboard = p1IsKeyboard;
 		for (int i = 0; i < 5; i++) {
 			players[i] = nullptr;
 			playerTypes[i] = (eObjID)0;
