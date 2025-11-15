@@ -8,7 +8,7 @@
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 int prevPressed[5] = { 0 };
-bool EveryHeal = true;
+bool EveryHeal = false;
 bool isARPressed = false;
 bool wasARPressed = false;
 
@@ -173,7 +173,7 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 
 
 	// Buttons:                                Idle,    Walking, X,       Y,       RT,      B,       A,       Dpad up, LT,      end LT,  end RT,  alt RT
-	static ActionList ArmstrongBossActions = { 0x10000, 0x10001, 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x20010, 0x2000F, 0x10000, 0x20007 };
+	static ActionList ArmstrongBossActions = { 0x10000, 0x10001, 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x2000F, 0x20010, 0x10000, 0x20007 };
 	static ActionList SamBossActions =       { 0x20000, 0x10002, 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005, 0x20000, 0x30009, 0x30008 };
 	static ActionList SundownerBossActions = { 0x10000, 0x10001, 0x20001, 0x20000, 0x20008, 0x20002, 0x20007, 0x10006, 0x20009, 0x10000, 0x10000, 0x20008 };
 	// Default here for Armstrong (em0700)

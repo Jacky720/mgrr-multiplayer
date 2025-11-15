@@ -254,6 +254,20 @@ int __cdecl ParseMenuController() {
 	return ((int (__cdecl*)())(shared::base + 0x9DB350))();
 }
 
+void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
+	if (!p1->field_4E4 && p1->m_FuelContainers.m_size) {
+		for (int i = 0; i < 5; i++) {
+			if (players[i]) {
+				players[i]->m_nHealth += healAmt;
+				if (players[i]->m_nHealth > players[i]->getMaxHealth())
+					players[i]->m_nHealth = players[i]->getMaxHealth();
+			}
+		}
+		/*p1->m_nHealth += healAmt;
+		if (p1->m_nHealth > p1->getMaxHealth()) p1->m_nHealth = p1->getMaxHealth();*/
+	}
+}
+
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);
@@ -454,6 +468,14 @@ void InitMod() {
 	// Enemy targeting
 	injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
 	injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
+
+	// Nanopaste
+	injector::MakeCALL(shared::base + 0x54DD58, &HealAll, true);
+	
+	// Disregard, varies between unhelpful and crashing
+	// Nanopaste (automatic use)
+	//injector::MakeCALL(shared::base + 0x7946CF, &HealAll, true); //0x794780
+	//injector::MakeNOP(shared::base + 0x77C806, 0x1B, true);
 
 	// Load image data
 	LoadUIData();

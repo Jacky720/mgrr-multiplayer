@@ -3,6 +3,8 @@
 #include <Hw.h>
 #include <Pl0000.h>
 #include <BehaviorEmBase.h>
+#include <PlayerManagerImplement.h>
+#include <cItemPossessionCure.h>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -396,6 +398,7 @@ void Present() {
 		// also _ = space, but i assume you got that
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
 		int i = 0;
+		int hpDrawOffset = 0;
 		for (Pl0000* player : players) {
 			if (player == nullptr) {
 				i++; // Accurately show controller IDs
@@ -429,8 +432,8 @@ void Present() {
 				hpMax = 100;
 #endif
 			}
-			bool ripper = player->canActivateRipperMode() || player->m_nRipperModeEnabled;
-			DrawFalseMGRUI(75, 105 + 60 * i, hpCur, hpMax, fcCur, fcMax, name, ripper);
+			bool ripper = (player->m_pEntity->m_EntityIndex == 0x10010) && (player->canActivateRipperMode() || player->m_nRipperModeEnabled);
+			DrawFalseMGRUI(75, 105 + 60 * hpDrawOffset, hpCur, hpMax, fcCur, fcMax, name, ripper);
 			auto pDrawList = ImGui::GetWindowDrawList();
 			cVec4 player_pos = player->getTransPos();
 			player_pos.y += 2.3f;
@@ -446,7 +449,19 @@ void Present() {
 				RenderTextWithShadow(std::to_string(i), (int)(temporary_projection.x - 50), (int)temporary_projection.y);
 			}
 			i++;
+			hpDrawOffset++;
 
+		}
+
+		// Nanopaste count
+		int equippedRecovery = PlayerManagerImplement::ms_Instance->getRecoveryEquipped();
+		if (equippedRecovery == 1) { // Nanopaste
+			cItemPossessionCure* nanopastehandler = ((cItemPossessionCure* (__thiscall*)(unsigned long, int))(shared::base + 0x54E5E0))(shared::base + 0x1486EA0, 0x23A6F56D);
+			RenderTextWithShadow(std::to_string(nanopastehandler->m_nBasePossession), 75, 100 + 60 * hpDrawOffset, C_BLACK, C_HPYELLOW);
+		}
+		else if (equippedRecovery == 2) { // Electrolyte packs (NOT USABLE)
+			cItemPossessionCure* electrolytes = ((cItemPossessionCure * (__thiscall*)(unsigned long, int))(shared::base + 0x54E5E0))(shared::base + 0x1486EA0, 0xD92BB0F);
+			RenderTextWithShadow(std::to_string(electrolytes->m_nBasePossession), 75, 100 + 60 * hpDrawOffset, C_BLACK, C_CYAN);
 		}
 		
 		int draw_offset = 0;
