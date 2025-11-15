@@ -6,10 +6,10 @@
 
 extern bool EveryHeal;
 
-bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
+bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr);
 
-bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
+bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string GamepadBind,
 	InputBitflags bit, float* altField, bool invert);
 
 void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int controllerNumber = -1);

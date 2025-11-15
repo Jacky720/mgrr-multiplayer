@@ -33,14 +33,14 @@ void GetCameraInput(int controllerNumber) {
 	// Camera handling
 	float deltaYaw = 0.0;
 	//left
-	if (CheckControlPressed(controllerNumber, CamLeft, GamepadCamLeft)) {
+	if (CheckControlPressed(controllerNumber, GamepadCamLeft)) {
 		deltaYaw = -1;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadCamLeft))
 			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamLeft);
 	}
 
 	//right
-	if (CheckControlPressed(controllerNumber, CamRight, GamepadCamRight)) {
+	if (CheckControlPressed(controllerNumber, GamepadCamRight)) {
 		deltaYaw = 1;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadCamRight))
 			deltaYaw *= GetGamepadAnalog(controllerNumber, GamepadCamRight);
@@ -52,14 +52,14 @@ void GetCameraInput(int controllerNumber) {
 
 	float deltaPitch = 0.0;
 	//up
-	if (CheckControlPressed(controllerNumber, CamUp, GamepadCamUp)) {
+	if (CheckControlPressed(controllerNumber, GamepadCamUp)) {
 		deltaPitch = -1;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadCamUp))
 			deltaPitch *= GetGamepadAnalog(controllerNumber, GamepadCamUp);
 	}
 
 	//down
-	if (CheckControlPressed(controllerNumber, CamDown, GamepadCamDown)) {
+	if (CheckControlPressed(controllerNumber, GamepadCamDown)) {
 		deltaPitch = 1;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadCamDown))
 			deltaPitch *= GetGamepadAnalog(controllerNumber, GamepadCamDown);

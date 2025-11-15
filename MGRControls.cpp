@@ -505,33 +505,6 @@ std::string TryParseVKToHex(std::string in) {
 }
 
 
-
-
-std::string Forward = "26";
-std::string Back = "28";
-std::string Left = "25";
-std::string Right = "27";
-std::string NormalAttack = "49"; // I
-std::string StrongAttack = "4F"; // O
-std::string Jump = "50"; // P
-std::string Interact = "74";
-std::string CamUp = "70";
-std::string CamDown = "71";
-std::string CamLeft = "72";
-std::string CamRight = "73";
-std::string Heal = "76";
-std::string Taunt = "59"; // Y
-std::string WeaponMenu = "77";
-std::string WeaponMenu2 = "78";
-std::string Run = "55"; // U
-std::string BladeMode = "4C"; // L
-std::string Subweapon = "79";
-std::string Lockon = "80";
-std::string Pause = "81";
-std::string Pause2 = "75";
-std::string Ability = "82";
-std::string CamReset = "83";
-
 std::string GamepadForward = "XINPUT_GAMEPAD_LEFT_THUMB_UP";
 std::string GamepadBack = "XINPUT_GAMEPAD_LEFT_THUMB_DOWN";
 std::string GamepadLeft = "XINPUT_GAMEPAD_LEFT_THUMB_LEFT";
@@ -560,8 +533,8 @@ std::string GamepadCamReset = "XINPUT_GAMEPAD_RIGHT_THUMB";
 std::string GamepadSpawn = "XINPUT_GAMEPAD_START";
 
 
-void LoadControl(CIniReader iniReader, std::string* Control, std::string* GamepadControl, std::string name) {
-	*Control = TryParseVKToHex(iniReader.ReadString("MGRRMultiplayerControls", name, *Control));
+void LoadControl(CIniReader iniReader, std::string* GamepadControl, std::string name) {
+	//*Control = TryParseVKToHex(iniReader.ReadString("MGRRMultiplayerControls", name, *Control));
 	*GamepadControl = iniReader.ReadString("MGRRMultiplayerControls", "Gamepad" + name, *GamepadControl);
 }
 
@@ -570,30 +543,30 @@ void LoadConfig() noexcept
 	// Load configuration data
 	CIniReader iniReader("MGRRMultiplayerControls.ini");
 
-	LoadControl(iniReader, &Forward, &GamepadForward, "Forward");
-	LoadControl(iniReader, &Back, &GamepadBack, "Back");
-	LoadControl(iniReader, &Left, &GamepadLeft, "Left");
-	LoadControl(iniReader, &Right, &GamepadRight, "Right");
-	LoadControl(iniReader, &NormalAttack, &GamepadNormalAttack, "NormalAttack");
-	LoadControl(iniReader, &StrongAttack, &GamepadStrongAttack, "StrongAttack");
-	LoadControl(iniReader, &Jump, &GamepadJump, "Jump");
-	LoadControl(iniReader, &Interact, &GamepadInteract, "Interact");
-	LoadControl(iniReader, &Run, &GamepadRun, "Run");
-	LoadControl(iniReader, &BladeMode, &GamepadBladeMode, "BladeMode");
-	LoadControl(iniReader, &Lockon, &GamepadLockon, "Lockon");
-	LoadControl(iniReader, &Subweapon, &GamepadSubweapon, "Subweapon");
-	LoadControl(iniReader, &CamUp, &GamepadCamUp, "CamUp");
-	LoadControl(iniReader, &CamDown, &GamepadCamDown, "CamDown");
-	LoadControl(iniReader, &CamLeft, &GamepadCamLeft, "CamLeft");
-	LoadControl(iniReader, &CamRight, &GamepadCamRight, "CamRight");
-	LoadControl(iniReader, &Taunt, &GamepadTaunt, "Taunt");
-	LoadControl(iniReader, &WeaponMenu, &GamepadWeaponMenu, "WeaponMenu");
-	LoadControl(iniReader, &WeaponMenu2, &GamepadWeaponMenu2, "WeaponMenu2");
-	LoadControl(iniReader, &Heal, &GamepadHeal, "Heal");
-	LoadControl(iniReader, &Pause, &GamepadPause, "Pause");
-	LoadControl(iniReader, &Pause2, &GamepadPause2, "Codec"); // Note non-matching, Codec is apparently an enum somewhere
-	LoadControl(iniReader, &Ability, &GamepadAbility, "Ability");
-	LoadControl(iniReader, &CamReset, &GamepadCamReset, "CamReset");
+	LoadControl(iniReader, &GamepadForward, "Forward");
+	LoadControl(iniReader, &GamepadBack, "Back");
+	LoadControl(iniReader, &GamepadLeft, "Left");
+	LoadControl(iniReader, &GamepadRight, "Right");
+	LoadControl(iniReader, &GamepadNormalAttack, "NormalAttack");
+	LoadControl(iniReader, &GamepadStrongAttack, "StrongAttack");
+	LoadControl(iniReader, &GamepadJump, "Jump");
+	LoadControl(iniReader, &GamepadInteract, "Interact");
+	LoadControl(iniReader, &GamepadRun, "Run");
+	LoadControl(iniReader, &GamepadBladeMode, "BladeMode");
+	LoadControl(iniReader, &GamepadLockon, "Lockon");
+	LoadControl(iniReader, &GamepadSubweapon, "Subweapon");
+	LoadControl(iniReader, &GamepadCamUp, "CamUp");
+	LoadControl(iniReader, &GamepadCamDown, "CamDown");
+	LoadControl(iniReader, &GamepadCamLeft, "CamLeft");
+	LoadControl(iniReader, &GamepadCamRight, "CamRight");
+	LoadControl(iniReader, &GamepadTaunt, "Taunt");
+	LoadControl(iniReader, &GamepadWeaponMenu, "WeaponMenu");
+	LoadControl(iniReader, &GamepadWeaponMenu2, "WeaponMenu2");
+	LoadControl(iniReader, &GamepadHeal, "Heal");
+	LoadControl(iniReader, &GamepadPause, "Pause");
+	LoadControl(iniReader, &GamepadPause2, "Codec"); // Note non-matching, Codec is apparently an enum somewhere
+	LoadControl(iniReader, &GamepadAbility, "Ability");
+	LoadControl(iniReader, &GamepadCamReset, "CamReset");
 
 	GamepadSpawn = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawn", GamepadSpawn);
 
@@ -657,68 +630,68 @@ std::string GetVanillaKeybind(InputBitflags bit) {
 #pragma warning(restore:26813)
 }
 
-std::string GetVanillaKeybind(std::string Keybind) {
-	if (Keybind == WeaponMenu || Keybind == WeaponMenu2)
+std::string GetKeyboardBind(std::string Keybind) {
+	if (Keybind == GamepadWeaponMenu || Keybind == GamepadWeaponMenu2)
 		return "32"; // "2"
-	if (Keybind == Heal)
+	if (Keybind == GamepadHeal)
 		return "51"; // "Q"
-	if (Keybind == Taunt)
+	if (Keybind == GamepadTaunt)
 		return "31"; // "1"
-	if (Keybind == Jump)
+	if (Keybind == GamepadJump)
 		return "20"; // " "
-	if (Keybind == Interact)
+	if (Keybind == GamepadInteract)
 		return "46"; // "F"
-	if (Keybind == NormalAttack)
+	if (Keybind == GamepadNormalAttack)
 		return "01"; // LMB
-	if (Keybind == StrongAttack)
+	if (Keybind == GamepadStrongAttack)
 		return "02"; // RMB
-	if (Keybind == Pause)
+	if (Keybind == GamepadPause)
 		return "1B"; // Escape
-	if (Keybind == Pause2)
+	if (Keybind == GamepadPause2)
 		return "33"; // "3"
-	if (Keybind == Subweapon)
+	if (Keybind == GamepadSubweapon)
 		return "43"; // "C"
-	if (Keybind == BladeMode)
+	if (Keybind == GamepadBladeMode)
 		return "A0"; // LShift
-	if (Keybind == Ability)
+	if (Keybind == GamepadAbility)
 		return "52"; // "R", technically not a 1:1 match because platinum
-	if (Keybind == Lockon)
+	if (Keybind == GamepadLockon)
 		return "45"; // "E"
-	if (Keybind == Run)
+	if (Keybind == GamepadRun)
 		return "A2"; // LCtrl
-	if (Keybind == CamReset)
+	if (Keybind == GamepadCamReset)
 		return "03"; // MMB
-	if (Keybind == Left)
+	if (Keybind == GamepadLeft)
 		return "41"; // "A"
-	if (Keybind == Right)
+	if (Keybind == GamepadRight)
 		return "44"; // "D"
-	if (Keybind == Forward)
+	if (Keybind == GamepadForward)
 		return "57"; // "W"
-	if (Keybind == Back)
+	if (Keybind == GamepadBack)
 		return "53"; // "S"
 #ifdef MOUSETEST
-	if (Keybind == CamLeft)
+	if (Keybind == GamepadCamLeft)
 		return "MouseLeft";
-	if (Keybind == CamRight)
+	if (Keybind == GamepadCamRight)
 		return "MouseRight";
-	if (Keybind == CamUp)
+	if (Keybind == GamepadCamUp)
 		return "MouseUp";
-	if (Keybind == CamDown)
+	if (Keybind == GamepadCamDown)
 		return "MouseDown";
 #endif
 	return "None"; // Camera is analog and won't really work here anyway
 }
 
-bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind) {
-	if (controllerNumber == -1) {
-		Keybind = GetVanillaKeybind(Keybind);
+bool CheckControlPressed(int controllerNumber, std::string GamepadBind) {
+	if (controllerNumber == -1) { // Keyboard
+		std::string Keybind = GetKeyboardBind(GamepadBind);
 #ifdef MOUSETEST
 		if (Keybind[0] == 'M')
 			return GetMouseAnalog(Keybind) > 0.0;
 #endif
 		if (Keybind == "None")
 			return false;
+		return (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000);
 	}
-	return ((controllerNumber <= 0 && (GetKeyState(std::stoi(Keybind, nullptr, 16)) & 0x8000)) // Debug feature, keyboard controls controller 1
-		|| IsGamepadButtonPressed(controllerNumber, GamepadBind));
+	return IsGamepadButtonPressed(controllerNumber, GamepadBind);
 }

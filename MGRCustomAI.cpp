@@ -12,7 +12,7 @@ bool EveryHeal = true;
 bool isARPressed = false;
 bool wasARPressed = false;
 
-bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
+bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string GamepadBind,
 	InputBitflags bit, unsigned int* altField1 = nullptr, unsigned int* altField2 = nullptr) {
 	int playerIndex = -1;
 	for (int i = 0; i < 5; i++) {
@@ -20,7 +20,7 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 			playerIndex = i;
 	}
 
-	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
+	if (CheckControlPressed(controllerNumber, GamepadBind)) {
 		player->m_CurrentInput.m_nButtonsDown |= bit;
 		if (!(prevPressed[playerIndex] & bit)) {
 			player->m_CurrentInput.m_nButtonsPressed |= bit;
@@ -47,9 +47,9 @@ bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string Keybind
 	}
 }
 
-bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Keybind, std::string GamepadBind,
+bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string GamepadBind,
 	InputBitflags bit, float* altField, bool invert) {
-	if (CheckControlPressed(controllerNumber, Keybind, GamepadBind)) {
+	if (CheckControlPressed(controllerNumber, GamepadBind)) {
 		player->m_CurrentInput.m_nButtonsDown |= bit;
 		player->m_CurrentInput.m_nButtonsReleased |= bit;
 		player->m_CurrentInput.m_nButtonsAlternated |= bit;
@@ -82,22 +82,22 @@ typedef struct actionList {
 void UpdateBossActions(BehaviorEmBase* Enemy, ActionList* BossActions, int controllerNumber = -1) {
 
 	// Armstrong move (Sam move)
-	if (CheckControlPressed(controllerNumber, NormalAttack, GamepadNormalAttack)
+	if (CheckControlPressed(controllerNumber, GamepadNormalAttack)
 		&& Enemy->m_nCurrentAction != BossActions->LightAttack) { // Two punches (four strikes)
 		Enemy->setState(BossActions->LightAttack, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, StrongAttack, GamepadStrongAttack)
+	if (CheckControlPressed(controllerNumber, GamepadStrongAttack)
 		&& Enemy->m_nCurrentAction != BossActions->HeavyAttack) { // Two punches, kick, punch (four strike w/ sheath)
 		Enemy->setState(BossActions->HeavyAttack, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, Run, GamepadRun)
+	if (CheckControlPressed(controllerNumber, GamepadRun)
 		&& (
-			CheckControlPressed(controllerNumber, Forward, GamepadForward)
-		    || CheckControlPressed(controllerNumber, Back, GamepadBack)
-		    || CheckControlPressed(controllerNumber, Left, GamepadLeft)
-		    || CheckControlPressed(controllerNumber, Right, GamepadRight))) { // Run QTE (Assault Rush)
+			CheckControlPressed(controllerNumber, GamepadForward)
+		    || CheckControlPressed(controllerNumber, GamepadBack)
+		    || CheckControlPressed(controllerNumber, GamepadLeft)
+		    || CheckControlPressed(controllerNumber, GamepadRight))) { // Run QTE (Assault Rush)
 		if (Enemy->m_nCurrentAction != BossActions->StartRun && Enemy->m_nCurrentAction != BossActions->MidRun)
 			Enemy->setState(BossActions->StartRun, 0, 0, 0);
 	}
@@ -105,22 +105,22 @@ void UpdateBossActions(BehaviorEmBase* Enemy, ActionList* BossActions, int contr
 		Enemy->setState(BossActions->EndRun, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, Interact, GamepadInteract)
+	if (CheckControlPressed(controllerNumber, GamepadInteract)
 		&& Enemy->m_nCurrentAction != BossActions->Interaction) { // Overhead with AOE (unblockable QTE)
 		Enemy->setState(BossActions->Interaction, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, Jump, GamepadJump)
+	if (CheckControlPressed(controllerNumber, GamepadJump)
 		&& Enemy->m_nCurrentAction != BossActions->Jumping) { // Uppercut (perfect parry QTE fail)
 		Enemy->setState(BossActions->Jumping, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, Taunt, GamepadTaunt)
+	if (CheckControlPressed(controllerNumber, GamepadTaunt)
 		&& Enemy->m_nCurrentAction != BossActions->Taunting) { // Explode (taunt)
 		Enemy->setState(BossActions->Taunting, 0, 0, 0);
 	}
 
-	if (CheckControlPressed(controllerNumber, BladeMode, GamepadBladeMode)) { // Heal (un-perfect-parryable four strike)
+	if (CheckControlPressed(controllerNumber, GamepadBladeMode)) { // Heal (un-perfect-parryable four strike)
 		if (Enemy->m_nCurrentAction != BossActions->Special)
 			Enemy->setState(BossActions->Special, 0, 0, 0);
 	}
@@ -153,7 +153,7 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	}
 	*/
 
-	if (CheckControlPressed(controllerNumber, Pause2, GamepadPause2))
+	if (CheckControlPressed(controllerNumber, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
 
@@ -195,28 +195,28 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 
 
 	//forward
-	if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
+	if (CheckControlPressed(controllerNumber, GamepadForward)) {
 		field_Y = -1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadForward))
 			field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
 	}
 
 	//back
-	if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
+	if (CheckControlPressed(controllerNumber, GamepadBack)) {
 		field_Y = 1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadBack))
 			field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
 	}
 
 	//left
-	if (CheckControlPressed(controllerNumber, Left, GamepadLeft)) {
+	if (CheckControlPressed(controllerNumber, GamepadLeft)) {
 		field_X = -1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadLeft))
 			field_X *= GetGamepadAnalog(controllerNumber, GamepadLeft);
 	}
 
 	//right
-	if (CheckControlPressed(controllerNumber, Right, GamepadRight)) {
+	if (CheckControlPressed(controllerNumber, GamepadRight)) {
 		field_X = 1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadRight))
 			field_X *= GetGamepadAnalog(controllerNumber, GamepadRight);
@@ -327,17 +327,17 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	if ((GetKeyState('8') & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadLockon))
 		((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(player);
 
-	if ((controllerNumber == 0 && GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
+	if (CheckControlPressed(controllerNumber, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
 
 	bool isAny = false;
 
 	// Left stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->m_CurrentInput.m_fLeftStick.y, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->m_CurrentInput.m_fLeftStick.y, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->m_CurrentInput.m_fLeftStick.x, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->m_CurrentInput.m_fLeftStick.x, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadForward, ForwardBit, &player->m_CurrentInput.m_fLeftStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadBack, BackwardBit, &player->m_CurrentInput.m_fLeftStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadLeft, LeftBit, &player->m_CurrentInput.m_fLeftStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadRight, RightBit, &player->m_CurrentInput.m_fLeftStick.x, false);
 
 	// PVP Homing
 	if (!isAny && EnableDamageToPlayers && !player->isIdle()) {
@@ -377,32 +377,32 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 		}
 	}
 	// Right stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->m_CurrentInput.m_fRightStick.y, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->m_CurrentInput.m_fRightStick.y, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamUp, CamUpBit, &player->m_CurrentInput.m_fRightStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamDown, CamDownBit, &player->m_CurrentInput.m_fRightStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false);
 	// Face buttons
-	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
-	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
-	isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadInteract, InteractBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
 	// Triggers and bumpers (lock-on takes camera control also)
-	isAny |= SetFlagsForAction(player, controllerNumber, Lockon, GamepadLockon, LockOnBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
-	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated)) {
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadLockon, LockOnBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
+	if (!SetFlagsForAction(player, controllerNumber, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated)) {
 		GetCameraInput(controllerNumber); // No camera control in Blade Mode
 	}
 	else {
 		isAny |= true;
 	}
-	isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadSubweapon, SubWeaponBit);
 	// D-pad
 	if (player->m_ModelIndex == 0x11400) {
-		isAny |= SetFlagsForAction(player, controllerNumber, Taunt, GamepadTaunt, TauntBit);
+		isAny |= SetFlagsForAction(player, controllerNumber, GamepadTaunt, TauntBit);
 	}
 	else {
 		// Synchronize AR vision for Wolf and Raiden
-		isARPressed |= CheckControlPressed(controllerNumber, Taunt, GamepadTaunt);
+		isARPressed |= CheckControlPressed(controllerNumber, GamepadTaunt);
 		isAny |= isARPressed;
 		if (player == MainPlayer) {
 			if (isARPressed) {
@@ -423,7 +423,7 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 		}
 	}
 
-	if (SetFlagsForAction(player, controllerNumber, Heal, GamepadHeal, HealBit)) { // Plays effect, does not heal
+	if (SetFlagsForAction(player, controllerNumber, GamepadHeal, HealBit)) { // Plays effect, does not heal
 		isAny |= true;
 		if (EveryHeal && healTimers[i] <= 0) {
 			healTimers[i] = 30 * 60;
@@ -432,13 +432,13 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 	}
 	if (healTimers[i] > 0)
 		healTimers[i]--;
-	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu, GamepadWeaponMenu, WeaponMenuBit);
-	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu2, GamepadWeaponMenu2, WeaponMenu2Bit);
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu, WeaponMenuBit);
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu2, WeaponMenu2Bit);
 	// Other
-	isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, CamReset, GamepadCamReset, CamResetBit);
-	//isAny |= SetFlagsForAction(player, controllerNumber, Pause, GamepadPause, PauseBit); // Does not work
-	//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadAbility, AbilityBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadCamReset, CamResetBit);
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadPause, PauseBit); // Does not work
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadPause2, CodecBit); // Non-Raidens don't have codec
 
 	if (!isAny) {
 		player->m_CurrentInput.m_nButtonsPressed = 0;
@@ -467,25 +467,25 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	// Aight we're stealing the rotation code from bosses because that locked itself up somehow
 	float field_X = 0; float field_Y = 0;
 	//forward
-	if (CheckControlPressed(controllerNumber, Forward, GamepadForward)) {
+	if (CheckControlPressed(controllerNumber, GamepadForward)) {
 		field_Y = -1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadForward)) field_Y *= GetGamepadAnalog(controllerNumber, GamepadForward);
 	}
 
 	//back
-	if (CheckControlPressed(controllerNumber, Back, GamepadBack)) {
+	if (CheckControlPressed(controllerNumber, GamepadBack)) {
 		field_Y = 1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadBack)) field_Y *= GetGamepadAnalog(controllerNumber, GamepadBack);
 	}
 
 	//left
-	if (CheckControlPressed(controllerNumber, Left, GamepadLeft)) {
+	if (CheckControlPressed(controllerNumber, GamepadLeft)) {
 		field_X = -1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadLeft)) field_X *= GetGamepadAnalog(controllerNumber, GamepadLeft);
 	}
 
 	//right
-	if (CheckControlPressed(controllerNumber, Right, GamepadRight)) {
+	if (CheckControlPressed(controllerNumber, GamepadRight)) {
 		field_X = 1000;
 		if (IsGamepadButtonPressed(controllerNumber, GamepadRight)) field_X *= GetGamepadAnalog(controllerNumber, GamepadRight);
 	}
@@ -513,43 +513,43 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 		AutoNormalAttackEnable = false;
 	}*/
 
-	if ((controllerNumber == 0 && GetKeyState(std::stoi(Pause2, nullptr, 16)) & 0x8000) || IsGamepadButtonPressed(controllerNumber, GamepadPause2))
+	if (CheckControlPressed(controllerNumber, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, controllerNumber);
 
 
 	bool isAny = false;
 
 	// Left stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Forward, GamepadForward, ForwardBit, &player->m_CurrentInput.m_fLeftStick.y, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Back, GamepadBack, BackwardBit, &player->m_CurrentInput.m_fLeftStick.y, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Left, GamepadLeft, LeftBit, &player->m_CurrentInput.m_fLeftStick.x, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, Right, GamepadRight, RightBit, &player->m_CurrentInput.m_fLeftStick.x, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadForward, ForwardBit, &player->m_CurrentInput.m_fLeftStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadBack, BackwardBit, &player->m_CurrentInput.m_fLeftStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadLeft, LeftBit, &player->m_CurrentInput.m_fLeftStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadRight, RightBit, &player->m_CurrentInput.m_fLeftStick.x, false);
 
 	// PVP Homing - disabled
 	// Right stick
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamUp, GamepadCamUp, CamUpBit, &player->m_CurrentInput.m_fRightStick.y, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamDown, GamepadCamDown, CamDownBit, &player->m_CurrentInput.m_fRightStick.y, false);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamLeft, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true);
-	isAny |= SetFlagsForAnalog(player, controllerNumber, CamRight, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamUp, CamUpBit, &player->m_CurrentInput.m_fRightStick.y, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamDown, CamDownBit, &player->m_CurrentInput.m_fRightStick.y, false);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true);
+	isAny |= SetFlagsForAnalog(player, controllerNumber, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false);
 	// Face buttons
-	isAny |= SetFlagsForAction(player, controllerNumber, NormalAttack, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
-	isAny |= SetFlagsForAction(player, controllerNumber, StrongAttack, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
-	isAny |= SetFlagsForAction(player, controllerNumber, Interact, GamepadInteract, InteractBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Jump, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadInteract, InteractBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
 	// Triggers and bumpers (lock-on takes camera control also)
-	isAny |= SetFlagsForAction(player, controllerNumber, Lockon, GamepadLockon, LockOnBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, Run, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
-	if (!SetFlagsForAction(player, controllerNumber, BladeMode, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated)) {
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadLockon, LockOnBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated);
+	if (!SetFlagsForAction(player, controllerNumber, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated)) {
 		GetCameraInput(controllerNumber); // No camera control in Blade Mode
 	}
 	else {
 		isAny |= true;
 	}
-	isAny |= SetFlagsForAction(player, controllerNumber, Subweapon, GamepadSubweapon, SubWeaponBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadSubweapon, SubWeaponBit);
 	// D-pad
 	// No AR
 
-	if (SetFlagsForAction(player, controllerNumber, Heal, GamepadHeal, HealBit)) { // Plays effect, does not heal
+	if (SetFlagsForAction(player, controllerNumber, GamepadHeal, HealBit)) { // Plays effect, does not heal
 		isAny |= true;
 		if (EveryHeal && healTimers[i] <= 0) {
 			healTimers[i] = 30 * 60;
@@ -558,13 +558,13 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	}
 	if (healTimers[i] > 0)
 		healTimers[i]--;
-	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu, GamepadWeaponMenu, WeaponMenuBit);
-	//isAny |= SetFlagsForAction(player, controllerNumber, WeaponMenu2, GamepadWeaponMenu2, WeaponMenu2Bit);
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu, WeaponMenuBit);
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu2, WeaponMenu2Bit);
 	// Other
-	isAny |= SetFlagsForAction(player, controllerNumber, Ability, GamepadAbility, AbilityBit);
-	isAny |= SetFlagsForAction(player, controllerNumber, CamReset, GamepadCamReset, CamResetBit);
-	//isAny |= SetFlagsForAction(player, controllerNumber, Pause, GamepadPause, PauseBit); // Does not work
-	//isAny |= SetFlagsForAction(player, controllerNumber, Pause2, GamepadPause2, CodecBit); // Non-Raidens don't have codec
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadAbility, AbilityBit);
+	isAny |= SetFlagsForAction(player, controllerNumber, GamepadCamReset, CamResetBit);
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadPause, PauseBit); // Does not work
+	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadPause2, CodecBit); // Non-Raidens don't have codec
 
 
 }

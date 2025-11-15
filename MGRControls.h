@@ -30,14 +30,11 @@ enum InputBitflags {
 	CamDownBit = 0x8000000,
 };
 
-extern std::string Forward, Back, Left, Right, NormalAttack, StrongAttack, Jump, Interact,
-	CamUp, CamDown, CamLeft, CamRight, Heal, Taunt, WeaponMenu, WeaponMenu2, Run,
-	BladeMode, Subweapon, Lockon, Pause, Pause2, Ability, CamReset, GamepadForward,
-	GamepadBack, GamepadLeft, GamepadRight, GamepadNormalAttack, GamepadStrongAttack,
-	GamepadJump, GamepadInteract, GamepadCamUp, GamepadCamDown, GamepadCamLeft,
-	GamepadCamRight, GamepadHeal, GamepadTaunt, GamepadWeaponMenu, GamepadWeaponMenu2,
-	GamepadRun, GamepadBladeMode, GamepadSubweapon, GamepadLockon, GamepadPause, GamepadPause2,
-	GamepadAbility, GamepadCamReset, GamepadSpawn;
+extern std::string GamepadForward, GamepadBack, GamepadLeft, GamepadRight,
+	GamepadNormalAttack, GamepadStrongAttack, GamepadJump, GamepadInteract, GamepadCamUp,
+	GamepadCamDown, GamepadCamLeft, GamepadCamRight, GamepadHeal, GamepadTaunt,
+	GamepadWeaponMenu, GamepadWeaponMenu2, GamepadRun, GamepadBladeMode, GamepadSubweapon,
+	GamepadLockon, GamepadPause, GamepadPause2, GamepadAbility, GamepadCamReset, GamepadSpawn;
 
 float GetGamepadAnalog(int controllerIndex, const std::string& button);
 
@@ -49,5 +46,5 @@ std::string TryParseVKToHex(std::string in);
 
 void LoadConfig();
 
-bool CheckControlPressed(int controllerNumber, std::string Keybind, std::string GamepadBind);
+bool CheckControlPressed(int controllerNumber, std::string GamepadBind);
 

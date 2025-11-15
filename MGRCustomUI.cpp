@@ -438,8 +438,13 @@ void Present() {
 			WorldToScreen(player_pos, temporary_projection);
 			//pDrawList->AddText(ImVec2(temporary_projection.x, temporary_projection.y), ImColor(255, 255, 255), std::to_string(i).c_str());
 
-			RenderTextWithShadow("controller", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
-			RenderTextWithShadow(std::to_string(i), (int)(temporary_projection.x - 50), (int)temporary_projection.y);
+			if (i == 0) {
+				RenderTextWithShadow("keyboard", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
+			}
+			else {
+				RenderTextWithShadow("controller", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
+				RenderTextWithShadow(std::to_string(i), (int)(temporary_projection.x - 50), (int)temporary_projection.y);
+			}
 			i++;
 
 		}
