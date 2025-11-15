@@ -58,7 +58,56 @@ LRESULT CALLBACK hkWindowProc(
 #include "imgui/imgui_impl_win32.h"
 
 
-std::string character_titles[7] = {"sam", "blade_wolf", "boss_sam", "sundowner", "senator_armstrong", "raiden", "dwarf_gekko"};
+std::vector<std::string> character_titles[] = {
+	{"sam"},
+	{"blade_wolf"},
+	{"boss_sam"},
+	{"sundowner"},
+	{"senator_armstrong_(shirt)", "senator_armstrong_(shirtless)"},
+	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
+     "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
+     "gray_fox", "raiden_(white_armor)", "raiden_(inferno_armor)", "raiden_(commando_armor)"}, // Mariachi omitted
+	{"dwarf_gekko"} };
+
+enum Costumes {
+	CustomBody,
+	CustomBodyBlue,
+	CustomBodyRed,
+	CustomBodyYellow,
+	DesperadoBody,
+	Suit,
+	Mariachi,
+	StandardBody,
+	OriginalBody,
+	GrayFox,
+	WhiteArmor,
+	InfernoArmor,
+	CommandoArmor,
+	CustomBodyDamaged,
+	PrologueBody,
+	Sam,
+	LQ84i
+};
+
+ModelItems* costumesList = (ModelItems*)(shared::base + 0x14A9828);
+
+std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
+	{(eObjID)0x11400, { costumesList[Costumes::Sam] }},
+	{(eObjID)0x11500, { {0x11505, 0, 0, 0, 0} }},
+	{(eObjID)0x10010, { costumesList[Costumes::CustomBody],
+						costumesList[Costumes::CustomBodyBlue],
+						costumesList[Costumes::CustomBodyRed],
+						costumesList[Costumes::CustomBodyYellow],
+						costumesList[Costumes::DesperadoBody],
+						costumesList[Costumes::Suit],
+						costumesList[Costumes::StandardBody],
+						costumesList[Costumes::OriginalBody],
+						costumesList[Costumes::GrayFox],
+						costumesList[Costumes::WhiteArmor],
+						costumesList[Costumes::InfernoArmor],
+						costumesList[Costumes::CommandoArmor] }}
+	// Armstrong has custom model items, in the sense that he instead spawns em070a. See SpawnCharacter.
+};
 
 
 bool isInit = false;
@@ -174,62 +223,12 @@ Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);*/
 
 //KeysStruct currentKey;
 
-bool isPlayerAtOnce = false;
+//bool isPlayerAtOnce = false;
 bool gotOriginalModelItems = false;
 
 Pl0000* players[5] = { nullptr };
 eObjID playerTypes[5] = { (eObjID)0 };
 int playerSpawnCheck[5] = { 0 };
-
-void Spawner(eObjID id, int controllerIndex = -1) {
-	if (controllerIndex > -1) {
-		playerTypes[controllerIndex + 1] = id;
-	}
-	else {
-		for (int i = 0; i < 5; i++) {
-			if (!playerTypes[i]) {
-				playerTypes[i] = id;
-				controllerIndex = i - 1;
-				break;
-			}
-		}
-	}
-
-	if (id == (eObjID)0x11400) {
-		modelItems->m_nHair = 0x11401;
-		modelItems->m_nVisor = 0x11402;
-		modelItems->m_nSheath = 0x11404;
-		modelItems->m_nHead = 0x11405;
-		modelItems->m_nModel = 0x11406;
-		*modelSword = 0x11403;
-	}
-	else if (id == (eObjID)0x10010) {
-		modelItems->m_nHair = 0x11011;
-		modelItems->m_nVisor = 0x11014;
-		modelItems->m_nSheath = 0x11013;
-		modelItems->m_nHead = 0x11017;
-		modelItems->m_nModel = 0x11010;
-		if (PhaseManager::ms_Instance.isDLCPhase())
-			*modelSword = 0x11403;
-		else
-			*modelSword = 0x11012;
-	}
-	else if (id == (eObjID)0x11500) {
-		modelItems->m_nModel = 0x11505;
-	}
-
-	int setType = 0;
-	if (id == (eObjID)0x12040)
-		setType = 1;
-
-	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
-	
-	// Frame counter, if it hits zero and the player does not exist, resets playertype
-	playerSpawnCheck[controllerIndex + 1] = 30;
-
-	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
-
-}
 
 Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
 	float minDist = INFINITY;
@@ -305,7 +304,7 @@ void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1) {
 	}
 }
 
-
+/*
 struct KeyState {
 	bool isPressed;
 	bool isHolding;
@@ -340,7 +339,87 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 	}
 	return *isMenuShowPtr; // Âîçâðàùàåì òåêóùåå ñîñòîÿíèå ìåíþ
 }
+*/
 
+void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
+	if (controllerIndex > -1) {
+		playerTypes[controllerIndex + 1] = id;
+	}
+	else {
+		for (int i = 0; i < 5; i++) {
+			if (!playerTypes[i]) {
+				playerTypes[i] = id;
+				controllerIndex = i - 1;
+				break;
+			}
+		}
+	}
+
+	if (id == (eObjID)0x11400) {
+		if (PhaseManager::ms_Instance.isDLCPhase())
+			*modelSword = 0x11403;
+		else
+			*modelSword = 0x13005;
+	}
+	else if (id == (eObjID)0x10010) {
+		if (PhaseManager::ms_Instance.isDLCPhase())
+			*modelSword = 0x11403;
+		else
+			*modelSword = 0x11012;
+	}
+	else if (id == (eObjID)0x11500) {
+		*modelSword = 0x11501;
+	}
+
+	if (characterModelItems.contains(id)) {
+		*modelItems = characterModelItems[id][costumeIndex];
+	}
+
+	int setType = 0;
+	if (id == (eObjID)0x12040)
+		setType = 1;
+
+	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
+
+	// Frame counter, if it hits zero and the player does not exist, resets playertype
+	playerSpawnCheck[controllerIndex + 1] = 30;
+
+	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
+
+}
+
+void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
+
+	if (id == 0)
+		Spawner((eObjID)0x11400, controller, costumeIndex);
+	else if (id == 1)
+		Spawner((eObjID)0x11500, controller, costumeIndex);
+	else if (id == 2) {
+		Spawner((eObjID)0x20020, controller);
+		PlayAsSam = true;
+	}
+	else if (id == 3) {
+		Spawner((eObjID)0x20310, controller);
+		PlayAsSundowner = true;
+	}
+	else if (id == 4) {
+		if (costumeIndex == 1)
+			Spawner((eObjID)0x2070A, controller);
+		else
+			Spawner((eObjID)0x20700, controller);
+		PlayAsArmstrong = true;
+	}
+	else if (id == 5) {
+		Spawner((eObjID)0x10010, controller, costumeIndex);
+	}
+	else if (id == 6) {
+		Spawner((eObjID)0x12040, controller);
+	}
+	RecalibrateBossCode();
+	//camera back to Raiden
+	//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+
+}
 
 
 Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
@@ -405,7 +484,7 @@ void Update()
 			playerTypes[i] = (eObjID)0;
 		}
 		ResetControllerAllFlags();
-		isPlayerAtOnce = false;
+		gotOriginalModelItems = false;
 		return;
 	}
 
@@ -442,27 +521,6 @@ void Update()
 		players[p1Index] = MainPlayer;
 		playerTypes[p1Index] = MainPlayer->m_pEntity->m_EntityIndex;
 	}
-
-	if (!isPlayerAtOnce) {
-		// Sam
-		for (int itemToRequest = 0x11401; itemToRequest <= 0x11406; itemToRequest++)
-			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		cObjReadManager::Instance.requestWork((eObjID)0x3D070, 0); // Sam projectile
-		
-		// Wolf
-		for (int itemToRequest = 0x11501; itemToRequest <= 0x11506; itemToRequest++)
-			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		
-		// Raiden
-		for (int itemToRequest = 0x11010; itemToRequest <= 0x11014; itemToRequest++)
-			cObjReadManager::Instance.requestWork((eObjID)itemToRequest, 0);
-		cObjReadManager::Instance.requestWork((eObjID)0x11017, 0);
-
-
-		isPlayerAtOnce = true;
-		gotOriginalModelItems = false;
-	}
-
 
 	modelItems = injector::ReadMemory<ModelItems*>(shared::base + 0x17EA01C, true);
 	modelSword = injector::ReadMemory<unsigned int*>(shared::base + 0x17E9FF4, true);
@@ -534,6 +592,7 @@ void Update()
 			playerTypes[i] = (eObjID)0;
 			if (i > 0)
 				controller_flag[i - 1] = 1;
+			m_EntQueue.clear();
 		}
 	}
 
@@ -608,33 +667,3 @@ public:
 		Events::OnTickEvent += Update;
 	}
 } plugin;
-
-void SpawnCharacter(int id, int controller) {
-
-	if (id == 0)
-		Spawner((eObjID)0x11400, controller);
-	else if (id == 1)
-		Spawner((eObjID)0x11500, controller);
-	else if (id == 2) {
-		Spawner((eObjID)0x20020, controller);
-		PlayAsSam = true;
-	}
-	else if (id == 3) {
-		Spawner((eObjID)0x20310, controller);
-		PlayAsSundowner = true;
-	}
-	else if (id == 4) {
-		Spawner((eObjID)0x20700, controller);
-		PlayAsArmstrong = true;
-	}
-	else if (id == 5) {
-		Spawner((eObjID)0x10010, controller);
-	}
-	else if (id == 6) {
-		Spawner((eObjID)0x12040, controller);
-	}
-	RecalibrateBossCode();
-	//camera back to Raiden
-	//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
-
-}

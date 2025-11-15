@@ -2,11 +2,17 @@
 
 #include <Events.h>
 #include <cGameUIManager.h>
+//#include <ObjReadManager.h>
 #include <EntitySystem.h>
 #include <shared.h>
 #include "ModelItems.h"
+#include <map>
 
 extern ModelItems* modelItems;
+extern unsigned int *modelSword;
+std::map<int, std::vector<int>> childObjs = { { 0x10010, {} }, // Empty list needed for modelItems load
+	                                          { 0x11400, {0x3D070} },
+											  { 0x11500, {0x11503, 0x11504, 0x11506} } };
 
 // cObjReadManager
 struct cObjReadManager
@@ -39,7 +45,6 @@ struct cObjReadManager
 };
 
 // DatHolder
-
 struct DatHolder
 {
 	char* m_data;
@@ -182,15 +187,55 @@ public:
 			{
 				if (m_EntQueue.m_size)
 				{
+					std::map<eObjID, unsigned int> loadedIDs;
+					void* block = ((Hw::cHeap*)(shared::base + 0x19DA8E8))->getBlock(nullptr);
+					while (block) {
+						loadedIDs.emplace(((eObjID*)block)[2], ((int*)block)[1]);
+						Hw::cHeap* allocator = ((Hw::cHeap**)block)[-1];
+						block = allocator->getBlock(block);
+					}
+
 					for (auto& str : m_EntQueue)
 					{
-						if (!str.bDone)
-						{
-							if (!str.bWorkFail)
-								str.bWorkFail = cObjReadManager::Instance.requestWork(str.mObjId, str.iSetType) == 0;
+						if (str.bDone || str.bWorkFail)
+							continue;
 
-							str.bDone = cObjReadManager::Instance.loadRequestedObject(str.mObjId, str.iSetType);
+						str.bWorkFail = cObjReadManager::Instance.requestWork(str.mObjId, str.iSetType) == 0;
+
+						if (str.bWorkFail)
+							continue;
+
+						std::vector<unsigned int> children2;
+						if (childObjs.contains(str.mObjId)) {
+							for (auto& id2 : childObjs[str.mObjId])
+								children2.push_back(id2);
+
+							if (modelSword) children2.push_back(*modelSword);
+							if (modelItems) {
+								children2.push_back(modelItems->m_nModel);
+								children2.push_back(modelItems->m_nHair);
+								children2.push_back(modelItems->m_nVisor);
+								children2.push_back(modelItems->m_nSheath);
+								children2.push_back(modelItems->m_nHead);
+							}
 						}
+
+						// Check readiness (some submodels may not be loaded yet and still risk crashing)
+						bool ready = true;
+						for (auto& id2 : children2) {
+							if (id2 == 0 || id2 == -1)
+								continue;
+							if (!loadedIDs.contains((eObjID)id2)) {
+								ready = false;
+								str.bWorkFail |= cObjReadManager::Instance.requestWork((eObjID)id2, 0) == 0;
+							}
+							else
+								ready &= (loadedIDs.at((eObjID)id2) & 4) != 0 && (loadedIDs.at((eObjID)id2) & 9) != 1;
+						}
+
+						if (ready)
+							str.bDone = cObjReadManager::Instance.loadRequestedObject(str.mObjId, str.iSetType);
+
 					}
 
 					for (unsigned int i = 0; i < m_EntQueue.m_size; i++)
@@ -226,6 +271,7 @@ public:
 									myEntity.m_WtbFile = wtp;
 									myEntity.m_TexturesFile = wta;
 								}
+
 								elem.m_Entity = EntitySystem::ms_Instance.createEntity(&myEntity);
 
 							}

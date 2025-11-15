@@ -10,11 +10,11 @@ bool qteCamera = true;
 bool invertCameraY = false;
 bool enableCameraY = true;
 double camLateralScale = 1.0;
-double camHeightScale = 1.0;
+double camHeightScale = 5.0;
 double camLateralMin = 1.0;
 double camLateralMax = 6.0;
-double camHeightMin = -0.5;
-double camHeightMax = 2.0;
+double camHeightMin = -2.5;
+double camHeightMax = 10.0;
 double camSensitivity = 1.0;
 double camYaw = 0.0;
 
@@ -89,7 +89,8 @@ void OverrideCameraPos() {
 	cVec4* oldTarget = &camera->m_TranslationMatrix.m_vecLookAtPosition;
 
 	float maxDist = 0.0;
-	cVec4 targetCenter = { 0.0, INFINITY, 0.0, 1.0 };
+	cVec4 targetCenter = MainPlayer->m_vecTransPos;
+	targetCenter.y += 1.0;
 	cVec4 cameraPos = { 0.0, 0.0, 0.0, 1.0 };
 
 #define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
@@ -121,9 +122,11 @@ void OverrideCameraPos() {
 		}
 		targetCenter.y = (float)min(targetCenter.y, p1Pos.y + 1.0);
 	}
-	cameraPos.x = targetCenter.x + (float)(camLateralScale * sin(camYaw));
-	cameraPos.y = targetCenter.y + (float)(max(maxDist, 5.0) * camHeightScale);
-	cameraPos.z = targetCenter.z + (float)(camLateralScale * cos(camYaw));
+	if (maxDist < 5.0) maxDist = 5.0;
+	maxDist /= 5.0;
+	cameraPos.x = targetCenter.x + (float)(maxDist * camLateralScale * sin(camYaw));
+	cameraPos.y = targetCenter.y + (float)(maxDist * camHeightScale);
+	cameraPos.z = targetCenter.z + (float)(maxDist * camLateralScale * cos(camYaw));
 
 	/* // Old implementation, more horizontal
 	float curYaw = getYaw(oldTarget->x - oldPos->x, oldTarget->z - oldPos->z);

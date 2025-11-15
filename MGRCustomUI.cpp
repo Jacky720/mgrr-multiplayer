@@ -25,11 +25,17 @@ int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 int checkScreenSizeTimer = 60;
 
 int selection_ids[4] = { 0, 0, 0, 0 };
+int costume_ids[4][character_count] = { 0 };
 int controller_flag[4] = { 0, 0, 0, 0 };
 // 0 - Unknown/Not Connected
 // 1 - Requires selection
 // 2 - Character selected, ready
 
+std::vector<std::pair<std::string, std::vector<bool>>> dpadStates = {
+	{"XINPUT_GAMEPAD_DPAD_UP",    {false, false, false, false, false, false}},
+    {"XINPUT_GAMEPAD_DPAD_LEFT",  {false, false, false, false, false, false}},
+	{"XINPUT_GAMEPAD_DPAD_DOWN",  {false, false, false, false, false, false}},
+	{"XINPUT_GAMEPAD_DPAD_RIGHT", {false, false, false, false, false, false}} };
 
 bool dpad_up_pressed[6] = { false, false, false, false, false, false };
 bool dpad_down_pressed[6] = { false, false, false, false, false, false };
@@ -284,42 +290,62 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 	case 9: numbername = "nine"; break;
 	default: numbername = "unknown";
 	}
+
+	bool freshDpad[4] = {false, false, false, false}; // Up, left, down, right
+	for (int i = 0; i < 4; i++) {
+		auto& dpadPair = dpadStates[i];
+		bool newState = IsGamepadButtonPressed(controller_id, dpadPair.first);
+		if (!dpadPair.second[controller_id]) { // Do not set freshDpad if the existing state was already on (no input repeating, basically)
+			freshDpad[i] = newState;
+		}
+		dpadPair.second[controller_id] = newState;
+	}
+
 	
-	if (IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_UP") && !dpad_up_pressed[controller_id]) {
-		dpad_up_pressed[controller_id] = true;
+	if (freshDpad[0]) { // UP
 		selection_ids[controller_id]--;
 		if (selection_ids[controller_id] < 0) {
-			selection_ids[controller_id] = sizeof(character_titles) / sizeof(std::string) - 1;
+			selection_ids[controller_id] = character_count - 1;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
-	else if (!IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_UP")) {
-		dpad_up_pressed[controller_id] = false;
-	}
-	if (IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_DOWN") && !dpad_down_pressed[controller_id]) {
-		dpad_down_pressed[controller_id] = true;
 
+	if (freshDpad[2]) { // DOWN
 		selection_ids[controller_id]++;
-		if (selection_ids[controller_id] >= sizeof(character_titles)/sizeof(std::string)) {
+		if (selection_ids[controller_id] >= character_count) {
 			selection_ids[controller_id] = 0;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
-	else if (!IsGamepadButtonPressed(controller_id, "XINPUT_GAMEPAD_DPAD_DOWN")) {
-		dpad_down_pressed[controller_id] = false;
+
+	int curChara = selection_ids[controller_id];
+
+	if (freshDpad[1]) { // LEFT
+		costume_ids[controller_id][curChara]--;
+		if (costume_ids[controller_id][curChara] < 0) {
+			costume_ids[controller_id][curChara] = character_titles[curChara].size() - 1;
+		}
+		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
+	}
+
+	if (freshDpad[3]) { // RIGHT
+		costume_ids[controller_id][curChara]++;
+		if (costume_ids[controller_id][curChara] >= character_titles[curChara].size()) {
+			costume_ids[controller_id][curChara] = 0;
+		}
+		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
 	
 
 	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
-	for (int i = 0; i < sizeof(character_titles) / sizeof(std::string); i++) {
+	for (int i = 0; i < character_count; i++) {
+		auto fgCol = C_LTGRAYFADE;
 		if (i == selection_ids[controller_id]) {
-			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
-		}
-		else {
-			RenderTextWithShadow(character_titles[i], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, C_LTGRAYFADE,  0, RIGHT_JUSTIFIED);
+			fgCol = C_LTGRAY;
 		}
 		
+		RenderTextWithShadow(character_titles[i][costume_ids[controller_id][i]], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
 	}
 	
 	//RenderTextMGR_RightLeft("sundowner", screenWidth - offset_x, y + 60, C_LTGRAY, 0);
@@ -420,45 +446,57 @@ void Present() {
 		int draw_offset = 0;
 		for (int ctrlr = 0; ctrlr < 4; ctrlr++) {
 
+			switch (controller_flag[ctrlr]) {
+			case 0:
+				if (IsGamepadButtonPressed(ctrlr, GamepadSpawn)) {
+					controller_flag[ctrlr] = 1;
+				}
+				break;
 
-			if (IsGamepadButtonPressed(ctrlr, GamepadSpawn) && controller_flag[ctrlr] == 0) {
-				controller_flag[ctrlr] = 1;
-			}
-
-			if (controller_flag[ctrlr] == 1) {
-				DrawCharacterSelector(60, (draw_offset * 140), ctrlr);
+			case 1:
+				DrawCharacterSelector(60, (draw_offset * 160), ctrlr);
 				draw_offset++;
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
 					controller_flag[ctrlr] = 2;
 					Se_PlayEvent("core_se_sys_decide_l");
-					SpawnCharacter(selection_ids[ctrlr], ctrlr);
+					SpawnCharacter(selection_ids[ctrlr], ctrlr, costume_ids[ctrlr][selection_ids[ctrlr]]);
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
 					controller_flag[ctrlr] = 0;
 					selection_ids[ctrlr] = 0;
 				}
-			}
+				break;
 
-			if (controller_flag[ctrlr] == 2 && IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START")
-				&& !(ctrlr == 0 && !p1IsKeyboard))
-				controller_flag[ctrlr] = 3;
-			
-			if (controller_flag[ctrlr] == 3) {
-				DrawDropMenu(60, (draw_offset * 140), ctrlr);
+			case 2:
+				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START")
+					&& !(ctrlr == 0 && !p1IsKeyboard)) { // Do not let main player drop
+					controller_flag[ctrlr] = 3;
+				}
+				break;
+
+			case 3:
+				DrawDropMenu(60, (draw_offset * 160), ctrlr);
 				draw_offset++;
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
 					controller_flag[ctrlr] = 0;
 					selection_ids[ctrlr] = 0;
 					Se_PlayEvent("core_se_sys_decide_l");
-					players[ctrlr + 1]->m_pEntity->~Entity();
+					if ((playerTypes[ctrlr + 1] & 0xf0000) == 0x20000) {
+						// Go directly to hell
+						players[ctrlr + 1]->place({0, -10000, 0, 0}, {0, 0, 0, 0});
+					}
+					else {
+						players[ctrlr + 1]->m_pEntity->~Entity();
+					}
 					players[ctrlr + 1] = nullptr;
 					playerTypes[ctrlr + 1] = (eObjID)0;
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
 					controller_flag[ctrlr] = 2;
 				}
+				break;
 			}
 
 		}

@@ -41,7 +41,12 @@ void gui::LoadStyle()
 
 void gui::RenderWindow()
 {
-	isMenuShow = handleKeyPress(HotKey, &isMenuShow);
+	static bool wasHotKeyPressed = false; // Статическая переменная, сохраняет состояние между вызовами
+
+	if (GetKeyState(HotKey) & 0x8000 && !wasHotKeyPressed) {
+		isMenuShow = !isMenuShow;
+	}
+	wasHotKeyPressed = GetKeyState(HotKey) & 0x8000;
 
 	static bool paused = false;
 
@@ -87,16 +92,69 @@ void gui::RenderWindow()
 				ImGui::Checkbox("Allow friendly fire", &EnableFriendlyFire);
 				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 
-
 				// Sundowner's Head: 1581929
 
+				RecalibrateBossCode();
+
+				if (MainPlayer && ImGui::Button("Teleport all players to Raiden")) {
+					TeleportToMainPlayer(MainPlayer);
+				}
+
+				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
+
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Current Players")) {
+				ImGui::Text("Player 1 (keyboard): %x\n", playerTypes[0]);
+				ImGui::Text("Player 2 (keyboard/controller): %x\n", playerTypes[1]);
+				ImGui::Text("Player 3 (controller): %x\n", playerTypes[2]);
+				ImGui::Text("Player 4 (controller): %x\n", playerTypes[3]);
+				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
+#define PRINTACTIONS
+#ifdef PRINTACTIONS
+				for (int i = 0; i < 5; i++) {
+					if (players[i])
+						ImGui::Text("Player %d action: %x %x", i + 1, players[i]->getCurrentAction(), players[i]->getCurrentActionId());
+				}
+#endif
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Camera")) {
+				ImGui::Checkbox("Custom camera", &customCamera);
+				if (customCamera) {
+					ImGui::Checkbox("Vanilla camera for QTEs", &qteCamera);
+					ImGui::InputDouble("Camera sensitivity", &camSensitivity);
+					ImGui::Checkbox("Allow vertical camera movement", &enableCameraY);
+					ImGui::Checkbox("Invert vertical camera movement", &invertCameraY);
+					ImGui::InputDouble("Camera lateral distance", &camLateralScale);
+					ImGui::InputDouble("Camera vertical distance", &camHeightScale);
+					if (enableCameraY) {
+						ImGui::InputDouble("Minimum lateral distance", &camLateralMin);
+						ImGui::InputDouble("Maximum lateral distance", &camLateralMax);
+						ImGui::InputDouble("Minimum vertical distance", &camHeightMin);
+						ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
+					}
+				}
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Dev")) {
+				static int memory_address = 0x0;
+				ImGui::InputInt("Memory Address:", &memory_address);
+				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
+					injector::MakeNOP(shared::base + memory_address, 3, true);
+				}
+				auto firstEnt = EntitySystem::ms_Instance.m_EntityList.m_pFirst;
+				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
 
 				// Debug print stuff
 //#define PRINTSAM
 //#define PRINTENEMY
 //#define SHOWBOSSACTION
 //#define PRINTBMs
-#define PRINTPHASE
+//#define PRINTPHASE
 #ifdef PRINTPHASE
 				int** gScenarioManagerImplement = *(int***)(shared::base + 0x17E9A30);
 				int phase = 0;
@@ -150,55 +208,6 @@ void gui::RenderWindow()
 #endif
 				}
 
-
-				RecalibrateBossCode();
-
-				if (ImGui::Button("Teleport all players to Raiden") && MainPlayer) {
-					TeleportToMainPlayer(MainPlayer);
-				}
-
-				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
-
-				ImGui::EndTabItem();
-			}
-
-			if (ImGui::BeginTabItem("Current Players")) {
-				ImGui::Text("Player 1 (keyboard): %x\n", playerTypes[0]);
-				ImGui::Text("Player 2 (keyboard/controller): %x\n", playerTypes[1]);
-				ImGui::Text("Player 3 (controller): %x\n", playerTypes[2]);
-				ImGui::Text("Player 4 (controller): %x\n", playerTypes[3]);
-				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
-				ImGui::EndTabItem();
-			}
-
-			if (ImGui::BeginTabItem("Camera")) {
-				ImGui::Checkbox("Custom camera", &customCamera);
-				if (customCamera) {
-					ImGui::Checkbox("Vanilla camera for QTEs", &qteCamera);
-					ImGui::InputDouble("Camera sensitivity", &camSensitivity);
-					ImGui::Checkbox("Allow vertical camera movement", &enableCameraY);
-					ImGui::Checkbox("Invert vertical camera movement", &invertCameraY);
-					ImGui::InputDouble("Camera lateral distance", &camLateralScale);
-					ImGui::InputDouble("Camera vertical distance", &camHeightScale);
-					if (enableCameraY) {
-						ImGui::InputDouble("Minimum lateral distance", &camLateralMin);
-						ImGui::InputDouble("Maximum lateral distance", &camLateralMax);
-						ImGui::InputDouble("Minimum vertical distance", &camHeightMin);
-						ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
-					}
-				}
-				ImGui::EndTabItem();
-			}
-
-			if (ImGui::BeginTabItem("Dev")) {
-				static int memory_address = 0x0;
-				ImGui::InputInt("Memory Address:", &memory_address);
-				if (ImGui::Button("NOP Memory Address") && MainPlayer) {
-					injector::MakeNOP(shared::base + memory_address, 3, true);
-				}
-				auto firstEnt = EntitySystem::ms_Instance.m_EntityList.m_pFirst;
-				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
-				ImGui::Text("Your action: %x %x", MainPlayer->getCurrentAction(), MainPlayer->getCurrentActionId());
 				ImGui::EndTabItem();
 			}
 
