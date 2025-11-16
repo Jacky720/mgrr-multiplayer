@@ -77,14 +77,14 @@ typedef struct actionList {
 	setAction Walking;
 	setAction LightAttack;
 	setAction HeavyAttack;
-	setAction StartRun;
 	setAction Interaction;
 	setAction Jumping;
 	setAction Taunting;
 	setAction Special;
 	setAction EndSpecial;
-	setAction EndRun;
+	setAction StartRun;
 	setAction MidRun;
+	setAction EndRun;
 } ActionList;
 
 bool matchAction(BehaviorEmBase* Enemy, setAction act) {
@@ -203,42 +203,42 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 		{0x10001}, // Walk
 		{0x20000}, // (X) Two punch combo
 		{0x20003}, // (Y) Two punches, kick, punch
-		{0x20007}, // (RT) Start run
 		{0x20006}, // (B) AOE overhead
 		{0x20001}, // (A) Uppercut
 		{0x20009}, // (D-pad up) Explode
 		{0x2000F, 0, 3}, // (LT) Heal (cycles)
 		{0x2000F, 4}, // (end LT) End heal
-		{0x20007, 4}, // (end RT) End run
-		{0x20007, 3}  // (mid RT) Still run
+		{0x20007},    // (RT) Start run
+		{0x20007, 3}, // (mid RT) Still run
+		{0x20007, 4}  // (end RT) End run
 	};
 	static ActionList SamBossActions       = {
 		{0x20000}, // Idle
 		{0x10002}, // Walk (unused)
 		{0x30004}, // (X) Four strike combo
 		{0x30006}, // (Y) Different four strike combo, with sheath
-		{0x30007}, // (RT) Start Assault Rush
 		{0x30014}, // (B) Yellow QTE attack
 		{0x3001C}, // (A) QTE fail, TODO: replace because it's scripted to damage P1 and not who you aim at
 		{0x10006}, // (D-pad up) Taunt
 		{0x30005}, // (LT) Un-parryable four strike combo (you know, that one)
 		{0x20000}, // (end LT) Idle
-		{0x30009}, // (end RT) End Assault Rush
-		{0x30008}  // (mid RT) Continued Assault Rush
+		{0x30007}, // (RT) Start Assault Rush
+		{0x30008}, // (mid RT) Continued Assault Rush
+		{0x30009}  // (end RT) End Assault Rush
 	};
 	static ActionList SundownerBossActions = {
 		{0x10000}, // Idle
 		{0x10001}, // Walk
 		{0x20001}, // (X) Uppercut
 		{0x20000}, // (Y) Overhead
-		{0x20008}, // (RT) Charge attack, TODO: ends early if too close to a player
 		{0x20002}, // (B) Combo attack
 		{0x20007}, // (A) Shields behind + turn around
 		{0x10006}, // (D-pad up) Taunt
 		{0x20009, 0, 2}, // (LT) Shield bash, TODO: ends early if not facing a player
 		{0x20009, 3, 0, 0x43, 2.0/15.0}, // (end LT) Shield bash end
-		{0x20008, 3, 0, 0x3F, 2.0/15.0}, // (end RT) Charge attack end
-		{0x20008, 2}  // (mid RT) Still charge attack
+		{0x20008},    // (RT) Charge attack, TODO: ends early if too close to a player
+		{0x20008, 2}, // (mid RT) Still charge attack
+		{0x20008, 3, 0, 0x3F, 2.0/15.0} // (end RT) Charge attack end
 	};
 	// Default here for Armstrong (em0700)
 	ActionList* BossActions = &ArmstrongBossActions;
