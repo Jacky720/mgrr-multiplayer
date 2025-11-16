@@ -140,26 +140,33 @@ void DrawLine(LPDIRECT3DDEVICE9 Device_Interface, int bx, int by, int bw, D3DCOL
 
 }
 
-void RenderTextMGR(string text, int x, int y, D3DCOLOR color, int fontid = 0) {
+void RenderTextMGR(string text, int x, int y, D3DCOLOR color, int fontid = 0, float scale = 1.0) {
 	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
 
 	int n = text.length();
 	char* txtarray = new char[n + 1];
 	strcpy_s(txtarray, n + 1, text.c_str());
+	D3DXMATRIX scaleMat = {
+		scale, 0, 0, 0,
+		0, scale, 0, 0,
+		0, 0, scale, 0,
+		0, 0, 0, 1
+	};
 
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	pSprite->SetTransform(&scaleMat);
 	int tmp_x_shift = 0;
 	for (int i = 0; i < n + 1; i++) {
-		D3DXVECTOR3 position((float)(x + tmp_x_shift), (float)y, 0.0f);
+		D3DXVECTOR3 position((float)(x + tmp_x_shift) / scale, (float)y / scale, 0.0f);
 		if (txtarray[i] != NULL) {
 
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
-			tmp_x_shift += font_map[fontid][txtarray[i]].width - 8;
+			tmp_x_shift += (font_map[fontid][txtarray[i]].width - 8) * scale;
 
 
 		}
 		else {
-			tmp_x_shift += 20;
+			tmp_x_shift += 20 * scale;
 		}
 
 	}
@@ -169,18 +176,24 @@ void RenderTextMGR(string text, int x, int y, D3DCOLOR color, int fontid = 0) {
 
 }
 
-void RenderTextMGR_RightLeft(string text, int x, int y, D3DCOLOR color, int fontid = 0) {
+void RenderTextMGR_RightLeft(string text, int x, int y, D3DCOLOR color, int fontid = 0, float scale = 1.0) {
 	// Copy string to a cstring array and then draw using the map, which allows for infinite expansion, just add the character to the mgfonts folder
 	int n = text.length();
 	char* txtarray = new char[n + 1];
 	strcpy_s(txtarray, n + 1, text.c_str());
-
+	D3DXMATRIX scaleMat = {
+		scale, 0, 0, 0,
+		0, scale, 0, 0,
+		0, 0, scale, 0,
+		0, 0, 0, 1
+	};
 
 	pSprite->Begin(D3DXSPRITE_ALPHABLEND);
+	pSprite->SetTransform(&scaleMat);
 	int tmp_x_shift = 0;
 	for (int i = n - 1; i >= 0; i--) {
-		tmp_x_shift -= font_map[fontid][txtarray[i]].width - 8; // Shift BEFORE since we're going left, THROUGH the character's space
-		D3DXVECTOR3 position((float)(x + tmp_x_shift), (float)y, 0.0f);
+		tmp_x_shift -= (font_map[fontid][txtarray[i]].width - 8) * scale; // Shift BEFORE since we're going left, THROUGH the character's space
+		D3DXVECTOR3 position((float)(x + tmp_x_shift) / scale, (float)y / scale, 0.0f);
 		if (txtarray[i] != NULL) {
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
 		}
@@ -203,7 +216,7 @@ void RenderTextMGR_RightLeft(string text, int x, int y, D3DCOLOR color, int font
 #define LEFT_JUSTIFIED 0
 #define RIGHT_JUSTIFIED 1
 
-void RenderTextWithShadow(string text, int x, int y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = LEFT_JUSTIFIED) {
+void RenderTextWithShadow(string text, int x, int y, D3DCOLOR bg = C_BLACK, D3DCOLOR fg = C_LTGRAY, int fontid = 0, int justification_flag = LEFT_JUSTIFIED, float scale = 1.0) {
 	static int offsets[9][2] = {
 	{-1, -1},
 	{-1, 0},
@@ -216,48 +229,44 @@ void RenderTextWithShadow(string text, int x, int y, D3DCOLOR bg = C_BLACK, D3DC
 	{1, 1},
 	};
 
+	if (justification_flag != LEFT_JUSTIFIED && justification_flag != RIGHT_JUSTIFIED)
+		return; // Can't render
+
+	auto renderFunc = (justification_flag == LEFT_JUSTIFIED) ? RenderTextMGR : RenderTextMGR_RightLeft;
+
 	// Draw shadow
 	for (int i = 0; i < 8; i++) {
-		if (justification_flag == LEFT_JUSTIFIED) {
-			RenderTextMGR(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
-		}
-		else if (justification_flag == RIGHT_JUSTIFIED) {
-			RenderTextMGR_RightLeft(text, x + offsets[i][0], y + offsets[i][1], bg, fontid);
-		}
+		renderFunc(text, x + offsets[i][0], y + offsets[i][1], bg, fontid, scale);
 	}
 
 	// Draw text
-	if (justification_flag == LEFT_JUSTIFIED) {
-		RenderTextMGR(text, x, y, fg, fontid);
-	}
-	else if (justification_flag == RIGHT_JUSTIFIED) {
-		RenderTextMGR_RightLeft(text, x, y, fg, fontid);
-	}
+	renderFunc(text, x, y, fg, fontid, scale);
 
 }
 
-void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR fg, D3DCOLOR bg = C_DKGRAY, float truemax = 0.0) {
-	if (truemax > 0.0) // e.g. up to 200% would mean truemax = maxvalue * 2
-		DrawLine(Hw::GraphicDevice, x, y, (int)(400 * truemax / maxvalue), bg, 4);
-	else
-		DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
-	DrawLine(Hw::GraphicDevice, x, y, (int)(400 * value / maxvalue), fg, 4);
+void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR fg, int barlength = 300, D3DCOLOR bg = C_DKGRAY) {
+	DrawLine(Hw::GraphicDevice, x, y, barlength, bg, 8);
+	DrawLine(Hw::GraphicDevice, x, y, (int)(barlength * value / maxvalue), fg, 8);
 }
-
 
 void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, float fcvalue, float fcmax, string name, bool ripper) {
+	// Health bar length. 100% = 300, 200% = 750 (2.5x)
+	int hpBarLength = 300 + (truehpmax / hpmax - 1) * 450;
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
-	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
-	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
+	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + hpBarLength - 50, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow(to_string(decimalplace) + "_%", x + hpBarLength - 50, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
 
-	RenderTextWithShadow(name, x, y);
-	DrawProgressBar(x, y + 23, hpvalue, hpmax, C_HPYELLOW, C_DKGRAY, truehpmax);
+	RenderTextWithShadow(name, x, y - 8, C_BLACK, C_LTGRAY, 0, LEFT_JUSTIFIED, 1.5);
+	DrawProgressBar(x, y + 23, hpvalue, truehpmax, C_HPYELLOW, hpBarLength);
 	auto fcCol = C_CYAN;
 	if (fcvalue < 400) fcCol = C_FCYELLOW;
 	if (ripper) fcCol = C_RED;
 	if (fcmax > 0) {
-		DrawProgressBar(x, y + 28, fcvalue, fcmax, fcCol);
+		DrawProgressBar(x, y + 32, min(fcvalue, 400), 400, fcCol);
+	}
+	for (int fcOff = 400, xOff = 305; fcmax > fcOff; fcOff += 280, xOff += 90) {
+		DrawProgressBar(x + xOff, y + 32, clamp((int)(fcvalue - fcOff), 0, 280), 280, fcCol, 85);
 	}
 
 
@@ -436,7 +445,7 @@ void Present() {
 #endif
 			}
 			bool ripper = (player->m_pEntity->m_EntityIndex == 0x10010) && (player->canActivateRipperMode() || player->m_nRipperModeEnabled);
-			DrawFalseMGRUI(75, 105 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper);
+			DrawFalseMGRUI(140, 90 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper);
 			auto pDrawList = ImGui::GetWindowDrawList();
 			cVec4 player_pos = player->getTransPos();
 			player_pos.y += 2.3f;
@@ -460,11 +469,11 @@ void Present() {
 		int equippedRecovery = PlayerManagerImplement::ms_Instance->getRecoveryEquipped();
 		if (equippedRecovery == 1) { // Nanopaste
 			cItemPossessionCure* nanopastehandler = ((cItemPossessionCure* (__thiscall*)(unsigned long, int))(shared::base + 0x54E5E0))(shared::base + 0x1486EA0, 0x23A6F56D);
-			RenderTextWithShadow(std::to_string(nanopastehandler->m_nBasePossession), 75, 100 + 60 * hpDrawOffset, C_BLACK, C_HPYELLOW);
+			RenderTextWithShadow(std::to_string(nanopastehandler->m_nBasePossession), 140, 100 + 60 * hpDrawOffset, C_BLACK, C_HPYELLOW);
 		}
 		else if (equippedRecovery == 2) { // Electrolyte packs (NOT USABLE)
 			cItemPossessionCure* electrolytes = ((cItemPossessionCure * (__thiscall*)(unsigned long, int))(shared::base + 0x54E5E0))(shared::base + 0x1486EA0, 0xD92BB0F);
-			RenderTextWithShadow(std::to_string(electrolytes->m_nBasePossession), 75, 100 + 60 * hpDrawOffset, C_BLACK, C_CYAN);
+			RenderTextWithShadow(std::to_string(electrolytes->m_nBasePossession), 140, 100 + 60 * hpDrawOffset, C_BLACK, C_CYAN);
 		}
 		
 		int draw_offset = 0;
