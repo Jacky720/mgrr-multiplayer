@@ -106,11 +106,17 @@ void gui::RenderWindow()
 			}
 
 			if (ImGui::BeginTabItem("Current Players")) {
-				ImGui::Text("Player 1 (keyboard): %x\n", playerTypes[0]);
-				ImGui::Text("Player 2 (keyboard/controller): %x\n", playerTypes[1]);
-				ImGui::Text("Player 3 (controller): %x\n", playerTypes[2]);
-				ImGui::Text("Player 4 (controller): %x\n", playerTypes[3]);
-				ImGui::Text("Player 5 (controller): %x\n", playerTypes[4]);
+				if (p1IsKeyboard) {
+					ImGui::Text("Keyboard (Main player): %x\n", playerTypes[0]);
+					ImGui::Text("Controller 1: %x\n", playerTypes[1]);
+				}
+				else {
+					ImGui::Text("Keyboard: %x\n", playerTypes[0]);
+					ImGui::Text("Controller 1 (Main player): %x\n", playerTypes[1]);
+				}
+				ImGui::Text("Controller 2: %x\n", playerTypes[2]);
+				ImGui::Text("Controller 3: %x\n", playerTypes[3]);
+				ImGui::Text("Controller 4: %x\n", playerTypes[4]);
 #define PRINTACTIONS
 #ifdef PRINTACTIONS
 				for (int i = 0; i < 5; i++) {
