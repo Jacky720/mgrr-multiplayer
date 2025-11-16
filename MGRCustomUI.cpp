@@ -236,26 +236,28 @@ void RenderTextWithShadow(string text, int x, int y, D3DCOLOR bg = C_BLACK, D3DC
 
 }
 
-void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR bg, D3DCOLOR fg) {
-
-	DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
+void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR fg, D3DCOLOR bg = C_DKGRAY, float truemax = 0.0) {
+	if (truemax > 0.0) // e.g. up to 200% would mean truemax = maxvalue * 2
+		DrawLine(Hw::GraphicDevice, x, y, (int)(400 * truemax / maxvalue), bg, 4);
+	else
+		DrawLine(Hw::GraphicDevice, x, y, (400), bg, 4);
 	DrawLine(Hw::GraphicDevice, x, y, (int)(400 * value / maxvalue), fg, 4);
 }
 
 
-void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float fcvalue, float fcmax, string name, bool ripper) {
+void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, float fcvalue, float fcmax, string name, bool ripper) {
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
 	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + 350, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 	RenderTextWithShadow(to_string(decimalplace) + "_%", x + 350, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
 
 	RenderTextWithShadow(name, x, y);
-	DrawProgressBar(x, y + 23, hpvalue, hpmax, C_DKGRAY, C_HPYELLOW);
+	DrawProgressBar(x, y + 23, hpvalue, hpmax, C_HPYELLOW, C_DKGRAY, truehpmax);
 	auto fcCol = C_CYAN;
 	if (fcvalue < 400) fcCol = C_FCYELLOW;
 	if (ripper) fcCol = C_RED;
 	if (fcmax > 0) {
-		DrawProgressBar(x, y + 28, fcvalue, fcmax, C_DKGRAY, fcCol);
+		DrawProgressBar(x, y + 28, fcvalue, fcmax, fcCol);
 	}
 
 
@@ -419,13 +421,14 @@ void Present() {
 			float fcMax = 0;
 			float hpCur = (float)player->m_nHealth;
 			float hpMax = (float)player->m_nMaxHealth;
+			float trueHpMax = (float)player->m_nMaxHealth;
 			if ((player->m_pEntity->m_EntityIndex & 0xF0000) == 0x10000 // Enemies have no FC
 				&& (player->m_pEntity->m_EntityIndex != 0x12040)) // Neither does Dwarf Gekko
 			{
 				fcCur = player->getFuelContainer();
 				fcMax = player->getFuelCapacity(false);
 				hpCur = (float)player->getHealth();
-				hpMax = (float)player->getMaxHealth();
+				trueHpMax = (float)player->getMaxHealth();
 #ifdef MOUSEDEBUG
 				//hpCur = CheckControlPressed(-1, CamUp, GamepadCamUp) - CheckControlPressed(-1, CamDown, GamepadCamDown);
 				hpCur = GetMouseAnalog("MouseUp");
@@ -433,7 +436,7 @@ void Present() {
 #endif
 			}
 			bool ripper = (player->m_pEntity->m_EntityIndex == 0x10010) && (player->canActivateRipperMode() || player->m_nRipperModeEnabled);
-			DrawFalseMGRUI(75, 105 + 60 * hpDrawOffset, hpCur, hpMax, fcCur, fcMax, name, ripper);
+			DrawFalseMGRUI(75, 105 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper);
 			auto pDrawList = ImGui::GetWindowDrawList();
 			cVec4 player_pos = player->getTransPos();
 			player_pos.y += 2.3f;
