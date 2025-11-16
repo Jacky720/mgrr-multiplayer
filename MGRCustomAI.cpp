@@ -63,33 +63,59 @@ bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string Gamepad
 	return false;
 }
 
+struct setAction {
+	unsigned int ActionId;
+	unsigned int SubactionId;
+	unsigned int MaxSubaction; // For checking states that contain a range of subactions 0-x
+	unsigned int AnimationMapId;
+	float AnimationLength;
+};
+
 
 typedef struct actionList {
-	unsigned int Idle;
-	unsigned int Walking;
-	unsigned int LightAttack;
-	unsigned int HeavyAttack;
-	unsigned int StartRun;
-	unsigned int Interaction;
-	unsigned int Jumping;
-	unsigned int Taunting;
-	unsigned int Special;
-	unsigned int EndSpecial;
-	unsigned int EndRun;
-	unsigned int MidRun;
+	setAction Idle;
+	setAction Walking;
+	setAction LightAttack;
+	setAction HeavyAttack;
+	setAction StartRun;
+	setAction Interaction;
+	setAction Jumping;
+	setAction Taunting;
+	setAction Special;
+	setAction EndSpecial;
+	setAction EndRun;
+	setAction MidRun;
 } ActionList;
+
+bool matchAction(BehaviorEmBase* Enemy, setAction act) {
+	if (Enemy->m_nCurrentAction != act.ActionId) return false;
+	if (act.SubactionId != 0) {
+		if (Enemy->m_nCurrentActionId != act.SubactionId) return false;
+	}
+	if (act.MaxSubaction != 0) {
+		if (Enemy->m_nCurrentActionId > act.MaxSubaction) return false;
+	}
+	return true;
+}
+
+void useAction(BehaviorEmBase* Enemy, setAction act) {
+	Enemy->setState(act.ActionId, act.SubactionId, 0, 0);
+	if (act.AnimationMapId) {
+		((int(__thiscall*)(Behavior*, int, int, float, float, int, float, float))(shared::base + 0x6A4080))(Enemy, act.AnimationMapId, 0, act.AnimationLength, 1.0, 0x80000000, -1.0, 1.0);
+	}
+}
 
 void UpdateBossActions(BehaviorEmBase* Enemy, ActionList* BossActions, int controllerNumber = -1) {
 
 	// Armstrong move (Sam move)
 	if (CheckControlPressed(controllerNumber, GamepadNormalAttack)
-		&& Enemy->m_nCurrentAction != BossActions->LightAttack) { // Two punches (four strikes)
-		Enemy->setState(BossActions->LightAttack, 0, 0, 0);
+		&& !matchAction(Enemy, BossActions->LightAttack)) { // Two punches (four strikes)
+		useAction(Enemy, BossActions->LightAttack);
 	}
 
 	if (CheckControlPressed(controllerNumber, GamepadStrongAttack)
-		&& Enemy->m_nCurrentAction != BossActions->HeavyAttack) { // Two punches, kick, punch (four strike w/ sheath)
-		Enemy->setState(BossActions->HeavyAttack, 0, 0, 0);
+		&& !matchAction(Enemy, BossActions->HeavyAttack)) { // Two punches, kick, punch (four strike w/ sheath)
+		useAction(Enemy, BossActions->HeavyAttack);
 	}
 
 	if (CheckControlPressed(controllerNumber, GamepadRun)
@@ -98,34 +124,34 @@ void UpdateBossActions(BehaviorEmBase* Enemy, ActionList* BossActions, int contr
 		    || CheckControlPressed(controllerNumber, GamepadBack)
 		    || CheckControlPressed(controllerNumber, GamepadLeft)
 		    || CheckControlPressed(controllerNumber, GamepadRight))) { // Run QTE (Assault Rush)
-		if (Enemy->m_nCurrentAction != BossActions->StartRun && Enemy->m_nCurrentAction != BossActions->MidRun)
-			Enemy->setState(BossActions->StartRun, 0, 0, 0);
+		if (!matchAction(Enemy, BossActions->StartRun) && !matchAction(Enemy, BossActions->MidRun))
+			useAction(Enemy, BossActions->StartRun);
 	}
-	else if (Enemy->m_nCurrentAction == BossActions->MidRun) { // Running should end
-		Enemy->setState(BossActions->EndRun, 0, 0, 0);
+	else if (matchAction(Enemy, BossActions->MidRun)) { // Running should end
+		useAction(Enemy, BossActions->EndRun);
 	}
 
 	if (CheckControlPressed(controllerNumber, GamepadInteract)
-		&& Enemy->m_nCurrentAction != BossActions->Interaction) { // Overhead with AOE (unblockable QTE)
-		Enemy->setState(BossActions->Interaction, 0, 0, 0);
+		&& !matchAction(Enemy, BossActions->Interaction)) { // Overhead with AOE (unblockable QTE)
+		useAction(Enemy, BossActions->Interaction);
 	}
 
 	if (CheckControlPressed(controllerNumber, GamepadJump)
-		&& Enemy->m_nCurrentAction != BossActions->Jumping) { // Uppercut (perfect parry QTE fail)
-		Enemy->setState(BossActions->Jumping, 0, 0, 0);
+		&& !matchAction(Enemy, BossActions->Jumping)) { // Uppercut (perfect parry QTE fail)
+		useAction(Enemy, BossActions->Jumping);
 	}
 
 	if (CheckControlPressed(controllerNumber, GamepadTaunt)
-		&& Enemy->m_nCurrentAction != BossActions->Taunting) { // Explode (taunt)
-		Enemy->setState(BossActions->Taunting, 0, 0, 0);
+		&& !matchAction(Enemy, BossActions->Taunting)) { // Explode (taunt)
+		useAction(Enemy, BossActions->Taunting);
 	}
 
 	if (CheckControlPressed(controllerNumber, GamepadBladeMode)) { // Heal (un-perfect-parryable four strike)
-		if (Enemy->m_nCurrentAction != BossActions->Special)
-			Enemy->setState(BossActions->Special, 0, 0, 0);
+		if (!matchAction(Enemy, BossActions->Special))
+			useAction(Enemy, BossActions->Special);
 	}
-	else if (Enemy->m_nCurrentAction == BossActions->Special) { // Blade Mode should end 
-		Enemy->setState(BossActions->EndSpecial, 0, 0, 0);
+	else if (matchAction(Enemy, BossActions->Special)) { // Blade Mode should end 
+		useAction(Enemy, BossActions->EndSpecial);
 	}
 }
 
@@ -172,10 +198,48 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	//UpdateMovement(Enemy, &camera);
 
 
-	// Buttons:                                Idle,    Walking, X,       Y,       RT,      B,       A,       Dpad up, LT,      end LT,  end RT,  alt RT
-	static ActionList ArmstrongBossActions = { 0x10000, 0x10001, 0x20000, 0x20003, 0x20007, 0x20006, 0x20001, 0x20009, 0x2000F, 0x20010, 0x10000, 0x20007 };
-	static ActionList SamBossActions =       { 0x20000, 0x10002, 0x30004, 0x30006, 0x30007, 0x30014, 0x3001C, 0x10006, 0x30005, 0x20000, 0x30009, 0x30008 };
-	static ActionList SundownerBossActions = { 0x10000, 0x10001, 0x20001, 0x20000, 0x20008, 0x20002, 0x20007, 0x10006, 0x20009, 0x10000, 0x10000, 0x20008 };
+	static ActionList ArmstrongBossActions = {
+		{0x10000}, // Idle
+		{0x10001}, // Walk
+		{0x20000}, // (X) Two punch combo
+		{0x20003}, // (Y) Two punches, kick, punch
+		{0x20007}, // (RT) Start run
+		{0x20006}, // (B) AOE overhead
+		{0x20001}, // (A) Uppercut
+		{0x20009}, // (D-pad up) Explode
+		{0x2000F, 0, 3}, // (LT) Heal (cycles)
+		{0x2000F, 4}, // (end LT) End heal
+		{0x20007, 4}, // (end RT) End run
+		{0x20007, 3}  // (mid RT) Still run
+	};
+	static ActionList SamBossActions       = {
+		{0x20000}, // Idle
+		{0x10002}, // Walk (unused)
+		{0x30004}, // (X) Four strike combo
+		{0x30006}, // (Y) Different four strike combo, with sheath
+		{0x30007}, // (RT) Start Assault Rush
+		{0x30014}, // (B) Yellow QTE attack
+		{0x3001C}, // (A) QTE fail, TODO: replace because it's scripted to damage P1 and not who you aim at
+		{0x10006}, // (D-pad up) Taunt
+		{0x30005}, // (LT) Un-parryable four strike combo (you know, that one)
+		{0x20000}, // (end LT) Idle
+		{0x30009}, // (end RT) End Assault Rush
+		{0x30008}  // (mid RT) Continued Assault Rush
+	};
+	static ActionList SundownerBossActions = {
+		{0x10000}, // Idle
+		{0x10001}, // Walk
+		{0x20001}, // (X) Uppercut
+		{0x20000}, // (Y) Overhead
+		{0x20008}, // (RT) Charge attack, TODO: ends early if too close to a player
+		{0x20002}, // (B) Combo attack
+		{0x20007}, // (A) Shields behind + turn around
+		{0x10006}, // (D-pad up) Taunt
+		{0x20009, 0, 2}, // (LT) Shield bash, TODO: ends early if not facing a player
+		{0x20009, 3, 0, 0x43, 2.0/15.0}, // (end LT) Shield bash end
+		{0x20008, 3, 0, 0x3F, 2.0/15.0}, // (end RT) Charge attack end
+		{0x20008, 2}  // (mid RT) Still charge attack
+	};
 	// Default here for Armstrong (em0700)
 	ActionList* BossActions = &ArmstrongBossActions;
 
@@ -223,13 +287,13 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 	}
 
 	if (field_X != 0 || field_Y != 0) {
-		if (Enemy->m_nCurrentAction == BossActions->Idle) Enemy->setState(BossActions->Walking, 0, 0, 0);
+		if (matchAction(Enemy, BossActions->Idle)) useAction(Enemy, BossActions->Walking);
 		float angle = atan2(field_X, field_Y);
 		angle += camYaw;
 		Enemy->m_vecRotation.y = angle;
 	}
 	else {
-		if (Enemy->m_nCurrentAction == BossActions->Walking) Enemy->setState(BossActions->Idle, 0, 0, 0);
+		if (matchAction(Enemy, BossActions->Walking)) useAction(Enemy, BossActions->Idle);
 	}
 
 	GetCameraInput(controllerNumber);

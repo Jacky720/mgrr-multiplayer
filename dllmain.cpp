@@ -236,7 +236,7 @@ Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
 	Entity* closestPlayer = PlayerManagerImplement::ms_Instance->getEntity(0);
 	cVec4 ePos = ecx->m_vecTransPos;
 	for (Pl0000* player : players) {
-		if (!player) continue;
+		if (!player || (BehaviorEmBase*)player == ecx) continue;
 		cVec4 pPos = player->m_vecTransPos;
 		float dist = sqrt((pPos.x - ePos.x) * (pPos.x - ePos.x) + (pPos.y - ePos.y) * (pPos.y - ePos.y) + (pPos.z - ePos.z) * (pPos.z - ePos.z));
 		if (dist < minDist) {
@@ -279,11 +279,12 @@ void RecalibrateBossCode() {
 	else
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
 	if (PlayAsSundowner) {
-		injector::WriteMemory<unsigned char>(shared::base + 0x1961B0, 0xC3, true);
 		//injector::WriteMemory<unsigned int>(shared::base + 0x196B8B, 0x90, true);
+		injector::WriteMemory<unsigned char>(shared::base + 0x1961B0, 0xC3, true); // ret
 	}
-	else
-		injector::WriteMemory<unsigned char>(shared::base + 0x1961B0, 0x56, true);
+	else {
+		injector::WriteMemory<unsigned char>(shared::base + 0x1961B0, 0x56, true); // push esi
+	}
 	// Potential Offsets:
 	// 0x001011AD - Handles entity, something
 
@@ -548,6 +549,8 @@ void Update()
 		}
 		players[p1Index] = MainPlayer;
 		playerTypes[p1Index] = MainPlayer->m_pEntity->m_EntityIndex;
+		// Don't let controller 1 tag in twice!
+		if (players[1]) controller_flag[0] = 2;
 	}
 
 	modelItems = injector::ReadMemory<ModelItems*>(shared::base + 0x17EA01C, true);
