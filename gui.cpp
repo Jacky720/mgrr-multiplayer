@@ -100,6 +100,7 @@ void gui::RenderWindow()
 				/*if (MainPlayer && ImGui::Button("Teleport all players to Raiden")) {
 					TeleportToMainPlayer(MainPlayer);
 				}*/
+				ImGui::InputFloat("Maximum diameter between players", &maxAllowedDist);
 
 				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
 

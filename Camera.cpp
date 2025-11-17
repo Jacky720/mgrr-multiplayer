@@ -115,9 +115,9 @@ void OverrideCameraPos() {
 			cVec4 p2Pos = player2->m_vecTransPos;
 			float dist = sqrt((p2Pos.x - p1Pos.x) * (p2Pos.x - p1Pos.x)
 				+ (p2Pos.z - p1Pos.z) * (p2Pos.z - p1Pos.z));
-			if (dist >= 15.0) {
+			if (dist >= maxAllowedDist) {
 				// Move players closer
-				float distMoveBack = (dist - 15.0f) / 2;
+				float distMoveBack = (dist - maxAllowedDist) / 2;
 				float xVecNrm = (p2Pos.x - p1Pos.x) / dist;
 				float zVecNrm = (p2Pos.z - p1Pos.z) / dist;
 				player->m_vecTransPos.x += distMoveBack * xVecNrm;

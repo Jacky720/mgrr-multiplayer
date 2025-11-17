@@ -138,6 +138,7 @@ bool EnableFriendlyFire = false;
 
 bool p1IsKeyboard = true;
 bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
+float maxAllowedDist = 15.0f;
 
 //unsigned int sword = 0x0;
 //unsigned int originalSword = 0x0;
