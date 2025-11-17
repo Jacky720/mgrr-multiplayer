@@ -270,16 +270,16 @@ void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
 }
 
 int __fastcall CheckZPress(Pl0000* player) {
-	return (player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_DEFFENSIVE_OFFENSIVE);
+	return (int)((player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_DEFFENSIVE_OFFENSIVE));
 }
 
 int __fastcall CheckXPress(Pl0000* player) {
-	return (player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_EXECUTION);
+	return (int)((player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_EXECUTION));
 }
 
 int __fastcall CheckRPress(Pl0000* player) {
 	// Should be cInput::isKeybindPressed at some point in the future
-	return (player == players[0]) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE);
+	return (int)((player == players[0]) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE));
 }
 
 auto giveVanillaCameraControl = ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90));
@@ -513,7 +513,7 @@ void InitMod() {
 	MakeRCheck(0x810597);
 	MakeRCheck(0x8106AD);
 	// DLC characters
-	MakeZCheck(0x69AD1D);
+	MakeZCheck(0x69AD1B);
 	MakeXCheck(0x69AD71);
 
 	// Load image data

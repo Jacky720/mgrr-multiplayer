@@ -184,14 +184,14 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 
 
 
-	float rotation = 0;
-	float v9;
+	//float rotation = 0;
+	//float v9;
 	float field_X = 0;
 	float field_Y = 0;
-	float v10;
-	float v11;
-	cVec4 v54;
-	long double tann = 0;
+	//float v10;
+	//float v11;
+	//cVec4 v54;
+	//long double tann = 0;
 	//forward
 
 	cCameraGame camera = cCameraGame::Instance;
