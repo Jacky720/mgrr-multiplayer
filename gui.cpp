@@ -17,7 +17,6 @@
 
 #include <format>
 
-
 void gui::OnReset::Before()
 {
 	ImGui_ImplDX9_InvalidateDeviceObjects();
@@ -110,10 +109,17 @@ void gui::RenderWindow()
 			if (ImGui::BeginTabItem("Current Players")) {
 				char p1Label[] = " (Main player)";
 				ImGui::Text("Keyboard%s: %x\n", p1IsKeyboard ? p1Label : "", playerTypes[0]);
-				if (players[0] && ImGui::Button("Teleport all players to keyboard player")) TeleportToMainPlayer(players[0]);
+				if (players[0]) {
+					if (ImGui::Button("Teleport all players to keyboard player")) TeleportToMainPlayer(players[0]);
+					if (!customCamera && ImGui::Button("Move camera to keyboard player")) giveVanillaCameraControl(players[0]);
+				}
 				for (int i = 1; i <= 4; i++) {
 					ImGui::Text("Controller %d%s: %x\n", i, (!p1IsKeyboard && i == 1) ? p1Label : "", playerTypes[i]);
-					if (players[i] && ImGui::Button(std::format("Teleport all players to controller {} player", i).c_str())) TeleportToMainPlayer(players[i]);
+					if (players[i]) {
+						if (ImGui::Button(std::format("Teleport all players to controller {} player", i).c_str())) TeleportToMainPlayer(players[i]);
+						if (!customCamera &&
+							ImGui::Button(std::format("Move camera to controller {} player", i).c_str())) giveVanillaCameraControl(players[i]);
+					}
 				}
 
 //#define PRINTACTIONS

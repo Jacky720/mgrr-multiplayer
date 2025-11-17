@@ -8,6 +8,7 @@
 void RecalibrateBossCode();
 void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
 void SpawnCharacter(int id, int controller, int costumeIndex = 0);
+extern int (__thiscall* giveVanillaCameraControl)(Pl0000* player);
 
 extern unsigned int HotKey;
 extern bool isMenuShow;

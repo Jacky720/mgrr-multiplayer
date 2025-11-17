@@ -282,6 +282,8 @@ int __fastcall CheckRPress(Pl0000* player) {
 	return (player == players[0]) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE);
 }
 
+auto giveVanillaCameraControl = ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90));
+
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);
@@ -452,7 +454,7 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 	}
 	RecalibrateBossCode();
 	//camera back to Raiden
-	//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	giveVanillaCameraControl(MainPlayer);
 
 }
 
@@ -607,8 +609,8 @@ void Update()
 	}
 
 	// MainPlayer take camera control
-	//if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-	//	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	if (GetKeyState('T') & 0x8000)
+		giveVanillaCameraControl(MainPlayer);
 
 	//Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 
