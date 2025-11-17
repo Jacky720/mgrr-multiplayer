@@ -80,13 +80,14 @@ void GetCameraInput(int controllerNumber) {
 	if (camLateralScale > camLateralMax) camLateralScale = camLateralMax;
 
 	static bool zooming[5] = { false };
+#define playerNumber (controllerNumber + 1)
 	if (CheckControlPressed(controllerNumber, GamepadCamReset) && !CheckControlPressed(controllerNumber, GamepadAbility)) {
-		if (!zooming[controllerNumber])
+		if (!zooming[playerNumber])
 			zoomOut = !zoomOut;
-		zooming[controllerNumber] = true;
+		zooming[playerNumber] = true;
 	}
 	else
-		zooming[controllerNumber] = false;
+		zooming[playerNumber] = false;
 }
 
 void OverrideCameraPos() {

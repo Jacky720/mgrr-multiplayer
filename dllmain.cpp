@@ -269,6 +269,18 @@ void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
 	}
 }
 
+int __fastcall CheckZPress(Pl0000* player) {
+	return player == players[0] && (GetKeyState('Z') & 0x8000) != 0;
+}
+
+int __fastcall CheckXPress(Pl0000* player) {
+	return player == players[0] && (GetKeyState('X') & 0x8000) != 0;
+}
+
+int __fastcall CheckRPress(Pl0000* player) {
+	return player == players[0] && (GetKeyState('R') & 0x8000) != 0;
+}
+
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);
@@ -474,10 +486,32 @@ void InitMod() {
 	// Nanopaste
 	injector::MakeCALL(shared::base + 0x54DD58, &HealAll, true);
 	
-	// Disregard, varies between unhelpful and crashing
-	// Nanopaste (automatic use)
-	//injector::MakeCALL(shared::base + 0x7946CF, &HealAll, true); //0x794780
-	//injector::MakeNOP(shared::base + 0x77C806, 0x1B, true);
+	// Disable Z, X, and R on controller players
+#define MakeZCheck(off) do { \
+	injector::MakeNOP(shared::base + off, 10, true); \
+	injector::WriteMemory<unsigned short>(shared::base + off, 0xD989, true); /* mov ecx,ebx */ \
+	injector::MakeCALL(shared::base + off + 2, &CheckZPress, true); \
+} while (false)
+	
+#define MakeXCheck(off) do { \
+	injector::MakeNOP(shared::base + off, 10, true); \
+	injector::WriteMemory<unsigned short>(shared::base + off, 0xD989, true); /* mov ecx,ebx */ \
+	injector::MakeCALL(shared::base + off + 2, &CheckXPress, true); \
+} while (false)
+
+#define MakeRCheck(off) do { \
+	injector::MakeNOP(shared::base + off, 10, true); \
+	injector::WriteMemory<unsigned short>(shared::base + off, 0xCE8B, true); /* mov ecx,esi */ \
+	injector::MakeCALL(shared::base + off + 2, &CheckRPress, true); \
+} while (false)
+	// Raiden
+	MakeZCheck(0x79403A);
+	MakeXCheck(0x794090);
+	MakeRCheck(0x810597);
+	MakeRCheck(0x8106AD);
+	// DLC characters
+	MakeZCheck(0x69AD1D);
+	MakeXCheck(0x69AD71);
 
 	// Load image data
 	LoadUIData();
