@@ -567,10 +567,10 @@ void LoadInputConfig() noexcept
 	LoadControl(iniReader, &GamepadPause2, "Codec"); // Note non-matching, Codec is apparently an enum somewhere
 	LoadControl(iniReader, &GamepadAbility, "Ability");
 	LoadControl(iniReader, &GamepadCamReset, "CamReset");
-
-	GamepadSpawn = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawn", GamepadSpawn);
+	LoadControl(iniReader, &GamepadSpawn, "Spawn");
 
 	p1IsKeyboard = iniReader.ReadBoolean("MGRRMultiplayerControls", "PlayerOneKeyboard", true);
+	HotKey = iniReader.ReadInteger("MGRRMultiplayerControls", "MenuHotkey", VK_INSERT);
 
 }
 

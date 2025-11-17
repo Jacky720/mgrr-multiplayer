@@ -32,6 +32,27 @@ int __fastcall CameraHacked(void* ecx) {
 	}
 }
 
+void LoadCameraConfig() noexcept {
+	// Load configuration data
+	CIniReader iniReader("MGRRMultiplayerControls.ini");
+
+	customCamera = iniReader.ReadBoolean("MGRRMultiplayerCamera", "UseCustomCamera", true);
+	qteCamera = iniReader.ReadBoolean("MGRRMultiplayerCamera", "UseVanillaQTECamera", true);
+	enableCameraY = iniReader.ReadBoolean("MGRRMultiplayerCamera", "UseCameraYControl", true);
+	invertCameraY = iniReader.ReadBoolean("MGRRMultiplayerCamera", "InvertCameraYControl", false);
+
+	camLateralScale = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraLateralDistance", 1.0);
+	camLateralMin = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMinLateralDist", 1.0);
+	camLateralMax = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMaxLateralDist", 6.0);
+	camHeightScale = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraVerticalDistance", 5.0);
+	camHeightMin = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMinVerticalDist", -2.5);
+	camHeightMax = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMaxVerticalDist", 10.0);
+	camSensitivity = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraSensitivity", 1.0);
+	zoomInFOV = iniReader.ReadFloat("MGRRMultiplayerCmaera", "CameraLowFOV", 50.0);
+	zoomOutFOV = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraHighFOV", 75.0);
+	maxAllowedDist = iniReader.ReadFloat("MGRRMultiplayerCamera", "MaxAllowedPlayerDist", 15.0);
+}
+
 void GetCameraInput(int controllerNumber) {
 	// Camera handling
 	float deltaYaw = 0.0;

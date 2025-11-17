@@ -270,15 +270,16 @@ void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
 }
 
 int __fastcall CheckZPress(Pl0000* player) {
-	return player == players[0] && (GetKeyState('Z') & 0x8000) != 0;
+	return (player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_DEFFENSIVE_OFFENSIVE);
 }
 
 int __fastcall CheckXPress(Pl0000* player) {
-	return player == players[0] && (GetKeyState('X') & 0x8000) != 0;
+	return (player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_EXECUTION);
 }
 
 int __fastcall CheckRPress(Pl0000* player) {
-	return player == players[0] && (GetKeyState('R') & 0x8000) != 0;
+	// Should be cInput::isKeybindPressed at some point in the future
+	return (player == players[0]) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE);
 }
 
 void RecalibrateBossCode() {
@@ -523,6 +524,7 @@ void InitMod() {
 	}
 
 	LoadInputConfig();
+	LoadCameraConfig();
 }
 
 

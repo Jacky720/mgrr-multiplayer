@@ -1,5 +1,6 @@
 #pragma once
 int __fastcall CameraHacked(void* ecx);
+void LoadCameraConfig();
 void OverrideCameraPos();
 void GetCameraInput(int controllerNumber);
 
