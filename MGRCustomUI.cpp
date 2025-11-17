@@ -350,7 +350,7 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 	}
 	
 
-	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
 	for (int i = 0; i < character_count; i++) {
 		auto fgCol = C_LTGRAYFADE;
@@ -358,7 +358,7 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 			fgCol = C_LTGRAY;
 		}
 		
-		RenderTextWithShadow(character_titles[i][costume_ids[controller_id][i]], screenWidth - offset_x, y + 40 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
+		RenderTextWithShadow(character_titles[i][costume_ids[controller_id][i]], screenWidth - offset_x, y + 20 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
 	}
 	
 	//RenderTextMGR_RightLeft("sundowner", screenWidth - offset_x, y + 60, C_LTGRAY, 0);
@@ -382,9 +382,9 @@ void DrawDropMenu(int offset_x, int y, int controller_id) {
 	default: numbername = "unknown";
 	}
 
-	RenderTextWithShadow("player_" + numbername + "_pause", screenWidth - offset_x, y + 20, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow("player_" + numbername + "_pause", screenWidth - offset_x, y, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
-	RenderTextWithShadow("drop", screenWidth - offset_x, y + 40, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow("drop", screenWidth - offset_x, y + 20, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
 }
 
 void ResetControllerAllFlags() {
@@ -476,7 +476,7 @@ void Present() {
 			RenderTextWithShadow(std::to_string(electrolytes->m_nBasePossession), 140, 100 + 60 * hpDrawOffset, C_BLACK, C_CYAN);
 		}
 		
-		int draw_offset = 0;
+		int draw_offset = 20;
 		for (int ctrlr = 0; ctrlr < 4; ctrlr++) {
 
 			switch (controller_flag[ctrlr]) {
@@ -487,8 +487,8 @@ void Present() {
 				break;
 
 			case 1:
-				DrawCharacterSelector(60, (draw_offset * 160), ctrlr);
-				draw_offset++;
+				DrawCharacterSelector(60, draw_offset, ctrlr);
+				draw_offset += 20 * (character_count + 1);
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
 					controller_flag[ctrlr] = 2;
@@ -509,8 +509,8 @@ void Present() {
 				break;
 
 			case 3:
-				DrawDropMenu(60, (draw_offset * 160), ctrlr);
-				draw_offset++;
+				DrawDropMenu(60, draw_offset, ctrlr);
+				draw_offset += 40;
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
 					controller_flag[ctrlr] = 0;
