@@ -468,7 +468,14 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 		// Synchronize AR vision for Wolf and Raiden
 		isARPressed |= CheckControlPressed(controllerNumber, GamepadTaunt);
 		isAny |= isARPressed;
-		if (player == MainPlayer) {
+		Pl0000* firstARPlayer = player;
+		for (int i = 0; i < 5; i++) {
+			if (playerTypes[i] == 0x10010 || playerTypes[i] == 0x11500) {
+				firstARPlayer = players[i];
+				break;
+			}
+		}
+		if (player == firstARPlayer) {
 			if (isARPressed) {
 				if (!wasARPressed) {
 					player->m_CurrentInput.m_nButtonsPressed |= TauntBit;
@@ -487,8 +494,9 @@ void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageT
 		}
 	}
 
-	if (SetFlagsForAction(player, controllerNumber, GamepadHeal, HealBit)) { // Plays effect, does not heal
+	if (SetFlagsForAction(player, controllerNumber, GamepadHeal, HealBit)) {
 		isAny |= true;
+		// Infinite nanopaste helper function, kept in but disabled by default
 		if (EveryHeal && healTimers[i] <= 0) {
 			healTimers[i] = 30 * 60;
 			player->setHealth(player->getMaxHealth());
@@ -613,8 +621,9 @@ void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToP
 	// D-pad
 	// No AR
 
-	if (SetFlagsForAction(player, controllerNumber, GamepadHeal, HealBit)) { // Plays effect, does not heal
+	if (SetFlagsForAction(player, controllerNumber, GamepadHeal, HealBit)) {
 		isAny |= true;
+		// Infinite nanopaste helper function, kept in but disabled by default
 		if (EveryHeal && healTimers[i] <= 0) {
 			healTimers[i] = 30 * 60;
 			player->setHealth(player->getMaxHealth());

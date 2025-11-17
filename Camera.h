@@ -13,6 +13,8 @@ extern double camHeightMin;
 extern double camHeightMax;
 extern double camYaw;
 extern double camSensitivity;
+extern double zoomInFOV;
+extern double zoomOutFOV;
 extern bool invertCameraY;
 extern bool enableCameraY;
 extern bool qteCamera;

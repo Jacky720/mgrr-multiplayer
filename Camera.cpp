@@ -9,6 +9,7 @@ bool customCamera = true;
 bool qteCamera = true;
 bool invertCameraY = false;
 bool enableCameraY = true;
+bool zoomOut = false;
 double camLateralScale = 1.0;
 double camHeightScale = 5.0;
 double camLateralMin = 1.0;
@@ -17,6 +18,8 @@ double camHeightMin = -2.5;
 double camHeightMax = 10.0;
 double camSensitivity = 1.0;
 double camYaw = 0.0;
+double zoomInFOV = 50.0;
+double zoomOutFOV = 75.0;
 
 int __fastcall CameraHacked(void* ecx) {
 	if (overrideCamera) {
@@ -75,6 +78,15 @@ void GetCameraInput(int controllerNumber) {
 	camLateralScale -= deltaPitch * (camLateralMax - camLateralMin) * 0.02 * camSensitivity;
 	if (camLateralScale < camLateralMin) camLateralScale = camLateralMin;
 	if (camLateralScale > camLateralMax) camLateralScale = camLateralMax;
+
+	static bool zooming = false;
+	if (CheckControlPressed(controllerNumber, GamepadCamReset) && !CheckControlPressed(controllerNumber, GamepadAbility)) {
+		if (!zooming)
+			zoomOut = !zoomOut;
+		zooming = true;
+	}
+	else
+		zooming = false;
 }
 
 void OverrideCameraPos() {
@@ -196,4 +208,5 @@ void OverrideCameraPos() {
 	cameraOffset->y = 0.0;
 	cameraOffset->z = 0.0;
 	cameraOffset->w = 0.0;
+	camera->m_TranslationMatrix.m_fFOV = (zoomOut ? zoomOutFOV : zoomInFOV) * PI / 180;
 }
