@@ -109,6 +109,7 @@
     <ClInclude Include="MGRCustomUI.h" />
     <ClInclude Include="MGRFunctions.h" />
     <ClInclude Include="ModelItems.h" />
+    <ClInclude Include="MPPlayer.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

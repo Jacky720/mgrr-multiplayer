@@ -5,13 +5,17 @@
 
 #include "Camera.h"
 #include "dllmain.h"
+#include "Injection.h"
+#include "MPPlayer.h"
 
 
 Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
 	float minDist = INFINITY;
 	Entity* closestPlayer = PlayerManagerImplement::ms_Instance->getEntity(0);
 	cVec4 ePos = ecx->m_vecTransPos;
-	for (Pl0000* player : players) {
+	Pl0000** playerObjs = MPPlayer::GetPlayerObjs();
+	for (int i = 0; i < maxPlayerCount; i++) {
+		Pl0000* player = playerObjs[i];
 		if (!player || (BehaviorEmBase*)player == ecx) continue;
 		cVec4 pPos = player->m_vecTransPos;
 		float dist = sqrt((pPos.x - ePos.x) * (pPos.x - ePos.x) + (pPos.y - ePos.y) * (pPos.y - ePos.y) + (pPos.z - ePos.z) * (pPos.z - ePos.z));
@@ -32,11 +36,12 @@ int __cdecl ParseMenuController() {
 
 void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
 	if (!p1->field_4E4 && p1->m_FuelContainers.m_size) {
-		for (int i = 0; i < 5; i++) {
-			if (players[i]) {
-				players[i]->m_nHealth += healAmt;
-				if (players[i]->m_nHealth > players[i]->getMaxHealth())
-					players[i]->m_nHealth = players[i]->getMaxHealth();
+		Pl0000** playerObjs = MPPlayer::GetPlayerObjs();
+		for (int i = 0; i < maxPlayerCount; i++) {
+			if (playerObjs[i]) {
+				playerObjs[i]->m_nHealth += healAmt;
+				if (playerObjs[i]->m_nHealth > playerObjs[i]->getMaxHealth())
+					playerObjs[i]->m_nHealth = playerObjs[i]->getMaxHealth();
 			}
 		}
 		/*p1->m_nHealth += healAmt;
@@ -45,16 +50,16 @@ void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
 }
 
 int __fastcall CheckZPress(Pl0000* player) {
-	return (int)((player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_DEFFENSIVE_OFFENSIVE));
+	return (int)((player == players[0]->playerObj) && cInput::isKeybindDown(cInput::KEYBIND_DEFFENSIVE_OFFENSIVE));
 }
 
 int __fastcall CheckXPress(Pl0000* player) {
-	return (int)((player == players[0]) && cInput::isKeybindDown(cInput::KEYBIND_EXECUTION));
+	return (int)((player == players[0]->playerObj) && cInput::isKeybindDown(cInput::KEYBIND_EXECUTION));
 }
 
 int __fastcall CheckRPress(Pl0000* player) {
 	// Should be cInput::isKeybindPressed at some point in the future
-	return (int)((player == players[0]) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE));
+	return (int)((player == players[0]->playerObj) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE));
 }
 
 void __fastcall ApplyBladeMode(Pl0000* player, int* enemy) {

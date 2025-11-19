@@ -11,6 +11,8 @@
 #include <XInput.h>
 #include "dllmain.h"
 #include "MGRControls.h"
+#include "MGRCustomUI.h"
+#include "MPPlayer.h"
 #include "imgui/imgui.h"
 using namespace std;
 
@@ -22,25 +24,7 @@ void __cdecl Se_PlayEvent(const char* event)
 	((void(__cdecl*)(const char*))(shared::base + 0xA5E1B0))(event);
 }
 
-int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 int checkScreenSizeTimer = 60;
-
-int selection_ids[4] = { 0, 0, 0, 0 };
-int costume_ids[4][character_count] = { 0 };
-int controller_flag[4] = { 0, 0, 0, 0 };
-// 0 - Unknown/Not Connected
-// 1 - Requires selection
-// 2 - Character selected, ready
-
-std::vector<std::pair<std::string, std::vector<bool>>> dpadStates = {
-	{"XINPUT_GAMEPAD_DPAD_UP",    {false, false, false, false, false, false}},
-    {"XINPUT_GAMEPAD_DPAD_LEFT",  {false, false, false, false, false, false}},
-	{"XINPUT_GAMEPAD_DPAD_DOWN",  {false, false, false, false, false, false}},
-	{"XINPUT_GAMEPAD_DPAD_RIGHT", {false, false, false, false, false, false}} };
-
-bool dpad_up_pressed[6] = { false, false, false, false, false, false };
-bool dpad_down_pressed[6] = { false, false, false, false, false, false };
 
 class MGRFontCharacter {
 public:
@@ -58,8 +42,6 @@ LPDIRECT3DTEXTURE9 hp_segment;
 
 // 0-1 Player menus, 
 LPDIRECT3DTEXTURE9 radial_assets[4];
-
-LPD3DXSPRITE pSprite = NULL;
 
 void LoadFont(fs::path directory_path, int id) {
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
@@ -161,12 +143,12 @@ void RenderTextMGR(string text, int x, int y, D3DCOLOR color, int fontid = 0, fl
 		if (txtarray[i] != NULL) {
 
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
-			tmp_x_shift += (font_map[fontid][txtarray[i]].width - 8) * scale;
+			tmp_x_shift += (int)((font_map[fontid][txtarray[i]].width - 8) * scale);
 
 
 		}
 		else {
-			tmp_x_shift += 20 * scale;
+			tmp_x_shift += (int)(20 * scale);
 		}
 
 	}
@@ -192,7 +174,7 @@ void RenderTextMGR_RightLeft(string text, int x, int y, D3DCOLOR color, int font
 	pSprite->SetTransform(&scaleMat);
 	int tmp_x_shift = 0;
 	for (int i = n - 1; i >= 0; i--) {
-		tmp_x_shift -= (font_map[fontid][txtarray[i]].width - 8) * scale; // Shift BEFORE since we're going left, THROUGH the character's space
+		tmp_x_shift -= (int)((font_map[fontid][txtarray[i]].width - 8) * scale); // Shift BEFORE since we're going left, THROUGH the character's space
 		D3DXVECTOR3 position((float)(x + tmp_x_shift) / scale, (float)y / scale, 0.0f);
 		if (txtarray[i] != NULL) {
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
@@ -251,7 +233,7 @@ void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR fg, int
 
 void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, float fcvalue, float fcmax, string name, bool ripper) {
 	// Health bar length. 100% = 300, 200% = 750 (2.5x)
-	int hpBarLength = 300 + (truehpmax / hpmax - 1) * 450;
+	int hpBarLength = (int)(300 + (truehpmax / hpmax - 1) * 450);
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
 	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + hpBarLength - 50, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
@@ -266,7 +248,7 @@ void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, f
 		DrawProgressBar(x, y + 32, min(fcvalue, 400), 400, fcCol);
 	}
 	for (int fcOff = 400, xOff = 305; fcmax > fcOff; fcOff += 280, xOff += 90) {
-		DrawProgressBar(x + xOff, y + 32, clamp((int)(fcvalue - fcOff), 0, 280), 280, fcCol, 85);
+		DrawProgressBar(x + xOff, y + 32, (float)clamp((int)(fcvalue - fcOff), 0, 280), 280, fcCol, 85);
 	}
 
 
@@ -292,7 +274,7 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 
 
 	string numbername;
-	switch (controller_id + 1) {
+	switch (controller_id) {
 	case 0: numbername = "zero"; break;
 	case 1: numbername = "one"; break;
 	case 2: numbername = "two"; break;
@@ -306,47 +288,48 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 	default: numbername = "unknown";
 	}
 
+	MPPlayer* player = players[controller_id];
+
 	bool freshDpad[4] = {false, false, false, false}; // Up, left, down, right
 	for (int i = 0; i < 4; i++) {
-		auto& dpadPair = dpadStates[i];
-		bool newState = IsGamepadButtonPressed(controller_id, dpadPair.first);
-		if (!dpadPair.second[controller_id]) { // Do not set freshDpad if the existing state was already on (no input repeating, basically)
+		bool newState = IsGamepadButtonPressed(controller_id, MPPlayer::dpadKeys[i]);
+		if (!player->dpadInputs[i]) { // Do not set freshDpad if the existing state was already on (no input repeating, basically)
 			freshDpad[i] = newState;
 		}
-		dpadPair.second[controller_id] = newState;
+		player->dpadInputs[i] = newState;
 	}
 
 	
-	if (freshDpad[0]) { // UP
-		selection_ids[controller_id]--;
-		if (selection_ids[controller_id] < 0) {
-			selection_ids[controller_id] = character_count - 1;
+	if (freshDpad[Up]) {
+		player->characterSelection--;
+		if (player->characterSelection < 0) {
+			player->characterSelection = character_count - 1;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
 
-	if (freshDpad[2]) { // DOWN
-		selection_ids[controller_id]++;
-		if (selection_ids[controller_id] >= character_count) {
-			selection_ids[controller_id] = 0;
+	if (freshDpad[Down]) {
+		player->characterSelection++;
+		if (player->characterSelection >= character_count) {
+			player->characterSelection = 0;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
 
-	int curChara = selection_ids[controller_id];
+	int curChara = player->characterSelection;
 
-	if (freshDpad[1]) { // LEFT
-		costume_ids[controller_id][curChara]--;
-		if (costume_ids[controller_id][curChara] < 0) {
-			costume_ids[controller_id][curChara] = character_titles[curChara].size() - 1;
+	if (freshDpad[Left]) {
+		player->costumeSelection[curChara]--;
+		if (player->costumeSelection[curChara] < 0) {
+			player->costumeSelection[curChara] = character_titles[curChara].size() - 1;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
 
-	if (freshDpad[3]) { // RIGHT
-		costume_ids[controller_id][curChara]++;
-		if (costume_ids[controller_id][curChara] >= character_titles[curChara].size()) {
-			costume_ids[controller_id][curChara] = 0;
+	if (freshDpad[Right]) {
+		player->costumeSelection[curChara]++;
+		if (player->costumeSelection[curChara] >= (signed)character_titles[curChara].size()) {
+			player->costumeSelection[curChara] = 0;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
@@ -356,11 +339,11 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 
 	for (int i = 0; i < character_count; i++) {
 		auto fgCol = C_LTGRAYFADE;
-		if (i == selection_ids[controller_id]) {
+		if (i == player->characterSelection) {
 			fgCol = C_LTGRAY;
 		}
 		
-		RenderTextWithShadow(character_titles[i][costume_ids[controller_id][i]], screenWidth - offset_x, y + 20 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
+		RenderTextWithShadow(character_titles[i][player->costumeSelection[i]], screenWidth - offset_x, y + 20 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
 	}
 	
 	//RenderTextMGR_RightLeft("sundowner", screenWidth - offset_x, y + 60, C_LTGRAY, 0);
@@ -370,7 +353,7 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 
 void DrawDropMenu(int offset_x, int y, int controller_id) {
 	string numbername;
-	switch (controller_id + 1) {
+	switch (controller_id) {
 	case 0: numbername = "zero"; break;
 	case 1: numbername = "one"; break;
 	case 2: numbername = "two"; break;
@@ -390,10 +373,9 @@ void DrawDropMenu(int offset_x, int y, int controller_id) {
 }
 
 void ResetControllerAllFlags() {
-	controller_flag[0] = 0;
-	controller_flag[1] = 0;
-	controller_flag[2] = 0;
-	controller_flag[3] = 0;
+	for (MPPlayer* player : players) {
+		player->controllerFlag = Out;
+	}
 }
 
 BOOL __stdcall WorldToScreen(const cVec4& worldPosition, cVec4& screenPos)
@@ -412,44 +394,45 @@ void Present() {
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
 		int i = 0;
 		int hpDrawOffset = 0;
-		for (Pl0000* player : players) {
-			if (player == nullptr) {
+		for (MPPlayer* player : players) {
+			if (player->playerObj == nullptr) {
 				i++; // Accurately show controller IDs
 				continue;
 			}
+			Pl0000* playerObj = player->playerObj;
 
 			string name = "";
-			if (player->m_pEntity->m_EntityIndex == 0x10010) name = "raiden";
-			if (player->m_pEntity->m_EntityIndex == 0x11400) name = "sam";
-			if (player->m_pEntity->m_EntityIndex == 0x11500) name = "wolf";
-			if (player->m_pEntity->m_EntityIndex == 0x20020) name = "jetstream_sam";
-			if (player->m_pEntity->m_EntityIndex == 0x20700) name = "senator";
-			if (player->m_pEntity->m_EntityIndex == 0x2070A) name = "senator";
-			if (player->m_pEntity->m_EntityIndex == 0x20310) name = "sundowner";
-			if (player->m_pEntity->m_EntityIndex == 0x12040) name = "dwarf_gekko";
+			if (player->playerType == 0x10010) name = "raiden";
+			if (player->playerType == 0x11400) name = "sam";
+			if (player->playerType == 0x11500) name = "wolf";
+			if (player->playerType == 0x20020) name = "jetstream_sam";
+			if (player->playerType == 0x20700) name = "senator";
+			if (player->playerType == 0x2070A) name = "senator";
+			if (player->playerType == 0x20310) name = "sundowner";
+			if (player->playerType == 0x12040) name = "dwarf_gekko";
 
 			float fcCur = 0;
 			float fcMax = 0;
-			float hpCur = (float)player->m_nHealth;
-			float hpMax = (float)player->m_nMaxHealth;
-			float trueHpMax = (float)player->m_nMaxHealth;
-			if ((player->m_pEntity->m_EntityIndex & 0xF0000) == 0x10000 // Enemies have no FC
-				&& (player->m_pEntity->m_EntityIndex != 0x12040)) // Neither does Dwarf Gekko
+			float hpCur = (float)playerObj->m_nHealth;
+			float hpMax = (float)playerObj->m_nMaxHealth;
+			float trueHpMax = (float)playerObj->m_nMaxHealth;
+			if ((player->playerType & 0xF0000) == 0x10000 // Enemies have no FC
+				&& (player->playerType != 0x12040)) // Neither does Dwarf Gekko
 			{
-				fcCur = player->getFuelContainer();
-				fcMax = player->getFuelCapacity(false);
-				hpCur = (float)player->getHealth();
-				trueHpMax = (float)player->getMaxHealth();
+				fcCur = playerObj->getFuelContainer();
+				fcMax = playerObj->getFuelCapacity(false);
+				hpCur = (float)playerObj->getHealth();
+				trueHpMax = (float)playerObj->getMaxHealth();
 #ifdef MOUSEDEBUG
 				//hpCur = CheckControlPressed(-1, CamUp, GamepadCamUp) - CheckControlPressed(-1, CamDown, GamepadCamDown);
 				hpCur = GetMouseAnalog("MouseUp");
 				hpMax = 100;
 #endif
 			}
-			bool ripper = (player->m_pEntity->m_EntityIndex == 0x10010) && (player->canActivateRipperMode() || player->m_nRipperModeEnabled);
+			bool ripper = (player->playerType == 0x10010) && (playerObj->canActivateRipperMode() || playerObj->m_nRipperModeEnabled);
 			DrawFalseMGRUI(140, 90 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper);
 			auto pDrawList = ImGui::GetWindowDrawList();
-			cVec4 player_pos = player->getTransPos();
+			cVec4 player_pos = playerObj->getTransPos();
 			player_pos.y += 2.3f;
 			cVec4 temporary_projection = cVec4(0, 0, 0, 0);
 			WorldToScreen(player_pos, temporary_projection);
@@ -479,34 +462,34 @@ void Present() {
 		}
 		
 		int draw_offset = 20;
-		for (int ctrlr = 0; ctrlr < 4; ctrlr++) {
-
-			switch (controller_flag[ctrlr]) {
-			case 0:
+		for (int ctrlr = 0; ctrlr < 5; ctrlr++) {
+			MPPlayer* player = players[ctrlr];
+			switch (player->controllerFlag) {
+			case Out:
 				if (IsGamepadButtonPressed(ctrlr, GamepadSpawn)) {
-					controller_flag[ctrlr] = 1;
+					player->controllerFlag = TaggingIn;
 				}
 				break;
 
-			case 1:
+			case TaggingIn:
 				DrawCharacterSelector(60, draw_offset, ctrlr);
 				draw_offset += 20 * (character_count + 1);
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
-					controller_flag[ctrlr] = 2;
+					player->controllerFlag = In;
 					Se_PlayEvent("core_se_sys_decide_l");
-					SpawnCharacter(selection_ids[ctrlr], ctrlr, costume_ids[ctrlr][selection_ids[ctrlr]]);
+					SpawnCharacter(player->characterSelection, ctrlr, player->costumeSelection[player->characterSelection]);
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
-					controller_flag[ctrlr] = 0;
-					selection_ids[ctrlr] = 0;
+					player->controllerFlag = Out;
+					player->characterSelection = 0;
 				}
 				break;
 
 			case 2:
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_START")
 					&& !(ctrlr == 0 && !p1IsKeyboard)) { // Do not let main player drop
-					controller_flag[ctrlr] = 3;
+					player->controllerFlag = TaggingOut;
 				}
 				break;
 
@@ -515,21 +498,21 @@ void Present() {
 				draw_offset += 40;
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
-					controller_flag[ctrlr] = 0;
-					selection_ids[ctrlr] = 0;
+					player->controllerFlag = Out;
+					player->characterSelection = 0;
 					Se_PlayEvent("core_se_sys_decide_l");
-					if ((playerTypes[ctrlr + 1] & 0xf0000) == 0x20000) {
+					if ((player->playerType & 0xf0000) == 0x20000) {
 						// Go directly to hell
-						players[ctrlr + 1]->place({0, -10000, 0, 0}, {0, 0, 0, 0});
+						player->playerObj->place({0, -10000, 0, 0}, {0, 0, 0, 0});
 					}
-					else {
-						players[ctrlr + 1]->m_pEntity->~Entity();
+					else { // TODO: "destruction queue" (it crashes if unarmed drops during attack, need to await idle)
+						player->playerObj->m_pEntity->~Entity();
 					}
-					players[ctrlr + 1] = nullptr;
-					playerTypes[ctrlr + 1] = (eObjID)0;
+					player->playerObj = nullptr;
+					player->playerType = (eObjID)0;
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
-					controller_flag[ctrlr] = 2;
+					player->controllerFlag = In;
 				}
 				break;
 			}

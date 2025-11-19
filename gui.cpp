@@ -15,6 +15,7 @@
 #include <Pl0000.h>
 #include <Trigger.h>
 #include "MGRFunctions.h"
+#include "MPPlayer.h"
 
 #include <format>
 
@@ -115,17 +116,17 @@ void gui::RenderWindow()
 
 			if (ImGui::BeginTabItem("Current Players")) {
 				char p1Label[] = " (Main player)";
-				ImGui::Text("Keyboard%s: %x\n", p1IsKeyboard ? p1Label : "", playerTypes[0]);
-				if (players[0]) {
+				ImGui::Text("Keyboard%s: %x\n", p1IsKeyboard ? p1Label : "", players[0]->playerType);
+				if (players[0]->playerObj) {
 					if (ImGui::Button("Teleport all players to keyboard player")) TeleportToMainPlayer(players[0]);
-					if (!customCamera && ImGui::Button("Move camera to keyboard player")) giveVanillaCameraControl(players[0]);
+					if (!customCamera && ImGui::Button("Move camera to keyboard player")) giveVanillaCameraControl(players[0]->playerObj);
 				}
 				for (int i = 1; i <= 4; i++) {
-					ImGui::Text("Controller %d%s: %x\n", i, (!p1IsKeyboard && i == 1) ? p1Label : "", playerTypes[i]);
+					ImGui::Text("Controller %d%s: %x\n", i, (!p1IsKeyboard && i == 1) ? p1Label : "", players[i]->playerType);
 					if (players[i]) {
 						if (ImGui::Button(std::format("Teleport all players to controller {} player", i).c_str())) TeleportToMainPlayer(players[i]);
 						if (!customCamera &&
-							ImGui::Button(std::format("Move camera to controller {} player", i).c_str())) giveVanillaCameraControl(players[i]);
+							ImGui::Button(std::format("Move camera to controller {} player", i).c_str())) giveVanillaCameraControl(players[i]->playerObj);
 					}
 				}
 
@@ -166,14 +167,14 @@ void gui::RenderWindow()
 				for (int i = 0; i < 5; i++) {
 					if (!players[i]) continue;
 
-					if (players[i]->m_ObjId == 0x20310) {
+					if (players[i]->enemyObj->m_ObjId == 0x20310) {
 						ImGui::Text("Sundowner %i", i);
 						ImGui::SameLine();
 						if (ImGui::Button("Phase 2-ify")) {
-							sundownerPhase2Create((Behavior*)players[i], 0);
+							sundownerPhase2Create((Behavior*)players[i]->enemyObj, 0);
 						}
 						ImGui::SameLine();
-						ImGui::Checkbox("Is Controller ID Phase 2", &isControllerIDSundownerPhase2[i]);
+						ImGui::Checkbox("Is Controller ID Phase 2", &players[i]->isSundownerPhase2);
 					}
 
 

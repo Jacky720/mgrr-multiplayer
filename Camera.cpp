@@ -1,25 +1,11 @@
 #include "dllmain.h"
+#include "Camera.h"
 #include "MGRCustomAI.h"
+#include "MPPlayer.h"
 
 #include <cCameraGame.h>
 #include <Trigger.h>
 
-bool overrideCamera = false;
-bool customCamera = true;
-bool qteCamera = true;
-bool invertCameraY = false;
-bool enableCameraY = true;
-bool zoomOut = false;
-double camLateralScale = 1.0;
-double camHeightScale = 5.0;
-double camLateralMin = 1.0;
-double camLateralMax = 6.0;
-double camHeightMin = -2.5;
-double camHeightMax = 10.0;
-double camSensitivity = 1.0;
-double camYaw = 0.0;
-double zoomInFOV = 50.0;
-double zoomOutFOV = 75.0;
 
 int __fastcall CameraHacked(void* ecx) {
 	if (overrideCamera) {
@@ -129,10 +115,14 @@ void OverrideCameraPos() {
 
 #define getYaw(x, z) (((z) != 0) ? atan((x)/(z)) : DegreeToRadian(90))
 
-	for (Pl0000* player : players) {
+	for (MPPlayer* playerIt : players) {
+		if (!playerIt) continue;
+		Pl0000* player = playerIt->playerObj;
 		if (!player) continue;
 		cVec4 p1Pos = player->m_vecTransPos;
-		for (Pl0000* player2 : players) {
+		for (MPPlayer* player2It : players) {
+			if (!player2It) continue;
+			Pl0000* player2 = player2It->playerObj;
 			if (!player2) continue;
 			cVec4 p2Pos = player2->m_vecTransPos;
 			float dist = sqrt((p2Pos.x - p1Pos.x) * (p2Pos.x - p1Pos.x)
@@ -230,5 +220,5 @@ void OverrideCameraPos() {
 	cameraOffset->y = 0.0;
 	cameraOffset->z = 0.0;
 	cameraOffset->w = 0.0;
-	camera->m_TranslationMatrix.m_fFOV = (zoomOut ? zoomOutFOV : zoomInFOV) * PI / 180;
+	camera->m_TranslationMatrix.m_fFOV = (float)(zoomOut ? zoomOutFOV : zoomInFOV) * PI / 180;
 }

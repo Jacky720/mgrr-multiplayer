@@ -6,6 +6,8 @@
 #include "ModelItems.h"
 #include "MGRFunctions.h"
 #include "Injection.h"
+#include "dllmain.h"
+#include "MPPlayer.h"
 
 #include <assert.h>
 #include <Events.h>
@@ -61,48 +63,6 @@ LRESULT CALLBACK hkWindowProc(
 
 Sub_18AE10_t sundownerPhase2Create = (Sub_18AE10_t)(shared::base + 0x188E40); // forward definition
 
-
-std::vector<std::string> character_titles[] = {
-	{"sam"},
-	{"blade_wolf"},
-	{"boss_sam"},
-	{"sundowner", "sundowner_(second_phase)"},
-	{"senator_armstrong_(shirt)", "senator_armstrong_(shirtless)"},
-	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
-     "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
-     "gray_fox", "raiden_(white_armor)", "raiden_(inferno_armor)", "raiden_(commando_armor)"}, // Mariachi omitted
-	{"raiden_(unarmed)", "civilian_a", "civilian_b", "civilian_c", "civilian_d", "nmani"},
-	{"dwarf_gekko"} };
-
-
-// unsigned my ass
-#define NILBODY 0xffffffff
-std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
-	{(eObjID)0x11400, { costumesList[Costumes::Sam] }},
-	{(eObjID)0x11500, { {0x11505, 0, 0, 0, 0} }},
-	{(eObjID)0x10010, { costumesList[Costumes::CustomBody],
-						costumesList[Costumes::CustomBodyBlue],
-						costumesList[Costumes::CustomBodyRed],
-						costumesList[Costumes::CustomBodyYellow],
-						costumesList[Costumes::DesperadoBody],
-						costumesList[Costumes::Suit],
-						costumesList[Costumes::StandardBody],
-						costumesList[Costumes::OriginalBody],
-						costumesList[Costumes::GrayFox],
-						costumesList[Costumes::WhiteArmor],
-						costumesList[Costumes::InfernoArmor],
-						costumesList[Costumes::CommandoArmor] }},
-	{(eObjID)0x10011, { {0x11010, 0x11011, 0x11014, 0x11013, 0x11017}, // Unarmed costumes
-						{0x10800, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x10801, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x10a00, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x10a01, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x2031a, NILBODY, NILBODY, 0x11013, NILBODY} }}
-	// Armstrong has custom model items, in the sense that he instead spawns em070a. See SpawnCharacter.
-};
-
-
-bool isInit = false;
 //bool SamSpawned = false;
 //bool WolfSpawned = false;
 
@@ -119,31 +79,12 @@ bool SamAtOnce = false;
 
 //bool SundownerBehaviorActive = true;
 
-bool PlayAsMistral = false;
-bool PlayAsMonsoon = false;
-bool PlayAsSundowner = false;
-bool PlayAsSam = false;
-bool PlayAsArmstrong = false;
-
-
-bool EnableFriendlyFire = false;
-
-bool p1IsKeyboard = true;
 bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
-float maxAllowedDist = 15.0f;
 
 //unsigned int sword = 0x0;
 //unsigned int originalSword = 0x0;
 
-
-
-bool isMenuShow = false;
-
-
 //eObjID mObjId = (eObjID)0x0;
-
-unsigned int HotKey = VK_INSERT; //Hotkey for menu show
-
 
 //DWORD dwResult;
 //XINPUT_STATE state;
@@ -220,12 +161,9 @@ Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);*/
 //bool isPlayerAtOnce = false;
 bool gotOriginalModelItems = false;
 
-Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
-Pl0000* players[5] = { nullptr };
-eObjID playerTypes[5] = { (eObjID)0 };
-int playerSpawnCheck[5] = { 0 };
-
-auto giveVanillaCameraControl = ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90));
+int giveVanillaCameraControl(Pl0000* player) {
+	return ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90))(player);
+}
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
@@ -270,17 +208,21 @@ void RecalibrateBossCode() {
 		injector::WriteMemory<unsigned int>(shared::base + 0x1C656D, 0x909090, true);*/
 }
 
-void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1) {
+void TeleportToMainPlayer(MPPlayer* mainPlayer, int controllerIndex) {
+	TeleportToMainPlayer(mainPlayer->playerObj, controllerIndex);
+}
+
+void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex) {
 	cVec4& pos = mainPlayer->m_vecTransPos;
 	cVec4& rot = mainPlayer->m_vecRotation;
 	if (controllerIndex >= 0) {
-		Pl0000* player = players[controllerIndex + 1];
+		Pl0000* player = players[controllerIndex]->playerObj;
 		player->place(pos, rot);
 		return;
 	}
-	for (Pl0000* player : players) {
-		if (player)
-			player->place(pos, rot);
+	for (MPPlayer* player : players) {
+		if (player->playerObj)
+			player->playerObj->place(pos, rot);
 	}
 }
 
@@ -335,13 +277,13 @@ void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
 	}
 
 	if (controllerIndex > -1) {
-		playerTypes[controllerIndex + 1] = id;
+		players[controllerIndex]->playerType = id;
 	}
 	else {
-		for (int i = 0; i < 5; i++) {
-			if (!playerTypes[i]) {
-				playerTypes[i] = id;
-				controllerIndex = i - 1;
+		for (int i = 0; i < maxPlayerCount; i++) {
+			if (!players[controllerIndex]->playerType) {
+				players[controllerIndex]->playerType = id;
+				controllerIndex = i;
 				break;
 			}
 		}
@@ -366,13 +308,13 @@ void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
 	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
 
 	// Frame counter, if it hits zero and the player does not exist, resets playertype
-	playerSpawnCheck[controllerIndex + 1] = 30;
+	players[controllerIndex]->spawnFailTimer = 30;
 
 	//injector::WriteMemory<unsigned int>(*(unsigned int*)shared::base + 0x17E9FF4, 0x11501, true);
 
 }
 
-void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
+void SpawnCharacter(int id, int controller, int costumeIndex) {
 
 	if (id == 0)
 		Spawner((eObjID)0x11400, controller, costumeIndex);
@@ -385,13 +327,7 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 	else if (id == 3) {
 		Spawner((eObjID)0x20310, controller);
 		// phase 2 code go here
-		if (costumeIndex % 2 != 0) { // Every 2 IDs will be phase 2, so you can have costumes and phases
-			isControllerIDSundownerPhase2[controller] = true;
-			
-		}
-		else {
-			isControllerIDSundownerPhase2[controller] = false; // ensures if a dropped sundowner reconnects that phase 2 won't persist
-		}
+		players[controller]->isSundownerPhase2 = (costumeIndex % 2 != 0); // Every other costume
 
 		PlayAsSundowner = true;
 	}
@@ -421,6 +357,9 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 void InitMod() {
 
 	MakeInjections();
+
+	MPPlayer::InitPlayers();
+
 	// Load image data
 	LoadUIData();
 
@@ -437,9 +376,6 @@ void InitMod() {
 
 void Update()
 {
-	for (int i = 0; i < 5; i++) {
-		if (playerSpawnCheck[i]) playerSpawnCheck[i]--;
-	}
 
 	overrideCamera = false;
 
@@ -448,14 +384,15 @@ void Update()
 		isInit = true;
 	}
 
+	for (MPPlayer* player : players) {
+		if (player->spawnFailTimer) player->spawnFailTimer--;
+	}
+
 	MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 	if (!MainPlayer) {
 		if (p1IsKeyboard != p1WasKeyboard) p1WasKeyboard = p1IsKeyboard;
-		for (int i = 0; i < 5; i++) {
-			players[i] = nullptr;
-			playerTypes[i] = (eObjID)0;
-		}
+		MPPlayer::EmptyPlayers();
 		ResetControllerAllFlags();
 		gotOriginalModelItems = false;
 		return;
@@ -477,24 +414,18 @@ void Update()
 
 	if (p1IsKeyboard != p1WasKeyboard) { // swap
 		p1WasKeyboard = p1IsKeyboard;
-		Pl0000* temp = players[0];
+		MPPlayer* temp = players[0];
 		players[0] = players[1];
 		players[1] = temp;
-		eObjID temp2 = playerTypes[0];
-		playerTypes[0] = playerTypes[1];
-		playerTypes[1] = temp2;
-		controller_flag[0] = (players[1] ? 2 : 0);
+		MPPlayer::FixIndexes();
 	}
 
-	if (players[p1Index] != MainPlayer) {
-		for (int i = 0; i < 5; i++) {
-			players[i] = nullptr;
-			playerTypes[i] = (eObjID)0;
-		}
-		players[p1Index] = MainPlayer;
-		playerTypes[p1Index] = MainPlayer->m_pEntity->m_EntityIndex;
+	if (players[p1Index]->playerObj != MainPlayer) {
+		MPPlayer::EmptyPlayers();
+		players[p1Index]->playerObj = MainPlayer;
+		players[p1Index]->playerType = MainPlayer->m_pEntity->m_EntityIndex;
 		// Don't let controller 1 tag in twice!
-		if (players[1]) controller_flag[0] = 2;
+		MPPlayer::FixIndexes();
 	}
 
 	modelItems = injector::ReadMemory<ModelItems*>(shared::base + 0x17EA01C, true);
@@ -524,9 +455,8 @@ void Update()
 
 	// Detect newly-spawned players
 	bool needNewPlayer = false;
-	for (int i = 0; i < 5; i++) {
-		if (playerTypes[i] && !players[i])
-			needNewPlayer = true;
+	for (MPPlayer* player : players) {
+		needNewPlayer |= player->TryingToSpawn();
 	}
 
 	if (needNewPlayer) {
@@ -537,15 +467,15 @@ void Update()
 			if (!player) continue;
 
 			bool alreadyInit = false;
-			for (int i = 0; i < 5; i++) {
-				if (players[i] == player)
+			for (MPPlayer *playerIt : players) {
+				if (playerIt->playerObj == player)
 					alreadyInit = true;
 			}
 			if (alreadyInit) continue;
 
-			for (int i = 0; i < 5; i++) {
-				if (playerTypes[i] && !players[i] && value->m_EntityIndex == playerTypes[i]) {
-					players[i] = player;
+			for (MPPlayer* playerIt : players) {
+				if (playerIt->TryingToSpawn() && value->m_EntityIndex == playerIt->playerType) {
+					playerIt->playerObj = player;
 					if (gotOriginalModelItems) {
 						modelItems->m_nHair = originalModelItems.m_nHair;
 						modelItems->m_nVisor = originalModelItems.m_nVisor;
@@ -563,15 +493,12 @@ void Update()
 	}
 
 	// Reset players who fail to spawn
-	for (int i = 0; i < 5; i++) {
-		if (!playerSpawnCheck[i] && playerTypes[i] && !players[i]) {
-			playerTypes[i] = (eObjID)0;
-			if (i > 0)
-				controller_flag[i - 1] = 1;
+	for (MPPlayer* player : players) {
+		if (!player->spawnFailTimer && player->TryingToSpawn()) {
+			player->playerType = (eObjID)0;
+			player->controllerFlag = TaggingIn;
 			m_EntQueue.clear();
 		}
-
-
 	}
 
 
@@ -579,24 +506,21 @@ void Update()
 	//int playerCount = 0;
 
 	// Player control overrides
-	for (int i = 0; i < 5; i++) {
-		Pl0000* player = players[i];
+	for (int i = 0; i < maxPlayerCount; i++) {
+		Pl0000* player = players[i]->playerObj;
 		if (!player) continue;
 
 		//playerPos[playerCount] = player->m_vecTransPos;
 		//playerCount++;
 
-		BehaviorEmBase* Enemy = (BehaviorEmBase*)player;
-		int controllerNumber = i - 1;
-
-		if ((Enemy->m_pEntity->m_EntityIndex & 0xF0000) == 0x20000) {
-			FullHandleAIBoss(Enemy, controllerNumber, EnableFriendlyFire);
+		if ((players[i]->playerType & 0xF0000) == 0x20000) {
+			FullHandleAIBoss(players[i]);
 		}
-		else if (player->m_pEntity->m_EntityIndex == (eObjID)0x12040) { // Not actually Pl0000*
-			FullHandleDGPlayer(player, controllerNumber, EnableFriendlyFire);
+		else if (players[i]->playerType == (eObjID)0x12040) { // Not actually Pl0000*
+			FullHandleDGPlayer(players[i]);
 		}
 		else { // Raiden, Sam, Wolf
-			FullHandleAIPlayer(player, controllerNumber, EnableFriendlyFire);
+			FullHandleAIPlayer(players[i]);
 		}
 	}
 

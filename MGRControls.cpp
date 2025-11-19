@@ -1,5 +1,6 @@
 #include "dllmain.h"
 #include "MGRCustomUI.h"
+#include "MGRControls.h"
 
 #include "IniReader.h"
 #include <string>
@@ -7,35 +8,6 @@
 #include "imgui/imgui.h"
 
 //#define MOUSETEST
-
-enum InputBitflags {
-	WeaponMenuBit = 0x1,
-	WeaponMenu2Bit = 0x2,
-	HealBit = 0x4,
-	TauntBit = 0x8,
-	JumpBit = 0x10,
-	InteractBit = 0x20,
-	LightAttackBit = 0x40,
-	HeavyAttackBit = 0x80,
-	PauseBit = 0x100,
-	CodecBit = 0x200,
-	SubWeaponBit = 0x400,
-	BladeModeBit = 0x800,
-	AbilityBit = 0x1000,
-	LockOnBit = 0x2000,
-	RunBit = 0x4000,
-	CamResetBit = 0x8000,
-	LeftBit = 0x100000,
-	RightBit = 0x200000,
-	ForwardBit = 0x400000,
-	BackwardBit = 0x800000,
-	CamLeftBit = 0x1000000,
-	CamRightBit = 0x2000000,
-	CamUpBit = 0x4000000,
-	CamDownBit = 0x8000000,
-};
-
-
 
 enum GamepadAnalogValues {
 	LeftX,
@@ -47,8 +19,9 @@ enum GamepadAnalogValues {
 // Returns a scale factor (expected 0.0 to 1.0, technically can give -1.0 to 1.0) for analog movement
 float GetGamepadAnalog(int controllerIndex, const std::string& button)
 {
+	if (controllerIndex == 0) return 0.0;
 	XINPUT_STATE state;
-	DWORD dwResult = XInputGetState(controllerIndex, &state);
+	DWORD dwResult = XInputGetState(controllerIndex - 1, &state);
 
 
 
@@ -106,11 +79,11 @@ float GetMouseAnalog(const std::string& button)
 
 bool IsGamepadButtonPressed(int controllerIndex, const std::string& button)
 {
-	if (controllerIndex < 0)
+	if (controllerIndex < 1)
 		return false;
 
 	XINPUT_STATE state;
-	DWORD dwResult = XInputGetState(controllerIndex, &state);
+	DWORD dwResult = XInputGetState(controllerIndex - 1, &state);
 
 
 	if (dwResult == ERROR_SUCCESS)
@@ -505,34 +478,6 @@ std::string TryParseVKToHex(std::string in) {
 }
 
 
-std::string GamepadForward = "XINPUT_GAMEPAD_LEFT_THUMB_UP";
-std::string GamepadBack = "XINPUT_GAMEPAD_LEFT_THUMB_DOWN";
-std::string GamepadLeft = "XINPUT_GAMEPAD_LEFT_THUMB_LEFT";
-std::string GamepadRight = "XINPUT_GAMEPAD_LEFT_THUMB_RIGHT";
-std::string GamepadNormalAttack = "XINPUT_GAMEPAD_X";
-std::string GamepadStrongAttack = "XINPUT_GAMEPAD_Y";
-std::string GamepadJump = "XINPUT_GAMEPAD_A";
-std::string GamepadInteract = "XINPUT_GAMEPAD_B";
-std::string GamepadCamUp = "XINPUT_GAMEPAD_RIGHT_THUMB_UP";
-std::string GamepadCamDown = "XINPUT_GAMEPAD_RIGHT_THUMB_DOWN";
-std::string GamepadCamLeft = "XINPUT_GAMEPAD_RIGHT_THUMB_LEFT";
-std::string GamepadCamRight = "XINPUT_GAMEPAD_RIGHT_THUMB_RIGHT";
-std::string GamepadHeal = "XINPUT_GAMEPAD_DPAD_DOWN";
-std::string GamepadTaunt = "XINPUT_GAMEPAD_DPAD_UP";
-std::string GamepadWeaponMenu = "XINPUT_GAMEPAD_DPAD_LEFT";
-std::string GamepadWeaponMenu2 = "XINPUT_GAMEPAD_DPAD_RIGHT";
-std::string GamepadRun = "XINPUT_GAMEPAD_RIGHT_TRIGGER";
-std::string GamepadBladeMode = "XINPUT_GAMEPAD_LEFT_TRIGGER";
-std::string GamepadSubweapon = "XINPUT_GAMEPAD_LEFT_SHOULDER";
-std::string GamepadLockon = "XINPUT_GAMEPAD_RIGHT_SHOULDER";
-std::string GamepadPause = "XINPUT_GAMEPAD_START";
-std::string GamepadPause2 = "XINPUT_GAMEPAD_BACK";
-std::string GamepadAbility = "XINPUT_GAMEPAD_LEFT_THUMB";
-std::string GamepadCamReset = "XINPUT_GAMEPAD_RIGHT_THUMB";
-
-std::string GamepadSpawn = "XINPUT_GAMEPAD_START";
-
-
 void LoadControl(CIniReader iniReader, std::string* GamepadControl, std::string name) {
 	//*Control = TryParseVKToHex(iniReader.ReadString("MGRRMultiplayerControls", name, *Control));
 	*GamepadControl = iniReader.ReadString("MGRRMultiplayerControls", "Gamepad" + name, *GamepadControl);
@@ -683,7 +628,7 @@ std::string GetKeyboardBind(std::string Keybind) {
 }
 
 bool CheckControlPressed(int controllerNumber, std::string GamepadBind) {
-	if (controllerNumber == -1) { // Keyboard
+	if (controllerNumber == 0) { // Keyboard
 		std::string Keybind = GetKeyboardBind(GamepadBind);
 #ifdef MOUSETEST
 		if (Keybind[0] == 'M')

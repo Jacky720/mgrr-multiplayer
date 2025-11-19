@@ -4,20 +4,44 @@
 #include <cCameraGame.h>
 #include <Pl0000.h>
 #include <unordered_map>
+#include "MPPlayer.h"
 
-extern bool EveryHeal;
-extern bool isControllerIDSundownerPhase2[5];
+__declspec(selectany) bool EveryHeal = false;
 
-bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string GamepadBind,
-	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr);
+typedef struct SetAction {
+	unsigned int ActionId;
+	unsigned int SubactionId;
+	unsigned int MaxSubaction; // For checking states that contain a range of subactions 0-x
+	unsigned int AnimationMapId;
+	float AnimationLength;
+} setAction;
 
-bool SetFlagsForAnalog(Pl0000* player, int controllerNumber, std::string GamepadBind,
-	InputBitflags bit, float* altField, bool invert);
 
-void UpdateBossActions(BehaviorEmBase* Enemy, unsigned int BossActions[], int controllerNumber = -1);
+typedef struct actionList {
+	setAction Idle;
+	setAction Walking;
+	setAction LightAttack;
+	setAction HeavyAttack;
+	setAction Interaction;
+	setAction Jumping;
+	setAction Taunting;
+	setAction Special;
+	setAction EndSpecial;
+	setAction StartRun;
+	setAction MidRun;
+	setAction EndRun;
+} ActionList;
 
-void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamagePlayer);
+bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind, InputBitflags bit,
+	unsigned int* altField1 = nullptr, unsigned int* altField2 = nullptr, cInput::InputUnit* curInput = nullptr);
 
-void FullHandleAIPlayer(Pl0000* player, int controllerNumber, bool EnableDamageToPlayers);
+bool SetFlagsForAnalog(MPPlayer* player, std::string GamepadBind, InputBitflags bit,
+	float* altField, bool invert, cInput::InputUnit* curInput = nullptr);
 
-void FullHandleDGPlayer(Behavior* dg, int controllerNumber, bool EnableDamageToPlayers);
+void UpdateBossActions(MPPlayer* Enemy, unsigned int* BossActions); // Rejects ActionList* for some reason
+
+void FullHandleAIBoss(MPPlayer* Enemy);
+
+void FullHandleAIPlayer(MPPlayer* player);
+
+void FullHandleDGPlayer(MPPlayer* dg);

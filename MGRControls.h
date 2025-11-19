@@ -30,11 +30,32 @@ enum InputBitflags {
 	CamDownBit = 0x8000000,
 };
 
-extern std::string GamepadForward, GamepadBack, GamepadLeft, GamepadRight,
-	GamepadNormalAttack, GamepadStrongAttack, GamepadJump, GamepadInteract, GamepadCamUp,
-	GamepadCamDown, GamepadCamLeft, GamepadCamRight, GamepadHeal, GamepadTaunt,
-	GamepadWeaponMenu, GamepadWeaponMenu2, GamepadRun, GamepadBladeMode, GamepadSubweapon,
-	GamepadLockon, GamepadPause, GamepadPause2, GamepadAbility, GamepadCamReset, GamepadSpawn;
+__declspec(selectany) std::string GamepadForward = "XINPUT_GAMEPAD_LEFT_THUMB_UP";
+__declspec(selectany) std::string GamepadBack = "XINPUT_GAMEPAD_LEFT_THUMB_DOWN";
+__declspec(selectany) std::string GamepadLeft = "XINPUT_GAMEPAD_LEFT_THUMB_LEFT";
+__declspec(selectany) std::string GamepadRight = "XINPUT_GAMEPAD_LEFT_THUMB_RIGHT";
+__declspec(selectany) std::string GamepadNormalAttack = "XINPUT_GAMEPAD_X";
+__declspec(selectany) std::string GamepadStrongAttack = "XINPUT_GAMEPAD_Y";
+__declspec(selectany) std::string GamepadJump = "XINPUT_GAMEPAD_A";
+__declspec(selectany) std::string GamepadInteract = "XINPUT_GAMEPAD_B";
+__declspec(selectany) std::string GamepadCamUp = "XINPUT_GAMEPAD_RIGHT_THUMB_UP";
+__declspec(selectany) std::string GamepadCamDown = "XINPUT_GAMEPAD_RIGHT_THUMB_DOWN";
+__declspec(selectany) std::string GamepadCamLeft = "XINPUT_GAMEPAD_RIGHT_THUMB_LEFT";
+__declspec(selectany) std::string GamepadCamRight = "XINPUT_GAMEPAD_RIGHT_THUMB_RIGHT";
+__declspec(selectany) std::string GamepadHeal = "XINPUT_GAMEPAD_DPAD_DOWN";
+__declspec(selectany) std::string GamepadTaunt = "XINPUT_GAMEPAD_DPAD_UP";
+__declspec(selectany) std::string GamepadWeaponMenu = "XINPUT_GAMEPAD_DPAD_LEFT";
+__declspec(selectany) std::string GamepadWeaponMenu2 = "XINPUT_GAMEPAD_DPAD_RIGHT";
+__declspec(selectany) std::string GamepadRun = "XINPUT_GAMEPAD_RIGHT_TRIGGER";
+__declspec(selectany) std::string GamepadBladeMode = "XINPUT_GAMEPAD_LEFT_TRIGGER";
+__declspec(selectany) std::string GamepadSubweapon = "XINPUT_GAMEPAD_LEFT_SHOULDER";
+__declspec(selectany) std::string GamepadLockon = "XINPUT_GAMEPAD_RIGHT_SHOULDER";
+__declspec(selectany) std::string GamepadPause = "XINPUT_GAMEPAD_START";
+__declspec(selectany) std::string GamepadPause2 = "XINPUT_GAMEPAD_BACK";
+__declspec(selectany) std::string GamepadAbility = "XINPUT_GAMEPAD_LEFT_THUMB";
+__declspec(selectany) std::string GamepadCamReset = "XINPUT_GAMEPAD_RIGHT_THUMB";
+
+__declspec(selectany) std::string GamepadSpawn = "XINPUT_GAMEPAD_START";
 
 float GetGamepadAnalog(int controllerIndex, const std::string& button);
 
@@ -44,7 +65,7 @@ bool IsGamepadButtonPressed(int controllerIndex, const std::string& button);
 
 std::string TryParseVKToHex(std::string in);
 
-void LoadInputConfig();
+void LoadInputConfig() noexcept;
 
 bool CheckControlPressed(int controllerNumber, std::string GamepadBind);
 

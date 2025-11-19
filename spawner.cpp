@@ -284,7 +284,7 @@ public:
 									newPlayer->setSwordLost(true);
 									newPlayer->m_SwordState = 1;
 									*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
-									((void(__thiscall*)(Pl0000*))(shared::base + 0x7948D0))(newPlayer); // Pl0000::RebuildCustomWeapon
+									((void(__thiscall*)(Pl0000*))(shared::base + 0x7948D0))(newPlayer); // Pl0000::RebuildCustomWeapon (Thanks Genos)
 									PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
 									newPlayer->setIdle(0);
 

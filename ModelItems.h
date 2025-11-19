@@ -37,6 +37,6 @@ enum CustomWeapons {
 	Unarmed
 };
 
-ModelItems* costumesList = (ModelItems*)(shared::base + 0x14A9828);
-eObjID* validCustomWeapons = (eObjID*)(shared::base + 0x14A99F0);
-eObjID** selectedCustomWeapon = (eObjID**)(shared::base + 0x17E9FCC);
+__declspec(selectany) ModelItems* costumesList = (ModelItems*)(shared::base + 0x14A9828);
+__declspec(selectany) eObjID* validCustomWeapons = (eObjID*)(shared::base + 0x14A99F0);
+__declspec(selectany) eObjID** selectedCustomWeapon = (eObjID**)(shared::base + 0x17E9FCC);

@@ -1,13 +1,19 @@
 #pragma once
 #include <d3dx9.h>
 
-extern LPD3DXSPRITE pSprite;
-extern int controller_flag[4];
-extern int screenWidth;
-extern int screenHeight;;
+__declspec(selectany) LPD3DXSPRITE pSprite = NULL;
+__declspec(selectany) int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+__declspec(selectany) int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 void LoadUIData();
 
 void Present();
 
 void ResetControllerAllFlags();
+
+enum ControllerFlags {
+	Out,
+	TaggingIn,
+	In,
+	TaggingOut
+};
