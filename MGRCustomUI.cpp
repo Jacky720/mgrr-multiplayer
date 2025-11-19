@@ -136,7 +136,11 @@ void RenderTextMGR(string text, int x, int y, D3DCOLOR color, int fontid = 0, fl
 	for (int i = 0; i < n + 1; i++) {
 		D3DXVECTOR3 position((float)(x + tmp_x_shift) / scale, (float)y / scale, 0.0f);
 		if (txtarray[i] != NULL) {
-
+			// Handle missing characters more gracefully
+			if (txtarray[i] == '<') txtarray[i] = '(';
+			if (txtarray[i] == '>') txtarray[i] = ')';
+			if (txtarray[i] == ' ') txtarray[i] = '_';
+			if (txtarray[i] >= 'A' && txtarray[i] <= 'Z') txtarray[i] += 'a' - 'A';
 			pSprite->Draw(font_map[fontid][txtarray[i]].sprite, NULL, NULL, &position, color);
 			tmp_x_shift += (int)((font_map[fontid][txtarray[i]].width - 8) * scale);
 
@@ -232,7 +236,7 @@ void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, f
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
 	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + hpBarLength - 50, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
-	RenderTextWithShadow(to_string(decimalplace) + "_%", x + hpBarLength - 50, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
+	RenderTextWithShadow(to_string(decimalplace) + " %", x + hpBarLength - 50, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
 
 	RenderTextWithShadow(name, x, y - 8, C_BLACK, C_LTGRAY, 0, LEFT_JUSTIFIED, 1.5);
 	DrawProgressBar(x, y + 23, hpvalue, truehpmax, C_HPYELLOW, hpBarLength);
@@ -270,17 +274,17 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 
 	string numbername;
 	switch (controller_id) {
-	case 0: numbername = "zero"; break;
-	case 1: numbername = "one"; break;
-	case 2: numbername = "two"; break;
-	case 3: numbername = "three"; break;
-	case 4: numbername = "four"; break;
-	case 5: numbername = "five"; break;
-	case 6: numbername = "six"; break;
-	case 7: numbername = "seven"; break;
-	case 8: numbername = "eight"; break;
-	case 9: numbername = "nine"; break;
-	default: numbername = "unknown";
+	case 0: numbername = "Zero"; break;
+	case 1: numbername = "One"; break;
+	case 2: numbername = "Two"; break;
+	case 3: numbername = "Three"; break;
+	case 4: numbername = "Four"; break;
+	case 5: numbername = "Five"; break;
+	case 6: numbername = "Six"; break;
+	case 7: numbername = "Seven"; break;
+	case 8: numbername = "Eight"; break;
+	case 9: numbername = "Nine"; break;
+	default: numbername = "(Unknown)";
 	}
 
 	MPPlayer* player = players[controller_id];
@@ -330,7 +334,7 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 	}
 	
 
-	RenderTextWithShadow("player_" + numbername + "_joining_as", screenWidth - offset_x, y, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow("Player " + numbername + " joining as", screenWidth - offset_x, y, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
 	for (int i = 0; i < character_count; i++) {
 		auto fgCol = C_LTGRAYFADE;
@@ -349,22 +353,22 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 void DrawDropMenu(int offset_x, int y, int controller_id) {
 	string numbername;
 	switch (controller_id) {
-	case 0: numbername = "zero"; break;
-	case 1: numbername = "one"; break;
-	case 2: numbername = "two"; break;
-	case 3: numbername = "three"; break;
-	case 4: numbername = "four"; break;
-	case 5: numbername = "five"; break;
-	case 6: numbername = "six"; break;
-	case 7: numbername = "seven"; break;
-	case 8: numbername = "eight"; break;
-	case 9: numbername = "nine"; break;
-	default: numbername = "unknown";
+	case 0: numbername = "Zero"; break;
+	case 1: numbername = "One"; break;
+	case 2: numbername = "Two"; break;
+	case 3: numbername = "Three"; break;
+	case 4: numbername = "Four"; break;
+	case 5: numbername = "Five"; break;
+	case 6: numbername = "Six"; break;
+	case 7: numbername = "Seven"; break;
+	case 8: numbername = "Eight"; break;
+	case 9: numbername = "Nine"; break;
+	default: numbername = "(Unknown)";
 	}
 
-	RenderTextWithShadow("player_" + numbername + "_pause", screenWidth - offset_x, y, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow("Player " + numbername + " Pause", screenWidth - offset_x, y, C_BLACK, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
 
-	RenderTextWithShadow("drop", screenWidth - offset_x, y + 20, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow("Drop", screenWidth - offset_x, y + 20, C_BLACK, C_LTGRAY, 0, RIGHT_JUSTIFIED);
 }
 
 void ResetControllerAllFlags() {
@@ -398,14 +402,14 @@ void Present() {
 
 			string name = player->playerName;
 			if (name.empty()) {
-				if (player->playerType == 0x10010) name = "raiden";
-				if (player->playerType == 0x11400) name = "sam";
-				if (player->playerType == 0x11500) name = "wolf";
-				if (player->playerType == 0x20020) name = "jetstream_sam";
-				if (player->playerType == 0x20700) name = "senator";
-				if (player->playerType == 0x2070A) name = "senator";
-				if (player->playerType == 0x20310) name = "sundowner";
-				if (player->playerType == 0x12040) name = "dwarf_gekko";
+				if (player->playerType == 0x10010) name = "Raiden";
+				if (player->playerType == 0x11400) name = "Sam";
+				if (player->playerType == 0x11500) name = "Wolf";
+				if (player->playerType == 0x20020) name = "Jetstream Sam";
+				if (player->playerType == 0x20700) name = "Senator";
+				if (player->playerType == 0x2070A) name = "Senator";
+				if (player->playerType == 0x20310) name = "Sundowner";
+				if (player->playerType == 0x12040) name = "Dwarf Gekko";
 			}
 
 			float fcCur = 0;
@@ -436,10 +440,10 @@ void Present() {
 			//pDrawList->AddText(ImVec2(temporary_projection.x, temporary_projection.y), ImColor(255, 255, 255), std::to_string(i).c_str());
 
 			if (i == 0) {
-				RenderTextWithShadow("keyboard", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
+				RenderTextWithShadow("Keyboard", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
 			}
 			else {
-				RenderTextWithShadow("controller", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
+				RenderTextWithShadow("Controller", (int)(temporary_projection.x - 50), (int)(temporary_projection.y - 10));
 				RenderTextWithShadow(std::to_string(i), (int)(temporary_projection.x - 50), (int)temporary_projection.y);
 			}
 			i++;
@@ -459,7 +463,7 @@ void Present() {
 		}
 		
 		int draw_offset = 20;
-		for (int ctrlr = 0; ctrlr < 5; ctrlr++) {
+		for (int ctrlr = 0; ctrlr < maxPlayerCount; ctrlr++) {
 			MPPlayer* player = players[ctrlr];
 			switch (player->controllerFlag) {
 			case Out:
