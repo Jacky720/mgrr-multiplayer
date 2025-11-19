@@ -173,6 +173,11 @@ void RenderTextMGR_RightLeft(string text, int x, int y, D3DCOLOR color, int font
 	pSprite->SetTransform(&scaleMat);
 	int tmp_x_shift = 0;
 	for (int i = n - 1; i >= 0; i--) {
+		// Handle missing characters more gracefully
+		if (txtarray[i] == '<') txtarray[i] = '(';
+		if (txtarray[i] == '>') txtarray[i] = ')';
+		if (txtarray[i] == ' ') txtarray[i] = '_';
+		if (txtarray[i] >= 'A' && txtarray[i] <= 'Z') txtarray[i] += 'a' - 'A';
 		tmp_x_shift -= (int)((font_map[fontid][txtarray[i]].width - 8) * scale); // Shift BEFORE since we're going left, THROUGH the character's space
 		D3DXVECTOR3 position((float)(x + tmp_x_shift) / scale, (float)y / scale, 0.0f);
 		if (txtarray[i] != NULL) {

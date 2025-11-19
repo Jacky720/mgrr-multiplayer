@@ -28,11 +28,11 @@ struct SpawnOption {
 // unsigned my ass
 #define NILBODY 0xffffffff
 __declspec(selectany) std::vector<SpawnOption> spawnOptions[] = {
-	{ {"Sam (human)",  "Sam", eObjID(0x11400), costumesList[Costumes::Sam], eObjID(0x11403)},
-	  {"Sam (cyborg)", "Sam", eObjID(0x11400), {eObjID(0x20020), eObjID(0x11401), eObjID(0x20022), eObjID(0x11404), eObjID(0x11405)}, eObjID(0x11403), Default, {"dam1"}} },
+	{ {"Sam (human)",  "Sam", eObjID(0x11400), costumesList[Sam], eObjID(0x11403)},
+	  {"Sam (cyborg)", "Sam", eObjID(0x11400), {0x20020, 0x11401, 0x20022, 0x11404, 0x11405}, eObjID(0x11403), Default, {"dam1"}} },
 
-	{ {"Blade Wolf", "Blade Wolf", eObjID(0x11500), costumesList[Costumes::LQ84i], eObjID(0x11501)},
-	  {"Fenrir",     "Fenrir",     eObjID(0x11500), costumesList[Costumes::LQ84i], eObjID(0x11501), Default, {"cover_a_DEC", "faceArmor"}} },
+	{ {"Blade Wolf", "Blade Wolf", eObjID(0x11500), costumesList[LQ84i], eObjID(0x11501)},
+	  {"Fenrir",     "Fenrir",     eObjID(0x11500), costumesList[LQ84i], eObjID(0x11501), Default, {"cover_a_DEC", "faceArmor", "EFD"}}},
 
 	{ {"Boss Sam", "Jetstream Sam", eObjID(0x20020)} },
 
@@ -42,27 +42,27 @@ __declspec(selectany) std::vector<SpawnOption> spawnOptions[] = {
 	{ {"Senator Armstrong (shirt)",     "Senator", eObjID(0x20700)},
 	  {"Senator Armstrong (shirtless)", "Senator", eObjID(0x2070A)} },
 
-	{ {"Raiden (Custom Body)",    "Raiden", eObjID(0x10010), costumesList[Costumes::CustomBody], eObjID(0x11012)},
-	  {"Raiden (Blue Body)",      "Raiden", eObjID(0x10010), costumesList[Costumes::CustomBodyBlue], eObjID(0x11012)},
-	  {"Raiden (Red Body)",       "Raiden", eObjID(0x10010), costumesList[Costumes::CustomBodyRed], eObjID(0x11012)},
-	  {"Raiden (Yellow Body)",    "Raiden", eObjID(0x10010), costumesList[Costumes::CustomBodyYellow], eObjID(0x11012)},
-	  {"Raiden (Desperado)",      "Raiden", eObjID(0x10010), costumesList[Costumes::DesperadoBody], eObjID(0x11012)},
-	  {"Raiden (Suit)",           "Raiden", eObjID(0x10010), costumesList[Costumes::Suit], eObjID(0x11012)},
-	  // {"Raiden (Mariachi)",    "Raiden", eObjID(0x10010), costumesList[Costumes::Mariachi], eObjID(0x11012)}, // Different hair spawning, wouldn't work
-	  {"Raiden (Prologue)",       "Raiden", eObjID(0x10010), costumesList[Costumes::PrologueBody], eObjID(0x11012)},
-	  {"Raiden (Original)",       "Raiden", eObjID(0x10010), costumesList[Costumes::OriginalBody], eObjID(0x11012)},
-	  {"Gray Fox",                "Gray Fox", eObjID(0x10010), costumesList[Costumes::GrayFox], eObjID(0x11012)},
-	  {"Raiden (White Armor)",    "Raiden", eObjID(0x10010), costumesList[Costumes::WhiteArmor], eObjID(0x11012)},
-	  {"Raiden (Inferno Armor)",  "Raiden", eObjID(0x10010), costumesList[Costumes::InfernoArmor], eObjID(0x11012)},
-	  {"Raiden (Commando Armor)", "Raiden", eObjID(0x10010), costumesList[Costumes::CommandoArmor], eObjID(0x11012)} },
+	{ {"Raiden (Custom Body)",    "Raiden", eObjID(0x10010), costumesList[CustomBody], eObjID(0x11012)},
+	  {"Raiden (Blue Body)",      "Raiden", eObjID(0x10010), costumesList[CustomBodyBlue], eObjID(0x11012)},
+	  {"Raiden (Red Body)",       "Raiden", eObjID(0x10010), costumesList[CustomBodyRed], eObjID(0x11012)},
+	  {"Raiden (Yellow Body)",    "Raiden", eObjID(0x10010), costumesList[CustomBodyYellow], eObjID(0x11012)},
+	  {"Raiden (Desperado)",      "Raiden", eObjID(0x10010), costumesList[DesperadoBody], eObjID(0x11012)},
+	  {"Raiden (Suit)",           "Raiden", eObjID(0x10010), costumesList[Suit], eObjID(0x11012)},
+	  // {"Raiden (Mariachi)",    "Raiden", eObjID(0x10010), costumesList[Mariachi], eObjID(0x11012)}, // Different hair spawning, wouldn't work
+	  {"Raiden (Prologue)",       "Raiden", eObjID(0x10010), costumesList[PrologueBody], eObjID(0x11012)},
+	  {"Raiden (Original)",       "Raiden", eObjID(0x10010), costumesList[OriginalBody], eObjID(0x11012)},
+	  {"Gray Fox",                "Gray Fox", eObjID(0x10010), costumesList[GrayFox], eObjID(0x11012)},
+	  {"Raiden (White Armor)",    "Raiden", eObjID(0x10010), costumesList[WhiteArmor], eObjID(0x11012)},
+	  {"Raiden (Inferno Armor)",  "Raiden", eObjID(0x10010), costumesList[InfernoArmor], eObjID(0x11012)},
+	  {"Raiden (Commando Armor)", "Raiden", eObjID(0x10010), costumesList[CommandoArmor], eObjID(0x11012)} },
 
 	{ // 0x11083 (Desperado sheath) to avoid sheath light
-	  {"Raiden (Unarmed)", "raiden",   eObjID(0x10010), {0x11010, 0x11011, 0x11014, 0x11083, 0x11017}, eObjID(0x11012), SpawnUnarmed}, // Desperado sheath for no light
-	  {"civilian A",       "civilian", eObjID(0x10010), {0x10800, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
-	  {"civilian B",       "civilian", eObjID(0x10010), {0x10801, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
-	  {"civilian C",       "civilian", eObjID(0x10010), {0x10a00, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
-	  {"civilian D",       "civilian", eObjID(0x10010), {0x10a01, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
-	  {"nmani",            "nmani",    eObjID(0x10010), {0x2031a, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed},
+	  {"Raiden (Unarmed)", "Raiden",   eObjID(0x10010), {0x11010, 0x11011, 0x11014, 0x11083, 0x11017}, eObjID(0x11012), SpawnUnarmed}, // Desperado sheath for no light
+	  {"Civilian A",       "Civilian", eObjID(0x10010), {0x10800, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
+	  {"Civilian B",       "Civilian", eObjID(0x10010), {0x10801, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
+	  {"Civilian C",       "Civilian", eObjID(0x10010), {0x10a00, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
+	  {"Civilian D",       "Civilian", eObjID(0x10010), {0x10a01, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
+	  {"Nmani",            "Nmani",    eObjID(0x10010), {0x2031a, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed},
 	  // TODO: figure out why 0x30031 (baton) doesn't work 
 	  {"Cop A",            "James",    eObjID(0x10010), {0x20160, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x13004), SpawnUnarmed,
 		{"es04e4", "es04e5", "rifle_ATT", "Dam_face"}},
