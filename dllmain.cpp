@@ -67,6 +67,7 @@ std::vector<std::string> character_titles[] = {
 	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
      "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
      "gray_fox", "raiden_(white_armor)", "raiden_(inferno_armor)", "raiden_(commando_armor)"}, // Mariachi omitted
+	{"raiden_(unarmed)", "civilian_a", "civilian_b", "civilian_c", "civilian_d", "nmani"},
 	{"dwarf_gekko"} };
 
 enum Costumes {
@@ -91,6 +92,8 @@ enum Costumes {
 
 ModelItems* costumesList = (ModelItems*)(shared::base + 0x14A9828);
 
+// unsigned my ass
+#define NILBODY 0xffffffff
 std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
 	{(eObjID)0x11400, { costumesList[Costumes::Sam] }},
 	{(eObjID)0x11500, { {0x11505, 0, 0, 0, 0} }},
@@ -105,7 +108,13 @@ std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
 						costumesList[Costumes::GrayFox],
 						costumesList[Costumes::WhiteArmor],
 						costumesList[Costumes::InfernoArmor],
-						costumesList[Costumes::CommandoArmor] }}
+						costumesList[Costumes::CommandoArmor] }},
+	{(eObjID)0x10011, { {0x11010, 0x11011, 0x11014, 0x11013, 0x11017}, // Unarmed costumes
+						{0x10800, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x10801, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x10a00, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x10a01, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x2031a, NILBODY, NILBODY, 0x11013, NILBODY} }}
 	// Armstrong has custom model items, in the sense that he instead spawns em070a. See SpawnCharacter.
 };
 
@@ -282,6 +291,22 @@ int __fastcall CheckRPress(Pl0000* player) {
 	return (int)((player == players[0]) && ((BOOL(__cdecl*)(cInput::eSaveKeybind))(shared::base + 0x61D2D0))(cInput::KEYBIND_RIPPERMODE));
 }
 
+void __fastcall ApplyBladeMode(Pl0000* player, int* enemy) {
+	if ((enemy[35] & 8) == 0) return; // idk it's in the original code
+	if (player == MainPlayer) {
+		if (PlayerManagerImplement::ms_Instance->getMainWeaponEquipped() == 6) {
+			if (ReturnCallVMTFunc<BOOL, 239, Pl0000*>(player)) { // Has the special effect upgrade
+				enemy[36] |= 0x20000;
+			}
+			else {
+				enemy[36] |= 0x40000;
+			}
+		}
+	}
+	if (player->isBladeModeActive())
+		enemy[36] |= 0x40000;
+}
+
 auto giveVanillaCameraControl = ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90));
 
 void RecalibrateBossCode() {
@@ -379,6 +404,18 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 */
 
 void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
+	if (characterModelItems.contains(id)) {
+		*modelItems = characterModelItems[id][costumeIndex];
+	}
+
+	int setType = 0;
+	if (id == (eObjID)0x12040)
+		setType = 1;
+	if (id == (eObjID)0x10011) { // Unarmed Raiden
+		id = (eObjID)0x10010;
+		setType = 2; // Hardcoded in spawner.cpp look I'm just throwing stuff at the wall rn
+	}
+
 	if (controllerIndex > -1) {
 		playerTypes[controllerIndex + 1] = id;
 	}
@@ -407,14 +444,6 @@ void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
 	else if (id == (eObjID)0x11500) {
 		*modelSword = 0x11501;
 	}
-
-	if (characterModelItems.contains(id)) {
-		*modelItems = characterModelItems[id][costumeIndex];
-	}
-
-	int setType = 0;
-	if (id == (eObjID)0x12040)
-		setType = 1;
 
 	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
 
@@ -450,6 +479,9 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 		Spawner((eObjID)0x10010, controller, costumeIndex);
 	}
 	else if (id == 6) {
+		Spawner((eObjID)0x10011, controller, costumeIndex); // Hardcoded to change to pl0010 but unarmed
+	}
+	else if (id == 7) {
 		Spawner((eObjID)0x12040, controller);
 	}
 	RecalibrateBossCode();
@@ -515,6 +547,12 @@ void InitMod() {
 	// DLC characters
 	MakeZCheck(0x69AD1B);
 	MakeXCheck(0x69AD71);
+
+	// Make enemies cuttable
+	injector::MakeNOP(shared::base + 0x7E7406, 0x32, true);
+	injector::WriteMemory<unsigned short>(shared::base + 0x7E7406, 0xF289, true); // mov edx,esi
+	injector::WriteMemory<unsigned int>(shared::base + 0x7E7408, 0x18244C8B, true); // ecx setup
+	//injector::MakeCALL(shared::base + 0x7E740C, &ApplyBladeMode, true); // TODO: Doesn't work rn, blade mode attacks aren't associated with the actual player?
 
 	// Load image data
 	LoadUIData();

@@ -22,7 +22,7 @@ extern bool p1IsKeyboard;
 extern eObjID playerTypes[5];
 extern Pl0000* MainPlayer;
 extern Pl0000* players[5];
-extern std::vector<std::string> character_titles[7];
+extern std::vector<std::string> character_titles[8];
 #define character_count (sizeof(character_titles) / sizeof(std::vector<std::string>))
 extern bool isInit;
 extern float maxAllowedDist;
