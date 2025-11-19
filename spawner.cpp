@@ -235,8 +235,7 @@ public:
 						}
 
 						if (ready) {
-							int trueSetType = (str.mObjId == (eObjID)0x10010) ? str.iSetType : 0;
-							str.bDone = cObjReadManager::Instance.loadRequestedObject(str.mObjId, trueSetType);
+							str.bDone = cObjReadManager::Instance.loadRequestedObject(str.mObjId, str.iSetType);
 						}
 
 					}
@@ -276,24 +275,6 @@ public:
 								}
 
 								elem.m_Entity = EntitySystem::ms_Instance.createEntity(&myEntity);
-
-								if (elem.iSetType == 2) {
-									Pl0000* newPlayer = elem.m_Entity->getEntityInstance<Pl0000>();
-									//newPlayer->field_13F4 = 0;
-									//newPlayer->field_13F8 = 1;
-									newPlayer->setSwordLost(true);
-									newPlayer->m_SwordState = 1;
-									*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
-									((void(__thiscall*)(Pl0000*))(shared::base + 0x7948D0))(newPlayer); // Pl0000::RebuildCustomWeapon (Thanks Genos)
-									PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
-									newPlayer->setIdle(0);
-
-									newPlayer->toggleAnyMesh("skin_in", false);
-									newPlayer->toggleAnyMesh("saya_arm", false);
-									Behavior* newSheath = newPlayer->m_SheathHandle.getEntity()->m_pInstance;
-									newSheath->toggleAnyMesh("equip_sheath", false);
-									newSheath->toggleAnyMesh("connect", false);
-								}
 
 							}
 							else {

@@ -258,49 +258,41 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 }
 */
 
-void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
-	if (characterModelItems.contains(id)) {
-		*modelItems = characterModelItems[id][costumeIndex];
-	}
-
-	int setType = 0;
-	if (id == (eObjID)0x12040)
-		setType = 1;
-	if (id == (eObjID)0x10011) { // Unarmed Raiden
-		id = (eObjID)0x10010;
-		setType = 2; // Hardcoded in spawner.cpp look I'm just throwing stuff at the wall rn
+void Spawner(SpawnOption ent, int controllerIndex = -1) {
+	if (ent.subParts.m_nModel != 0) {
+		*modelItems = ent.subParts;
 	}
 
 	if (controllerIndex > -1) {
-		players[controllerIndex]->playerType = id;
+		players[controllerIndex]->playerType = ent.objID;
 	}
 	else {
 		for (int i = 0; i < maxPlayerCount; i++) {
 			if (!players[controllerIndex]->playerType) {
-				players[controllerIndex]->playerType = id;
+				players[controllerIndex]->playerType = ent.objID;
 				controllerIndex = i;
 				break;
 			}
 		}
 	}
 
-	if (id == (eObjID)0x11400) {
+	if (ent.objID == (eObjID)0x11400) {
 		if (PhaseManager::ms_Instance.isDLCPhase())
 			*modelSword = 0x11403;
 		else
 			*modelSword = 0x13005;
 	}
-	else if (id == (eObjID)0x10010) {
+	else if (ent.objID == (eObjID)0x10010) {
 		if (PhaseManager::ms_Instance.isDLCPhase())
 			*modelSword = 0x11403;
 		else
 			*modelSword = 0x11012;
 	}
-	else if (id == (eObjID)0x11500) {
+	else if (ent.objID == (eObjID)0x11500) {
 		*modelSword = 0x11501;
 	}
 
-	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
+	m_EntQueue.push_back({ .mObjId = ent.objID, .iSetType = ent.setType, .bWorkFail = !isObjExists(ent.objID) });
 
 	// Frame counter, if it hits zero and the player does not exist, resets playertype
 	players[controllerIndex]->spawnFailTimer = 30;
@@ -310,38 +302,24 @@ void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
 }
 
 void SpawnCharacter(int id, int controller, int costumeIndex) {
+	SpawnOption ent = spawnOptions[id][costumeIndex];
+	Spawner(ent, controller);
 
-	if (id == 0)
-		Spawner((eObjID)0x11400, controller, costumeIndex);
-	else if (id == 1)
-		Spawner((eObjID)0x11500, controller, costumeIndex);
-	else if (id == 2) {
-		Spawner((eObjID)0x20020, controller);
+	if (ent.objID == eObjID(0x20020))
 		PlayAsSam = true;
-	}
-	else if (id == 3) {
-		Spawner((eObjID)0x20310, controller);
-		// phase 2 code go here
-		players[controller]->isSundownerPhase2 = (costumeIndex % 2 != 0); // Every other costume
-
+	else if (ent.objID == eObjID(0x20310)) {
 		PlayAsSundowner = true;
+		players[controller]->isSundownerPhase2 = (ent.special == SundownerPhase2);
 	}
-	else if (id == 4) {
-		if (costumeIndex == 1)
-			Spawner((eObjID)0x2070A, controller);
-		else
-			Spawner((eObjID)0x20700, controller);
+	else if (ent.objID == eObjID(0x20700) || ent.objID == eObjID(0x2070A))
 		PlayAsArmstrong = true;
-	}
-	else if (id == 5) {
-		Spawner((eObjID)0x10010, controller, costumeIndex);
-	}
-	else if (id == 6) {
-		Spawner((eObjID)0x10011, controller, costumeIndex); // Hardcoded to change to pl0010 but unarmed
-	}
-	else if (id == 7) {
-		Spawner((eObjID)0x12040, controller);
-	}
+
+	players[controller]->isSundownerPhase2 = (ent.special == SundownerPhase2);
+	players[controller]->unarmed = (ent.special == SpawnUnarmed);
+	players[controller]->stockFenrir = (ent.special == StockFenrir);
+	
+	players[controller]->playerName = ent.gameName;
+
 	RecalibrateBossCode();
 	//camera back to Raiden
 	giveVanillaCameraControl(MainPlayer);
@@ -419,6 +397,12 @@ void Update()
 		MPPlayer::EmptyPlayers();
 		players[p1Index]->playerObj = MainPlayer;
 		players[p1Index]->playerType = MainPlayer->m_pEntity->m_EntityIndex;
+		if (MainPlayer->m_pEntity->m_EntityIndex == eObjID(0x10010))
+			players[p1Index]->playerName = "raiden";
+		else if (MainPlayer->m_pEntity->m_EntityIndex == eObjID(0x11400))
+			players[p1Index]->playerName = "sam";
+		if (MainPlayer->m_pEntity->m_EntityIndex == eObjID(0x11500))
+			players[p1Index]->playerName = "blade_wolf";
 		// Don't let controller 1 tag in twice!
 		MPPlayer::FixIndexes();
 	}
@@ -478,6 +462,28 @@ void Update()
 						modelItems->m_nHead = originalModelItems.m_nHead;
 						modelItems->m_nModel = originalModelItems.m_nModel;
 						*modelSword = originalModelSword;
+					}
+					if (playerIt->stockFenrir) {
+						player->toggleAnyMesh("cover_a_DEC", false);
+						player->toggleAnyMesh("faceArmor", false);
+					}
+					if (playerIt->unarmed) {
+						player->toggleAnyMesh("skin_in", false);
+						player->toggleAnyMesh("saya_arm", false); // Doesn't work?
+						Behavior* newSheath = player->m_SheathHandle.getEntity()->m_pInstance;
+						newSheath->toggleAnyMesh("equip_sheath", false);
+						newSheath->toggleAnyMesh("connect", false);
+
+						player->setSwordLost(true);
+						player->m_SwordState = 1;
+						*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
+						player->rebuildCustomWeapon(); // (Thanks Genos)
+						PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
+						player->setIdle(0);
+					}
+					if (playerIt->playerType == eObjID(0x11400)) {
+						// Boss Sam costume has damage meshes, hide
+						player->toggleAnyMesh("dam1", false);
 					}
 					break;
 				}

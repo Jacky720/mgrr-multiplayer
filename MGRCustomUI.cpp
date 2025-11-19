@@ -316,14 +316,14 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 	if (freshDpad[Left]) {
 		player->costumeSelection[curChara]--;
 		if (player->costumeSelection[curChara] < 0) {
-			player->costumeSelection[curChara] = character_titles[curChara].size() - 1;
+			player->costumeSelection[curChara] = spawnOptions[curChara].size() - 1;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
 	}
 
 	if (freshDpad[Right]) {
 		player->costumeSelection[curChara]++;
-		if (player->costumeSelection[curChara] >= (signed)character_titles[curChara].size()) {
+		if (player->costumeSelection[curChara] >= (signed)spawnOptions[curChara].size()) {
 			player->costumeSelection[curChara] = 0;
 		}
 		Se_PlayEvent("core_se_sys_custom_item_window_corsor");
@@ -338,7 +338,7 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 			fgCol = C_LTGRAY;
 		}
 		
-		RenderTextWithShadow(character_titles[i][player->costumeSelection[i]], screenWidth - offset_x, y + 20 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
+		RenderTextWithShadow(spawnOptions[i][player->costumeSelection[i]].optionName, screenWidth - offset_x, y + 20 + i * 20, C_BLACK, fgCol, 0, RIGHT_JUSTIFIED);
 	}
 	
 	//RenderTextMGR_RightLeft("sundowner", screenWidth - offset_x, y + 60, C_LTGRAY, 0);
@@ -396,15 +396,17 @@ void Present() {
 			}
 			Pl0000* playerObj = player->playerObj;
 
-			string name = "";
-			if (player->playerType == 0x10010) name = "raiden";
-			if (player->playerType == 0x11400) name = "sam";
-			if (player->playerType == 0x11500) name = "wolf";
-			if (player->playerType == 0x20020) name = "jetstream_sam";
-			if (player->playerType == 0x20700) name = "senator";
-			if (player->playerType == 0x2070A) name = "senator";
-			if (player->playerType == 0x20310) name = "sundowner";
-			if (player->playerType == 0x12040) name = "dwarf_gekko";
+			string name = player->playerName;
+			if (name.empty()) {
+				if (player->playerType == 0x10010) name = "raiden";
+				if (player->playerType == 0x11400) name = "sam";
+				if (player->playerType == 0x11500) name = "wolf";
+				if (player->playerType == 0x20020) name = "jetstream_sam";
+				if (player->playerType == 0x20700) name = "senator";
+				if (player->playerType == 0x2070A) name = "senator";
+				if (player->playerType == 0x20310) name = "sundowner";
+				if (player->playerType == 0x12040) name = "dwarf_gekko";
+			}
 
 			float fcCur = 0;
 			float fcMax = 0;

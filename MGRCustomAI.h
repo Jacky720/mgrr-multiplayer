@@ -8,16 +8,16 @@
 
 __declspec(selectany) bool EveryHeal = false;
 
-typedef struct SetAction {
+struct setAction {
 	unsigned int ActionId;
 	unsigned int SubactionId;
 	unsigned int MaxSubaction; // For checking states that contain a range of subactions 0-x
 	unsigned int AnimationMapId;
 	float AnimationLength;
-} setAction;
+};
 
 
-typedef struct actionList {
+struct ActionList {
 	setAction Idle;
 	setAction Walking;
 	setAction LightAttack;
@@ -30,7 +30,7 @@ typedef struct actionList {
 	setAction StartRun;
 	setAction MidRun;
 	setAction EndRun;
-} ActionList;
+};
 
 bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind, InputBitflags bit,
 	unsigned int* altField1 = nullptr, unsigned int* altField2 = nullptr, cInput::InputUnit* curInput = nullptr);

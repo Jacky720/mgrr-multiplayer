@@ -12,7 +12,7 @@
 void RecalibrateBossCode();
 void TeleportToMainPlayer(MPPlayer* mainPlayer, int controllerIndex = -1);
 void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
-void SpawnCharacter(int id, int controller, int costumeIndex = 0);
+void SpawnCharacter(int id, int controller, int costumeID = 0);
 int giveVanillaCameraControl(Pl0000* player);
 
 __declspec(selectany) unsigned int HotKey = VK_INSERT; //Hotkey for menu show

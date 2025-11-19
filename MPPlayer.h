@@ -8,45 +8,64 @@
 #include <vector>
 #include <map>
 
-__declspec(selectany) std::vector<std::string> character_titles[] = {
-	{"sam"},
-	{"blade_wolf"},
-	{"boss_sam"},
-	{"sundowner", "sundowner_(second_phase)"},
-	{"senator_armstrong_(shirt)", "senator_armstrong_(shirtless)"},
-	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
-	 "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
-	 "gray_fox", "raiden_(white_armor)", "raiden_(inferno_armor)", "raiden_(commando_armor)"}, // Mariachi omitted
-	{"raiden_(unarmed)", "civilian_a", "civilian_b", "civilian_c", "civilian_d", "nmani"},
-	{"dwarf_gekko"} };
+enum eSpecialSpawn {
+	Default,
+	SundownerPhase2,
+	SpawnUnarmed,
+	StockFenrir
+};
+
+struct SpawnOption {
+	std::string optionName;
+	std::string gameName;
+	eObjID objID;
+	ModelItems subParts;
+	int setType;
+	eSpecialSpawn special;
+};
 
 // unsigned my ass
 #define NILBODY 0xffffffff
-__declspec(selectany) std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
-	{(eObjID)0x11400, { costumesList[Costumes::Sam] }},
-	{(eObjID)0x11500, { {0x11505, 0, 0, 0, 0} }},
-	{(eObjID)0x10010, { costumesList[Costumes::CustomBody],
-						costumesList[Costumes::CustomBodyBlue],
-						costumesList[Costumes::CustomBodyRed],
-						costumesList[Costumes::CustomBodyYellow],
-						costumesList[Costumes::DesperadoBody],
-						costumesList[Costumes::Suit],
-						costumesList[Costumes::StandardBody],
-						costumesList[Costumes::OriginalBody],
-						costumesList[Costumes::GrayFox],
-						costumesList[Costumes::WhiteArmor],
-						costumesList[Costumes::InfernoArmor],
-						costumesList[Costumes::CommandoArmor] }},
-	{(eObjID)0x10011, { {0x11010, 0x11011, 0x11014, 0x11013, 0x11017}, // Unarmed costumes
-						{0x10800, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x10801, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x10a00, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x10a01, NILBODY, NILBODY, 0x11013, NILBODY},
-						{0x2031a, NILBODY, NILBODY, 0x11013, NILBODY} }}
-						// Armstrong has custom model items, in the sense that he instead spawns em070a. See SpawnCharacter.
+__declspec(selectany) std::vector<SpawnOption> spawnOptions[] = {
+	{ {"sam_(human)",  "sam", eObjID(0x11400), costumesList[Costumes::Sam]},
+	  {"sam_(cyborg)", "sam", eObjID(0x11400), {eObjID(0x20020), eObjID(0x11401), eObjID(0x20022), eObjID(0x11404), eObjID(0x11405)}} },
+
+	{ {"blade_wolf", "blade_wolf", eObjID(0x11500), costumesList[Costumes::LQ84i]},
+	  {"fenrir",     "fenrir",     eObjID(0x11500), costumesList[Costumes::LQ84i], 0, StockFenrir}},
+
+	{ {"boss_sam", "jetstream_sam", eObjID(0x20020)} },
+
+	{ {"sundowner",                "sundowner", eObjID(0x20310)},
+	  {"sundowner_(second_phase)", "sundowner", eObjID(0x20310), {}, 0, SundownerPhase2} },
+
+	{ {"senator_armstrong_(shirt)",     "senator", eObjID(0x20700)},
+	  {"senator_armstrong_(shirtless)", "senator", eObjID(0x2070A)}},
+
+	{ {"raiden_(custom_body)",    "raiden", eObjID(0x10010), costumesList[Costumes::CustomBody]},
+	  {"raiden_(blue_body)",      "raiden", eObjID(0x10010), costumesList[Costumes::CustomBodyBlue]},
+	  {"raiden_(red_body)",       "raiden", eObjID(0x10010), costumesList[Costumes::CustomBodyRed]},
+	  {"raiden_(yellow_body)",    "raiden", eObjID(0x10010), costumesList[Costumes::CustomBodyYellow]},
+	  {"raiden_(desperado)",      "raiden", eObjID(0x10010), costumesList[Costumes::DesperadoBody]},
+	  {"raiden_(suit)",           "raiden", eObjID(0x10010), costumesList[Costumes::Suit]},
+	  // {"raiden_(mariachi)",    "raiden", eObjID(0x10010), costumesList[Costumes::Mariachi]}, // Different hair spawning, wouldn't work
+	  {"raiden_(prologue)",       "raiden", eObjID(0x10010), costumesList[Costumes::PrologueBody]},
+	  {"raiden_(original)",       "raiden", eObjID(0x10010), costumesList[Costumes::OriginalBody]},
+	  {"gray_fox",                "gray_fox", eObjID(0x10010), costumesList[Costumes::GrayFox]},
+	  {"raiden_(white_armor)",    "raiden", eObjID(0x10010), costumesList[Costumes::WhiteArmor]},
+	  {"raiden_(inferno_armor)",  "raiden", eObjID(0x10010), costumesList[Costumes::InfernoArmor]},
+	  {"raiden_(commando_armor)", "raiden", eObjID(0x10010), costumesList[Costumes::CommandoArmor]} },
+
+	{ {"raiden_(unarmed)", "raiden",   eObjID(0x10010), {0x11010, 0x11011, 0x11014, 0x11083, 0x11017}, 0, SpawnUnarmed}, // Desperado sheath for no light
+	  {"civilian_a",       "civilian", eObjID(0x10010), {0x10800, NILBODY, NILBODY, 0x11083, NILBODY}, 0, SpawnUnarmed},
+	  {"civilian_b",       "civilian", eObjID(0x10010), {0x10801, NILBODY, NILBODY, 0x11083, NILBODY}, 0, SpawnUnarmed},
+	  {"civilian_c",       "civilian", eObjID(0x10010), {0x10a00, NILBODY, NILBODY, 0x11083, NILBODY}, 0, SpawnUnarmed},
+	  {"civilian_d",       "civilian", eObjID(0x10010), {0x10a01, NILBODY, NILBODY, 0x11083, NILBODY}, 0, SpawnUnarmed},
+	  {"nmani",            "nmani",    eObjID(0x10010), {0x2031a, NILBODY, NILBODY, 0x11083, NILBODY}, 0, SpawnUnarmed} },
+
+	{ {"dwarf_gekko", "dwarf_gekko", eObjID(0x12040), {}, 1} }
 };
 
-#define character_count (sizeof(character_titles) / sizeof(std::vector<std::string>))
+#define character_count (sizeof(spawnOptions) / sizeof(std::vector<SpawnOption>))
 
 #define maxPlayerCount 5
 enum eDirection {
@@ -77,6 +96,10 @@ public:
 	bool zoomingCamera;
 	int controlIndex;
 	bool dpadInputs[4];
+	std::string playerName;
+	bool unarmed;
+	bool stockFenrir;
+
 	static inline std::string dpadKeys[4];
 
 	MPPlayer() {
@@ -97,6 +120,9 @@ public:
 		dpadInputs[Left] = false;
 		dpadInputs[Down] = false;
 		dpadInputs[Right] = false;
+		playerName = "";
+		unarmed = false;
+		stockFenrir = false;
 	}
 
 	static inline MPPlayer* players[maxPlayerCount];
