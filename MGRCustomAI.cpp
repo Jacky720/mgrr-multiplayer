@@ -272,9 +272,8 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 			
 			BossActions = &Sundowner2BossActions;
 			if (hasInitalizedNewSundownerToProperPhase[controllerNumber] == false) {
-				sundownerPhase2Create(Enemy, 1);
+				sundownerPhase2Create(Enemy, 0);
 				hasInitalizedNewSundownerToProperPhase[controllerNumber] = true;
-				Enemy->m_nHealth = Enemy->m_nMaxHealth;
 			}
 			
 		}

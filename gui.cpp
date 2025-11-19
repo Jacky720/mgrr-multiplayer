@@ -98,20 +98,6 @@ void gui::RenderWindow()
 
 				// Sundowner's Head: 1581929
 
-				if (ImGui::Button("Force Sundowner Phase 2")) {
-					for (Pl0000* player : players) {
-						if (!player) continue;
-
-						if (player->m_ObjId == 0x20310) {
-							sundownerPhase2Create((Behavior*)player, 1);
-
-
-						}
-
-
-
-					}
-				}
 
 				RecalibrateBossCode();
 
@@ -162,6 +148,30 @@ void gui::RenderWindow()
 						ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
 					}
 				}
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Sundowner")) {
+				
+				for (int i = 0; i < 5; i++) {
+					if (!players[i]) continue;
+
+					if (players[i]->m_ObjId == 0x20310) {
+						ImGui::Text("Sundowner %i", i);
+						ImGui::SameLine();
+						if (ImGui::Button("Phase 2-ify")) {
+							sundownerPhase2Create((Behavior*)players[i], 0);
+						}
+						ImGui::SameLine();
+						ImGui::Checkbox("Is Controller ID Phase 2", &isControllerIDSundownerPhase2[i]);
+					}
+
+
+
+				}
+				
+
+
 				ImGui::EndTabItem();
 			}
 

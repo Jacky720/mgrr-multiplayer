@@ -64,7 +64,7 @@ std::vector<std::string> character_titles[] = {
 	{"sam"},
 	{"blade_wolf"},
 	{"boss_sam"},
-	{"sundowner", "sundowner_(second phase)"},
+	{"sundowner", "sundowner_(second_phase)"},
 	{"senator_armstrong_(shirt)", "senator_armstrong_(shirtless)"},
 	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
      "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
