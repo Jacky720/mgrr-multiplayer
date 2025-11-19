@@ -32,8 +32,7 @@ struct ActionList {
 	setAction EndRun;
 };
 
-bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind, InputBitflags bit,
-	unsigned int* altField1 = nullptr, unsigned int* altField2 = nullptr, cInput::InputUnit* curInput = nullptr);
+bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind, InputBitflags bit, cInput::InputUnit* curInput = nullptr);
 
 bool SetFlagsForAnalog(MPPlayer* player, std::string GamepadBind, InputBitflags bit,
 	float* altField, bool invert, cInput::InputUnit* curInput = nullptr);

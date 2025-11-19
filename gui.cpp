@@ -163,8 +163,6 @@ void gui::RenderWindow()
 								players[i]->unarmed = true;
 							}
 						}
-						else
-							ImGui::Text("");
 					}
 				}
 

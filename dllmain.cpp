@@ -276,20 +276,14 @@ void Spawner(SpawnOption ent, int controllerIndex = -1) {
 		}
 	}
 
-	if (ent.objID == (eObjID)0x11400) {
+	if (ent.sword)
+		*modelSword = ent.sword;
+
+	if (ent.objID == eObjID(0x11400) || ent.objID == eObjID(0x10010)) {
 		if (PhaseManager::ms_Instance.isDLCPhase())
 			*modelSword = 0x11403;
-		else
+		else if (ent.sword == eObjID(0x11403))
 			*modelSword = 0x13005;
-	}
-	else if (ent.objID == (eObjID)0x10010) {
-		if (PhaseManager::ms_Instance.isDLCPhase())
-			*modelSword = 0x11403;
-		else
-			*modelSword = 0x11012;
-	}
-	else if (ent.objID == (eObjID)0x11500) {
-		*modelSword = 0x11501;
 	}
 
 	m_EntQueue.push_back({ .mObjId = ent.objID, .iSetType = ent.setType, .bWorkFail = !isObjExists(ent.objID) });
@@ -316,7 +310,7 @@ void SpawnCharacter(int id, int controller, int costumeIndex) {
 
 	players[controller]->isSundownerPhase2 = (ent.special == SundownerPhase2);
 	players[controller]->unarmed = (ent.special == SpawnUnarmed);
-	players[controller]->stockFenrir = (ent.special == StockFenrir);
+	players[controller]->disableMeshes = ent.disableMeshes;
 	
 	players[controller]->playerName = ent.gameName;
 
@@ -463,12 +457,7 @@ void Update()
 						modelItems->m_nModel = originalModelItems.m_nModel;
 						*modelSword = originalModelSword;
 					}
-					if (playerIt->stockFenrir) {
-						player->toggleAnyMesh("cover_a_DEC", false);
-						player->toggleAnyMesh("faceArmor", false);
-					}
 					if (playerIt->unarmed) {
-						player->toggleAnyMesh("skin_in", false);
 						player->toggleAnyMesh("saya_arm", false); // Doesn't work?
 						Behavior* newSheath = player->m_SheathHandle.getEntity()->m_pInstance;
 						newSheath->toggleAnyMesh("equip_sheath", false);
@@ -481,9 +470,8 @@ void Update()
 						PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
 						player->setIdle(0);
 					}
-					if (playerIt->playerType == eObjID(0x11400)) {
-						// Boss Sam costume has damage meshes, hide
-						player->toggleAnyMesh("dam1", false);
+					for (std::string toggleMesh : playerIt->disableMeshes) {
+						player->toggleAnyMesh(toggleMesh.c_str(), false);
 					}
 					break;
 				}

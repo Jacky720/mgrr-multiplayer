@@ -13,9 +13,9 @@ bool isARPressed = false;
 bool wasARPressed = false;
 
 bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind,
-	InputBitflags bit, unsigned int* altField1, unsigned int* altField2, cInput::InputUnit* curInput) {
+	InputBitflags bit, cInput::InputUnit* curInput) {
 	Pl0000* playerObj = player->playerObj;
-	if (!curInput) curInput = &playerObj->m_CurrentInput;
+	if (curInput == nullptr) curInput = &playerObj->m_CurrentInput;
 	if (CheckControlPressed(player->controlIndex, GamepadBind)) {
 		curInput->m_nButtonsDown |= bit;
 		if (!(player->prevPressed & bit)) {
@@ -25,19 +25,16 @@ bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind,
 			curInput->m_nButtonsPressed &= ~bit;
 		}
 		player->prevPressed |= bit;
-		if (altField1) *altField1 |= bit;
-		if (altField2) *altField2 |= bit;
-		curInput->m_nButtonsReleased |= bit;
+		curInput->m_nButtonsReleased &= ~bit;
 		curInput->m_nButtonsAlternated |= bit;
 		return true;
 	}
 	else {
 		curInput->m_nButtonsDown &= ~bit;
 		curInput->m_nButtonsPressed &= ~bit;
+		if (player->prevPressed & bit)
+			curInput->m_nButtonsReleased |= bit;
 		player->prevPressed &= ~bit;
-		if (altField1) *altField1 &= ~bit;
-		if (altField2) *altField2 &= ~bit;
-		curInput->m_nButtonsReleased &= ~bit;
 		curInput->m_nButtonsAlternated &= ~bit;
 		return false;
 	}
@@ -46,7 +43,7 @@ bool SetFlagsForAction(MPPlayer* player, std::string GamepadBind,
 bool SetFlagsForAnalog(MPPlayer* player, std::string GamepadBind,
 	InputBitflags bit, float* altField, bool invert, cInput::InputUnit *curInput) {
 	Pl0000* playerObj = player->playerObj;
-	if (!curInput) curInput = &playerObj->m_CurrentInput;
+	if (curInput == nullptr) curInput = &playerObj->m_CurrentInput;
 	if (CheckControlPressed(player->controlIndex, GamepadBind)) {
 		curInput->m_nButtonsDown |= bit;
 		curInput->m_nButtonsReleased |= bit;
@@ -450,14 +447,14 @@ void FullHandleAIPlayer(MPPlayer* player) {
 	isAny |= SetFlagsForAnalog(player, GamepadCamLeft, CamLeftBit, &playerObj->m_CurrentInput.m_fRightStick.x, true);
 	isAny |= SetFlagsForAnalog(player, GamepadCamRight, CamRightBit, &playerObj->m_CurrentInput.m_fRightStick.x, false);
 	// Face buttons
-	isAny |= SetFlagsForAction(player, GamepadNormalAttack, LightAttackBit, &playerObj->m_CurrentInput.m_nButtonsAlternated);
-	isAny |= SetFlagsForAction(player, GamepadStrongAttack, HeavyAttackBit, &playerObj->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, GamepadNormalAttack, LightAttackBit);
+	isAny |= SetFlagsForAction(player, GamepadStrongAttack, HeavyAttackBit);
 	isAny |= SetFlagsForAction(player, GamepadInteract, InteractBit);
-	isAny |= SetFlagsForAction(player, GamepadJump, JumpBit, &playerObj->m_CurrentInput.m_nButtonsReleased, &playerObj->m_CurrentInput.m_nButtonsAlternated);
+	isAny |= SetFlagsForAction(player, GamepadJump, JumpBit);
 	// Triggers and bumpers (lock-on takes camera control also)
 	isAny |= SetFlagsForAction(player, GamepadLockon, LockOnBit);
-	isAny |= SetFlagsForAction(player, GamepadRun, RunBit, &playerObj->m_CurrentInput.m_nButtonsReleased, &playerObj->m_CurrentInput.m_nButtonsAlternated);
-	if (!SetFlagsForAction(player, GamepadBladeMode, BladeModeBit, &playerObj->m_CurrentInput.m_nButtonsReleased, &playerObj->m_CurrentInput.m_nButtonsAlternated)) {
+	isAny |= SetFlagsForAction(player, GamepadRun, RunBit);
+	if (!SetFlagsForAction(player, GamepadBladeMode, BladeModeBit)) {
 		GetCameraInput(player->controlIndex); // No camera control in Blade Mode
 	}
 	else {
@@ -605,24 +602,24 @@ void FullHandleDGPlayer(MPPlayer* dg) {
 	isAny |= SetFlagsForAnalog(dg, GamepadCamLeft, CamLeftBit, &player->m_CurrentInput.m_fRightStick.x, true, &player->m_CurrentInput);
 	isAny |= SetFlagsForAnalog(dg, GamepadCamRight, CamRightBit, &player->m_CurrentInput.m_fRightStick.x, false, &player->m_CurrentInput);
 	// Face buttons
-	isAny |= SetFlagsForAction(dg, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput.m_nButtonsAlternated, nullptr, &player->m_CurrentInput);
-	isAny |= SetFlagsForAction(dg, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput.m_nButtonsAlternated, nullptr, &player->m_CurrentInput);
-	isAny |= SetFlagsForAction(dg, GamepadInteract, InteractBit, nullptr, nullptr, &player->m_CurrentInput);
-	isAny |= SetFlagsForAction(dg, GamepadJump, JumpBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadNormalAttack, LightAttackBit, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadStrongAttack, HeavyAttackBit, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadInteract, InteractBit, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadJump, JumpBit, &player->m_CurrentInput);
 	// Triggers and bumpers (lock-on takes camera control also)
-	isAny |= SetFlagsForAction(dg, GamepadLockon, LockOnBit, nullptr, nullptr, &player->m_CurrentInput);
-	isAny |= SetFlagsForAction(dg, GamepadRun, RunBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated, &player->m_CurrentInput);
-	if (!SetFlagsForAction(dg, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput.m_nButtonsReleased, &player->m_CurrentInput.m_nButtonsAlternated, &player->m_CurrentInput)) {
+	isAny |= SetFlagsForAction(dg, GamepadLockon, LockOnBit, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadRun, RunBit, &player->m_CurrentInput);
+	if (!SetFlagsForAction(dg, GamepadBladeMode, BladeModeBit, &player->m_CurrentInput)) {
 		GetCameraInput(dg->controlIndex); // No camera control in Blade Mode
 	}
 	else {
 		isAny |= true;
 	}
-	isAny |= SetFlagsForAction(dg, GamepadSubweapon, SubWeaponBit, nullptr, nullptr, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadSubweapon, SubWeaponBit, &player->m_CurrentInput);
 	// D-pad
 	// No AR
 
-	if (SetFlagsForAction(dg, GamepadHeal, HealBit, nullptr, nullptr, &player->m_CurrentInput)) {
+	if (SetFlagsForAction(dg, GamepadHeal, HealBit, &player->m_CurrentInput)) {
 		isAny |= true;
 		// Infinite nanopaste helper function, kept in but disabled by default
 		if (EveryHeal && dg->healTimer < 0) {
@@ -635,8 +632,8 @@ void FullHandleDGPlayer(MPPlayer* dg) {
 	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu, WeaponMenuBit);
 	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu2, WeaponMenu2Bit);
 	// Other
-	isAny |= SetFlagsForAction(dg, GamepadAbility, AbilityBit, nullptr, nullptr, &player->m_CurrentInput);
-	isAny |= SetFlagsForAction(dg, GamepadCamReset, CamResetBit, nullptr, nullptr, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadAbility, AbilityBit, &player->m_CurrentInput);
+	isAny |= SetFlagsForAction(dg, GamepadCamReset, CamResetBit, &player->m_CurrentInput);
 	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadPause, PauseBit); // Does not work
 	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadPause2, CodecBit); // Non-Raidens don't have codec
 
