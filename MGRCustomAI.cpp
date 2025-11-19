@@ -412,7 +412,7 @@ void FullHandleAIPlayer(MPPlayer* player) {
 		Pl0000* nearestPlayer = nullptr;
 		float nearestPlayerDist = INFINITY;
 		for (MPPlayer* player2 : players) {
-			if (player2 == player || !player2)
+			if (player2 == player || !player2 || !player2->playerObj)
 				continue;
 			float dist = getDistance(playerObj, player2->playerObj);
 			if (dist < nearestPlayerDist) {
