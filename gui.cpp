@@ -13,6 +13,7 @@
 #include <EntitySystem.h>
 #include <GameMenuStatus.h>
 #include <Pl0000.h>
+#include <PlayerManagerImplement.h>
 #include <Trigger.h>
 #include "MGRFunctions.h"
 #include "MPPlayer.h"
@@ -112,19 +113,58 @@ void gui::RenderWindow()
 				ImGui::EndTabItem();
 			}
 
+#define p1Index (p1IsKeyboard ? 0 : 1)
+
 			if (ImGui::BeginTabItem("Current Players")) {
-				char p1Label[] = " (Main player)";
-				ImGui::Text("Keyboard%s: %x\n", p1IsKeyboard ? p1Label : "", players[0]->playerType);
-				if (players[0]->playerObj) {
-					if (ImGui::Button("Teleport all players to keyboard player")) TeleportToMainPlayer(players[0]);
-					if (!customCamera && ImGui::Button("Move camera to keyboard player")) giveVanillaCameraControl(players[0]->playerObj);
-				}
-				for (int i = 1; i <= 4; i++) {
-					ImGui::Text("Controller %d%s: %x\n", i, (!p1IsKeyboard && i == 1) ? p1Label : "", players[i]->playerType);
-					if (players[i]) {
-						if (ImGui::Button(std::format("Teleport all players to controller {} player", i).c_str())) TeleportToMainPlayer(players[i]);
-						if (!customCamera &&
-							ImGui::Button(std::format("Move camera to controller {} player", i).c_str())) giveVanillaCameraControl(players[i]->playerObj);
+				static const char p1Label[] = " (Main player)";
+				for (int i = 0; i < maxPlayerCount; i++) {
+					std::string designation = std::format("Controller {}", i);
+					if (i == 0) designation = "Keyboard";
+					ImGui::Text("%s%s: %x\n", designation.c_str(), (i == p1Index) ? p1Label : "", players[i]->playerType);
+					if (!players[i]->playerObj)
+						continue;
+					
+					if (ImGui::Button(std::format("Teleport all players to {} player", designation).c_str()))
+						TeleportToMainPlayer(players[i]);
+					
+					if (!customCamera &&
+						ImGui::Button(std::format("Move camera to {} player", designation).c_str()))
+						giveVanillaCameraControl(players[i]->playerObj);
+					
+					if (players[i]->playerType == eObjID(0x20310)) {
+						ImGui::Text("Sundowner %i", i);
+						ImGui::SameLine();
+						if (ImGui::Button("Phase 2-ify")) {
+							sundownerPhase2Create(players[i]->enemyObj, 0);
+							players[i]->isSundownerPhase2 = true;
+						}
+						ImGui::SameLine();
+						ImGui::Checkbox("Is Controller ID Phase 2", &players[i]->isSundownerPhase2);
+					}
+					else if (players[i]->playerType == eObjID(0x10010)) {
+						ImGui::Text("Raiden %d", i);
+						ImGui::SameLine();
+						if (players[i]->unarmed) {
+							if (ImGui::Button("Arm")) {
+								players[i]->playerObj->setSwordLost(false);
+								players[i]->playerObj->m_SwordState = 0;
+								players[i]->playerObj->setIdle(0);
+								players[i]->unarmed = false;
+							}
+						}
+						else if (!players[i]->unarmed) {
+							if (ImGui::Button("Disarm")) {
+								players[i]->playerObj->setSwordLost(true);
+								players[i]->playerObj->m_SwordState = 1;
+								*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
+								players[i]->playerObj->rebuildCustomWeapon(); // (Thanks Genos)
+								PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
+								players[i]->playerObj->setIdle(0);
+								players[i]->unarmed = true;
+							}
+						}
+						else
+							ImGui::Text("");
 					}
 				}
 
@@ -160,7 +200,7 @@ void gui::RenderWindow()
 				ImGui::EndTabItem();
 			}
 
-			if (ImGui::BeginTabItem("Sundowner")) {
+			/*if (ImGui::BeginTabItem("Sundowner")) {
 				
 				for (int i = 0; i < 5; i++) {
 					if (!players[i]) continue;
@@ -182,7 +222,7 @@ void gui::RenderWindow()
 
 
 				ImGui::EndTabItem();
-			}
+			}*/
 
 			if (ImGui::BeginTabItem("Dev")) {
 				static int memory_address = 0x0;

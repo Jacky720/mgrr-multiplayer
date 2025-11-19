@@ -220,16 +220,16 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 	static ActionList Sundowner2BossActions = {
 		{0x10000}, // Idle
 		{0x10001}, // Walk
-		{0x20011, 1}, // (X) Uppercut
+		{0x20011, 1}, // (X)
 		{0x20010}, // (Y) Combo A
 		{0x2000E}, // (B) Combo Yellow
 		{0x50000}, // (A) Jump Back
 		{0x10006}, // (D-pad up) Taunt
 		{0x40007, 1, 2}, // (LT) Block
-		{0, 3, 0, 0x43, 2.0f / 15.0f}, // (end LT) Shield bash end
-		{0},    // (RT) Charge attack, TODO: ends early if too close to a player
-		{0, 2}, // (mid RT) Still charge attack
-		{0, 3, 0, 0x3F, 2.0f / 15.0f} // (end RT) Charge attack end
+		{0x10000}, // (end LT)
+		{0x10000},    // (RT)
+		{0x10000}, // (mid RT)
+		{0x10000} // (end RT)
 	};
 
 	// Default here for Armstrong (em0700)
