@@ -14,8 +14,11 @@
 #include <GameMenuStatus.h>
 #include <Pl0000.h>
 #include <Trigger.h>
+#include "MGRFunctions.h"
 
 #include <format>
+
+extern Sub_18AE10_t sundownerPhase2Create;
 
 void gui::OnReset::Before()
 {
@@ -39,9 +42,12 @@ void gui::LoadStyle()
 	// your style settings here
 }
 
+// test
+
+
 void gui::RenderWindow()
 {
-	static bool wasHotKeyPressed = false; // Статическая переменная, сохраняет состояние между вызовами
+	static bool wasHotKeyPressed = false; // Г‘ГІГ ГІГЁГ·ГҐГ±ГЄГ Гї ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї, Г±Г®ГµГ°Г Г­ГїГҐГІ Г±Г®Г±ГІГ®ГїГ­ГЁГҐ Г¬ГҐГ¦Г¤Гі ГўГ»Г§Г®ГўГ Г¬ГЁ
 
 	if (GetKeyState(HotKey) & 0x8000 && !wasHotKeyPressed) {
 		isMenuShow = !isMenuShow;
@@ -93,6 +99,7 @@ void gui::RenderWindow()
 				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 
 				// Sundowner's Head: 1581929
+
 
 				RecalibrateBossCode();
 
@@ -151,6 +158,30 @@ void gui::RenderWindow()
 					ImGui::InputDouble("Camera zoom-in FOV", &zoomInFOV);
 					ImGui::InputDouble("Camera zoom-out FOV", &zoomOutFOV);
 				}
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Sundowner")) {
+				
+				for (int i = 0; i < 5; i++) {
+					if (!players[i]) continue;
+
+					if (players[i]->m_ObjId == 0x20310) {
+						ImGui::Text("Sundowner %i", i);
+						ImGui::SameLine();
+						if (ImGui::Button("Phase 2-ify")) {
+							sundownerPhase2Create((Behavior*)players[i], 0);
+						}
+						ImGui::SameLine();
+						ImGui::Checkbox("Is Controller ID Phase 2", &isControllerIDSundownerPhase2[i]);
+					}
+
+
+
+				}
+				
+
+
 				ImGui::EndTabItem();
 			}
 

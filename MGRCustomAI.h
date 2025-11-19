@@ -3,8 +3,10 @@
 #include <BehaviorEmBase.h>
 #include <cCameraGame.h>
 #include <Pl0000.h>
+#include <unordered_map>
 
 extern bool EveryHeal;
+extern bool isControllerIDSundownerPhase2[5];
 
 bool SetFlagsForAction(Pl0000* player, int controllerNumber, std::string GamepadBind,
 	InputBitflags bit, int* altField1 = nullptr, int* altField2 = nullptr);

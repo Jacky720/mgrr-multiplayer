@@ -66,6 +66,9 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MGRFunctions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Injection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
