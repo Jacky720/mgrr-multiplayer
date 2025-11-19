@@ -103,6 +103,7 @@
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="Injection.h" />
     <ClInclude Include="MGRControls.h" />
     <ClInclude Include="MGRCustomAI.h" />
     <ClInclude Include="MGRCustomUI.h" />
@@ -119,6 +120,7 @@
     <ClCompile Include="imgui\imgui_impl_dx9.cpp" />
     <ClCompile Include="imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Injection.cpp" />
     <ClCompile Include="MGRControls.cpp" />
     <ClCompile Include="MGRCustomAI.cpp" />
     <ClCompile Include="MGRCustomUI.cpp" />

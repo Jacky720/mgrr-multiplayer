@@ -15,17 +15,6 @@ std::map<int, std::vector<int>> childObjs = { { 0x10010, {0x32040} }, // Empty l
 	                                          { 0x11400, {0x3D070} },
 											  { 0x11500, {0x11503, 0x11504, 0x11506} } };
 
-eObjID *validCustomWeapons = (eObjID*)(shared::base + 0x14A99F0);
-eObjID **selectedCustomWeapon = (eObjID**)(shared::base + 0x17E9FCC);
-enum CustomWeapons {
-	None,
-	Axe,
-	Polearm,
-	Sai,
-	Pincers,
-	Unarmed
-};
-
 // cObjReadManager
 struct cObjReadManager
 {
