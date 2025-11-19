@@ -278,8 +278,10 @@ void DrawCharacterSelector(int offset_x, int y, int controller_id) {
 		RECT rect;
 		checkScreenSizeTimer--;
 		if (checkScreenSizeTimer == 0
-		    && GetWindowRect(FindWindowA(NULL, "METAL GEAR RISING: REVENGEANCE"), &rect))
+		    && GetWindowRect(Hw::OSWindow, &rect))
 		{
+			
+
 			screenWidth = rect.right - rect.left;
 			screenHeight = rect.bottom - rect.top;
 			checkScreenSizeTimer = -1;

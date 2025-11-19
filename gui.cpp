@@ -14,8 +14,9 @@
 #include <GameMenuStatus.h>
 #include <Pl0000.h>
 #include <Trigger.h>
+#include "MGRFunctions.h"
 
-
+extern Sub_18AE10_t sundownerPhase2Create;
 
 void gui::OnReset::Before()
 {
@@ -38,6 +39,9 @@ void gui::LoadStyle()
 	
 	// your style settings here
 }
+
+// test
+
 
 void gui::RenderWindow()
 {
@@ -93,6 +97,21 @@ void gui::RenderWindow()
 				ImGui::Checkbox("Player 1 uses keyboard (else Controller 1)", &p1IsKeyboard);
 
 				// Sundowner's Head: 1581929
+
+				if (ImGui::Button("Force Sundowner Phase 2")) {
+					for (Pl0000* player : players) {
+						if (!player) continue;
+
+						if (player->m_ObjId == 0x20310) {
+							sundownerPhase2Create((Behavior*)player, 1);
+
+
+						}
+
+
+
+					}
+				}
 
 				RecalibrateBossCode();
 

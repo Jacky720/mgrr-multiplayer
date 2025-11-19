@@ -4,7 +4,7 @@
 #include "MGRCustomAI.h"
 #include "MGRCustomUI.h"
 #include "ModelItems.h"
-
+#include "MGRFunctions.h"
 #include <assert.h>
 #include <Events.h>
 #include "imgui/imgui.h"
@@ -57,12 +57,14 @@ LRESULT CALLBACK hkWindowProc(
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
 
+Sub_18AE10_t sundownerPhase2Create = (Sub_18AE10_t)(shared::base + 0x188E40); // forward definition
+
 
 std::vector<std::string> character_titles[] = {
 	{"sam"},
 	{"blade_wolf"},
 	{"boss_sam"},
-	{"sundowner"},
+	{"sundowner", "sundowner_(second phase)"},
 	{"senator_armstrong_(shirt)", "senator_armstrong_(shirtless)"},
 	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
      "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
@@ -141,6 +143,7 @@ bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
 
 //unsigned int sword = 0x0;
 //unsigned int originalSword = 0x0;
+
 
 
 bool isMenuShow = false;
@@ -421,6 +424,15 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 	}
 	else if (id == 3) {
 		Spawner((eObjID)0x20310, controller);
+		// phase 2 code go here
+		if (costumeIndex % 2 != 0) { // Every 2 IDs will be phase 2, so you can have costumes and phases
+			isControllerIDSundownerPhase2[controller] = true;
+			
+		}
+		else {
+			isControllerIDSundownerPhase2[controller] = false; // ensures if a dropped sundowner reconnects that phase 2 won't persist
+		}
+
 		PlayAsSundowner = true;
 	}
 	else if (id == 4) {
@@ -612,6 +624,7 @@ void Update()
 					}
 					break;
 				}
+
 			}
 
 		}
@@ -625,7 +638,10 @@ void Update()
 				controller_flag[i - 1] = 1;
 			m_EntQueue.clear();
 		}
+
+
 	}
+
 
 	//cVec4 playerPos[5];
 	//int playerCount = 0;

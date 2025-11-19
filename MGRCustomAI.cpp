@@ -5,9 +5,14 @@
 #include <BehaviorEmBase.h>
 #include <cCameraGame.h>
 #include <Pl0000.h>
+#include "MGRFunctions.h"
+
+extern Sub_18AE10_t sundownerPhase2Create;
 
 int healTimers[5] = { -1, -1, -1, -1, -1 };
 int prevPressed[5] = { 0 };
+bool isControllerIDSundownerPhase2[5];
+bool hasInitalizedNewSundownerToProperPhase[5] = { 0, 0, 0, 0, 0 };
 bool EveryHeal = false;
 bool isARPressed = false;
 bool wasARPressed = false;
@@ -240,6 +245,22 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 		{0x20008, 2}, // (mid RT) Still charge attack
 		{0x20008, 3, 0, 0x3F, 2.0/15.0} // (end RT) Charge attack end
 	};
+
+	static ActionList Sundowner2BossActions = {
+		{0x10000}, // Idle
+		{0x10001}, // Walk
+		{0x20011, 1}, // (X) Uppercut
+		{0x20010}, // (Y) Combo A
+		{0x2000E}, // (B) Combo Yellow
+		{0x50000}, // (A) Jump Back
+		{0x10006}, // (D-pad up) Taunt
+		{0x40007, 1, 2}, // (LT) Block
+		{0, 3, 0, 0x43, 2.0 / 15.0}, // (end LT) Shield bash end
+		{0},    // (RT) Charge attack, TODO: ends early if too close to a player
+		{0, 2}, // (mid RT) Still charge attack
+		{0, 3, 0, 0x3F, 2.0 / 15.0} // (end RT) Charge attack end
+	};
+
 	// Default here for Armstrong (em0700)
 	ActionList* BossActions = &ArmstrongBossActions;
 
@@ -247,7 +268,20 @@ void FullHandleAIBoss(BehaviorEmBase* Enemy, int controllerNumber, bool CanDamag
 		BossActions = &SamBossActions;
 	}
 	if (Enemy->m_pEntity->m_EntityIndex == 0x20310) {
-		BossActions = &SundownerBossActions;
+		if (isControllerIDSundownerPhase2[controllerNumber]) {
+			
+			BossActions = &Sundowner2BossActions;
+			if (hasInitalizedNewSundownerToProperPhase[controllerNumber] == false) {
+				sundownerPhase2Create(Enemy, 1);
+				hasInitalizedNewSundownerToProperPhase[controllerNumber] = true;
+				Enemy->m_nHealth = Enemy->m_nMaxHealth;
+			}
+			
+		}
+		else {
+			BossActions = &SundownerBossActions;
+		}
+		
 	}
 
 	UpdateBossActions(Enemy, BossActions, controllerNumber);
