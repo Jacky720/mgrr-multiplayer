@@ -482,9 +482,12 @@ void Present() {
 				draw_offset += 20 * (character_count + 1);
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
+					int charSelect = player->characterSelection;
+					int costSelect = player->costumeSelection[charSelect];
+					if (spawnOptions[charSelect][costSelect].gameName.empty()) break; // Dummy entry, do not spawn
 					player->controllerFlag = In;
 					Se_PlayEvent("core_se_sys_decide_l");
-					SpawnCharacter(player->characterSelection, ctrlr, player->costumeSelection[player->characterSelection]);
+					SpawnCharacter(charSelect, ctrlr, costSelect);
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
 					player->controllerFlag = Out;

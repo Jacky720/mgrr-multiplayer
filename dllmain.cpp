@@ -22,6 +22,7 @@
 #include <PhaseManager.h>
 #include <injector/injector.hpp>
 #include <string>
+#include <format>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -301,10 +302,8 @@ void SpawnCharacter(int id, int controller, int costumeIndex) {
 
 	if (ent.objID == eObjID(0x20020))
 		PlayAsSam = true;
-	else if (ent.objID == eObjID(0x20310)) {
+	else if (ent.objID == eObjID(0x20310))
 		PlayAsSundowner = true;
-		players[controller]->isSundownerPhase2 = (ent.special == SundownerPhase2);
-	}
 	else if (ent.objID == eObjID(0x20700) || ent.objID == eObjID(0x2070A))
 		PlayAsArmstrong = true;
 
@@ -320,6 +319,40 @@ void SpawnCharacter(int id, int controller, int costumeIndex) {
 
 }
 
+void LoadSkinConfig() noexcept {
+	// Load configuration data
+	CIniReader iniReader("MGRRMultiplayerControls.ini");
+
+	std::vector<SpawnOption>* customSkins = &spawnOptions[character_count - 1];
+	for (int i = 1; ; i++) {
+		std::string designation = std::format("Skin{}", i);
+		std::string name = iniReader.ReadString("MGRRMultiplayerSkins", designation + "_Name", "");
+		if (name.empty()) break;
+		if (i == 1) customSkins->clear();
+		eObjID objID = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Object", 0x10010);
+		ModelItems subParts;
+		subParts.m_nModel = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Body", 0x11300);
+		subParts.m_nHead = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Head", -1);
+		subParts.m_nHair = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Hair", -1);
+		subParts.m_nVisor = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Visor", -1);
+		subParts.m_nSheath = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Sheath", 0x11013);
+		eObjID sword = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Sword", 0x11012);
+		std::string specialStr = iniReader.ReadString("MGRRMultiplayerSkins", designation + "_Special", "");
+		eSpecialSpawn special = Default;
+		if (specialStr == "Unarmed")
+			special = SpawnUnarmed;
+		else if (specialStr == "SundownerPhase2")
+			special = SundownerPhase2;
+
+		std::vector<std::string> hideMeshes;
+		for (int j = 1; ; j++) {
+			std::string hideMesh = iniReader.ReadString("MGRRMultiplayerSkins", std::format("Skin{}_HideMesh_{}", i, j), "");
+			if (hideMesh.empty()) break;
+			hideMeshes.push_back(hideMesh);
+		}
+		customSkins->push_back({name, name, objID, subParts, sword, special, hideMeshes});
+	}
+}
 
 void InitMod() {
 
@@ -338,6 +371,7 @@ void InitMod() {
 
 	LoadInputConfig();
 	LoadCameraConfig();
+	LoadSkinConfig();
 }
 
 

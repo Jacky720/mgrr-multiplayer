@@ -62,14 +62,11 @@ __declspec(selectany) std::vector<SpawnOption> spawnOptions[] = {
 	  {"Civilian B",       "Civilian", eObjID(0x10010), {0x10801, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
 	  {"Civilian C",       "Civilian", eObjID(0x10010), {0x10a00, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
 	  {"Civilian D",       "Civilian", eObjID(0x10010), {0x10a01, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
-	  {"Nmani",            "Nmani",    eObjID(0x10010), {0x2031a, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed},
-	  // TODO: figure out why 0x30031 (baton) doesn't work 
-	  {"Cop A",            "James",    eObjID(0x10010), {0x20160, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x13004), SpawnUnarmed,
-		{"es04e4", "es04e5", "rifle_ATT", "Dam_face"}},
-	  {"Cop B",            "Thomas",   eObjID(0x10010), {0x20160, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x13004), SpawnUnarmed,
-		{"es04e0", "es04e5", "rifle_ATT", "Dam_face"}} },
+	  {"Nmani",            "Nmani",    eObjID(0x10010), {0x2031a, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed} },
 
-	{ {"Dwarf Gekko", "Dwarf Gekko", eObjID(0x12040), {}, eObjID(0), Default, {}, 1}}
+	{ {"Dwarf Gekko", "Dwarf Gekko", eObjID(0x12040), {}, eObjID(0), Default, {}, 1} },
+
+	{ {"Your Custom Skin Here", ""} } // Empty string blocks drop-in code
 };
 
 #define character_count (sizeof(spawnOptions) / sizeof(std::vector<SpawnOption>))
