@@ -92,10 +92,10 @@ float GetMouseAnalog(const std::string& button)
 
 		if ((unsigned int)(y + 1080) > 5000) y = 0; // ????
 
-		if (button == "MouseLeft") return -x / 20;
-		else if (button == "MouseRight") return x / 20;
-		else if (button == "MouseUp") return -y / 20;
-		else if (button == "MouseDown") return y / 20;
+		if (button == "MouseLeft") return -(float)x / 20;
+		else if (button == "MouseRight") return (float)x / 20;
+		else if (button == "MouseUp") return -(float)y / 20;
+		else if (button == "MouseDown") return (float)y / 20;
 
 	}
 	return 0.0;
@@ -567,10 +567,10 @@ void LoadInputConfig() noexcept
 	LoadControl(iniReader, &GamepadPause2, "Codec"); // Note non-matching, Codec is apparently an enum somewhere
 	LoadControl(iniReader, &GamepadAbility, "Ability");
 	LoadControl(iniReader, &GamepadCamReset, "CamReset");
-
-	GamepadSpawn = iniReader.ReadString("MGRRMultiplayerControls", "GamepadSpawn", GamepadSpawn);
+	LoadControl(iniReader, &GamepadSpawn, "Spawn");
 
 	p1IsKeyboard = iniReader.ReadBoolean("MGRRMultiplayerControls", "PlayerOneKeyboard", true);
+	HotKey = iniReader.ReadInteger("MGRRMultiplayerControls", "MenuHotkey", VK_INSERT);
 
 }
 

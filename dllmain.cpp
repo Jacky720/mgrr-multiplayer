@@ -5,6 +5,8 @@
 #include "MGRCustomUI.h"
 #include "ModelItems.h"
 #include "MGRFunctions.h"
+#include "Injection.h"
+
 #include <assert.h>
 #include <Events.h>
 #include "imgui/imgui.h"
@@ -69,30 +71,12 @@ std::vector<std::string> character_titles[] = {
 	{"raiden_(custom_body)", "raiden_(blue_body)", "raiden_(red_body)", "raiden_(yellow_body)",
      "raiden_(desperado)", "raiden_(suit)", "raiden_(prologue)", "raiden_(original)",
      "gray_fox", "raiden_(white_armor)", "raiden_(inferno_armor)", "raiden_(commando_armor)"}, // Mariachi omitted
+	{"raiden_(unarmed)", "civilian_a", "civilian_b", "civilian_c", "civilian_d", "nmani"},
 	{"dwarf_gekko"} };
 
-enum Costumes {
-	CustomBody,
-	CustomBodyBlue,
-	CustomBodyRed,
-	CustomBodyYellow,
-	DesperadoBody,
-	Suit,
-	Mariachi,
-	StandardBody,
-	OriginalBody,
-	GrayFox,
-	WhiteArmor,
-	InfernoArmor,
-	CommandoArmor,
-	CustomBodyDamaged,
-	PrologueBody,
-	Sam,
-	LQ84i
-};
 
-ModelItems* costumesList = (ModelItems*)(shared::base + 0x14A9828);
-
+// unsigned my ass
+#define NILBODY 0xffffffff
 std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
 	{(eObjID)0x11400, { costumesList[Costumes::Sam] }},
 	{(eObjID)0x11500, { {0x11505, 0, 0, 0, 0} }},
@@ -107,7 +91,13 @@ std::map<eObjID, std::vector<ModelItems>> characterModelItems = {
 						costumesList[Costumes::GrayFox],
 						costumesList[Costumes::WhiteArmor],
 						costumesList[Costumes::InfernoArmor],
-						costumesList[Costumes::CommandoArmor] }}
+						costumesList[Costumes::CommandoArmor] }},
+	{(eObjID)0x10011, { {0x11010, 0x11011, 0x11014, 0x11013, 0x11017}, // Unarmed costumes
+						{0x10800, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x10801, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x10a00, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x10a01, NILBODY, NILBODY, 0x11013, NILBODY},
+						{0x2031a, NILBODY, NILBODY, 0x11013, NILBODY} }}
 	// Armstrong has custom model items, in the sense that he instead spawns em070a. See SpawnCharacter.
 };
 
@@ -140,6 +130,7 @@ bool EnableFriendlyFire = false;
 
 bool p1IsKeyboard = true;
 bool p1WasKeyboard = p1IsKeyboard; // detect change (sloppy ik)
+float maxAllowedDist = 15.0f;
 
 //unsigned int sword = 0x0;
 //unsigned int originalSword = 0x0;
@@ -234,42 +225,7 @@ Pl0000* players[5] = { nullptr };
 eObjID playerTypes[5] = { (eObjID)0 };
 int playerSpawnCheck[5] = { 0 };
 
-Entity* __fastcall TargetHacked(BehaviorEmBase* ecx) {
-	float minDist = INFINITY;
-	Entity* closestPlayer = PlayerManagerImplement::ms_Instance->getEntity(0);
-	cVec4 ePos = ecx->m_vecTransPos;
-	for (Pl0000* player : players) {
-		if (!player || (BehaviorEmBase*)player == ecx) continue;
-		cVec4 pPos = player->m_vecTransPos;
-		float dist = sqrt((pPos.x - ePos.x) * (pPos.x - ePos.x) + (pPos.y - ePos.y) * (pPos.y - ePos.y) + (pPos.z - ePos.z) * (pPos.z - ePos.z));
-		if (dist < minDist) {
-			closestPlayer = player->m_pEntity;
-			minDist = dist;
-		}
-	}
-
-	return closestPlayer;
-}
-
-int __cdecl ParseMenuController() {
-	if (MainPlayer)
-		return 0;
-	return ((int (__cdecl*)())(shared::base + 0x9DB350))();
-}
-
-void __fastcall HealAll(Pl0000* p1, void* edx, int healAmt) {
-	if (!p1->field_4E4 && p1->m_FuelContainers.m_size) {
-		for (int i = 0; i < 5; i++) {
-			if (players[i]) {
-				players[i]->m_nHealth += healAmt;
-				if (players[i]->m_nHealth > players[i]->getMaxHealth())
-					players[i]->m_nHealth = players[i]->getMaxHealth();
-			}
-		}
-		/*p1->m_nHealth += healAmt;
-		if (p1->m_nHealth > p1->getMaxHealth()) p1->m_nHealth = p1->getMaxHealth();*/
-	}
-}
+auto giveVanillaCameraControl = ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90));
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)
@@ -366,6 +322,18 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 */
 
 void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
+	if (characterModelItems.contains(id)) {
+		*modelItems = characterModelItems[id][costumeIndex];
+	}
+
+	int setType = 0;
+	if (id == (eObjID)0x12040)
+		setType = 1;
+	if (id == (eObjID)0x10011) { // Unarmed Raiden
+		id = (eObjID)0x10010;
+		setType = 2; // Hardcoded in spawner.cpp look I'm just throwing stuff at the wall rn
+	}
+
 	if (controllerIndex > -1) {
 		playerTypes[controllerIndex + 1] = id;
 	}
@@ -394,14 +362,6 @@ void Spawner(eObjID id, int controllerIndex = -1, int costumeIndex = 0) {
 	else if (id == (eObjID)0x11500) {
 		*modelSword = 0x11501;
 	}
-
-	if (characterModelItems.contains(id)) {
-		*modelItems = characterModelItems[id][costumeIndex];
-	}
-
-	int setType = 0;
-	if (id == (eObjID)0x12040)
-		setType = 1;
 
 	m_EntQueue.push_back({ .mObjId = id, .iSetType = setType, .bWorkFail = !isObjExists(id) });
 
@@ -446,50 +406,21 @@ void SpawnCharacter(int id, int controller, int costumeIndex = 0) {
 		Spawner((eObjID)0x10010, controller, costumeIndex);
 	}
 	else if (id == 6) {
+		Spawner((eObjID)0x10011, controller, costumeIndex); // Hardcoded to change to pl0010 but unarmed
+	}
+	else if (id == 7) {
 		Spawner((eObjID)0x12040, controller);
 	}
 	RecalibrateBossCode();
 	//camera back to Raiden
-	//((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	giveVanillaCameraControl(MainPlayer);
 
 }
 
 
 void InitMod() {
 
-	injector::MakeNOP(shared::base + 0x69A516, 2, true); // F3 A5 // Disable normal input Sam and Wolf
-	injector::MakeNOP(shared::base + 0x7937E6, 2, true); // Disable normal input Raiden
-	// Dwarf Gekko has some more complex code
-	injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable normal input Dwarf Gekko
-	injector::MakeNOP(shared::base + 0x1F5E35, 6, true); // Disable joystick reset Dwarf Gekko (1)
-	injector::MakeNOP(shared::base + 0x1F5E3C, 6, true); // Disable joystick reset Dwarf Gekko (2)
-	//injector::MakeNOP(shared::base + 0x1F5E56, 2, true); // Disable input copy Dwarf Gekko
-	// Disable fixRotation on Em0040_0015.mot
-	injector::WriteMemory<unsigned short>(shared::base + 0x1FA661, 0xEED9, true); // FLDZ
-	injector::MakeNOP(shared::base + 0x1FA663, 4, true);
-
-	// i forget what exactly this is for, actually
-	injector::MakeRET(shared::base + 0x1F62A0, 0, true); // this function crashes due to undefined field_A18, fix root cause instead
-	// Disable normal controller input
-	//injector::MakeNOP(shared::base + 0x9DB430, 5, true); // E8 1B FF FF FF
-	injector::MakeCALL(shared::base + 0x9DB430, &ParseMenuController, true);
-	// Remove need for custom pl1400 and pl1500
-	injector::MakeNOP(shared::base + 0x69E313, 6, true);
-
-	// Camera override
-	injector::MakeCALL(shared::base + 0x823765, &CameraHacked, true); // Disable camera sometimes
-	// Enemy targeting
-	injector::MakeNOP(shared::base + 0x6C7E9C, 16, true); // Clear out redundant enemy target call
-	injector::MakeCALL(shared::base + 0x6C7E9C, &TargetHacked, true);
-
-	// Nanopaste
-	injector::MakeCALL(shared::base + 0x54DD58, &HealAll, true);
-	
-	// Disregard, varies between unhelpful and crashing
-	// Nanopaste (automatic use)
-	//injector::MakeCALL(shared::base + 0x7946CF, &HealAll, true); //0x794780
-	//injector::MakeNOP(shared::base + 0x77C806, 0x1B, true);
-
+	MakeInjections();
 	// Load image data
 	LoadUIData();
 
@@ -500,6 +431,7 @@ void InitMod() {
 	}
 
 	LoadInputConfig();
+	LoadCameraConfig();
 }
 
 
@@ -582,8 +514,8 @@ void Update()
 	}
 
 	// MainPlayer take camera control
-	//if ((GetKeyState('7') & 0x8000) || (GetKeyState('T') & 0x8000))
-	//	((int(__thiscall*)(Pl0000 * player))(shared::base + 0x784B90))(MainPlayer);
+	if (GetKeyState('T') & 0x8000)
+		giveVanillaCameraControl(MainPlayer);
 
 	//Hw::cVec4* matrix = (Hw::cVec4*)&cCameraGame::Instance.m_TranslationMatrix;
 

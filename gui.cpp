@@ -16,6 +16,8 @@
 #include <Trigger.h>
 #include "MGRFunctions.h"
 
+#include <format>
+
 extern Sub_18AE10_t sundownerPhase2Create;
 
 void gui::OnReset::Before()
@@ -45,7 +47,7 @@ void gui::LoadStyle()
 
 void gui::RenderWindow()
 {
-	static bool wasHotKeyPressed = false; // Статическая переменная, сохраняет состояние между вызовами
+	static bool wasHotKeyPressed = false; // Г‘ГІГ ГІГЁГ·ГҐГ±ГЄГ Гї ГЇГҐГ°ГҐГ¬ГҐГ­Г­Г Гї, Г±Г®ГµГ°Г Г­ГїГҐГІ Г±Г®Г±ГІГ®ГїГ­ГЁГҐ Г¬ГҐГ¦Г¤Гі ГўГ»Г§Г®ГўГ Г¬ГЁ
 
 	if (GetKeyState(HotKey) & 0x8000 && !wasHotKeyPressed) {
 		isMenuShow = !isMenuShow;
@@ -101,9 +103,10 @@ void gui::RenderWindow()
 
 				RecalibrateBossCode();
 
-				if (MainPlayer && ImGui::Button("Teleport all players to Raiden")) {
+				/*if (MainPlayer && ImGui::Button("Teleport all players to Raiden")) {
 					TeleportToMainPlayer(MainPlayer);
-				}
+				}*/
+				ImGui::InputFloat("Maximum diameter between players", &maxAllowedDist);
 
 				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
 
@@ -111,19 +114,24 @@ void gui::RenderWindow()
 			}
 
 			if (ImGui::BeginTabItem("Current Players")) {
-				if (p1IsKeyboard) {
-					ImGui::Text("Keyboard (Main player): %x\n", playerTypes[0]);
-					ImGui::Text("Controller 1: %x\n", playerTypes[1]);
+				char p1Label[] = " (Main player)";
+				ImGui::Text("Keyboard%s: %x\n", p1IsKeyboard ? p1Label : "", playerTypes[0]);
+				if (players[0]) {
+					if (ImGui::Button("Teleport all players to keyboard player")) TeleportToMainPlayer(players[0]);
+					if (!customCamera && ImGui::Button("Move camera to keyboard player")) giveVanillaCameraControl(players[0]);
 				}
-				else {
-					ImGui::Text("Keyboard: %x\n", playerTypes[0]);
-					ImGui::Text("Controller 1 (Main player): %x\n", playerTypes[1]);
+				for (int i = 1; i <= 4; i++) {
+					ImGui::Text("Controller %d%s: %x\n", i, (!p1IsKeyboard && i == 1) ? p1Label : "", playerTypes[i]);
+					if (players[i]) {
+						if (ImGui::Button(std::format("Teleport all players to controller {} player", i).c_str())) TeleportToMainPlayer(players[i]);
+						if (!customCamera &&
+							ImGui::Button(std::format("Move camera to controller {} player", i).c_str())) giveVanillaCameraControl(players[i]);
+					}
 				}
-				ImGui::Text("Controller 2: %x\n", playerTypes[2]);
-				ImGui::Text("Controller 3: %x\n", playerTypes[3]);
-				ImGui::Text("Controller 4: %x\n", playerTypes[4]);
-#define PRINTACTIONS
+
+//#define PRINTACTIONS
 #ifdef PRINTACTIONS
+				ImGui::Text("");
 				for (int i = 0; i < 5; i++) {
 					if (players[i])
 						ImGui::Text("Player %d action: %x %x", i + 1, players[i]->getCurrentAction(), players[i]->getCurrentActionId());
@@ -147,6 +155,8 @@ void gui::RenderWindow()
 						ImGui::InputDouble("Minimum vertical distance", &camHeightMin);
 						ImGui::InputDouble("Maximum vertical distance", &camHeightMax);
 					}
+					ImGui::InputDouble("Camera zoom-in FOV", &zoomInFOV);
+					ImGui::InputDouble("Camera zoom-out FOV", &zoomOutFOV);
 				}
 				ImGui::EndTabItem();
 			}

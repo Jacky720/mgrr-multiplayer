@@ -4,13 +4,14 @@
 #include <cGameUIManager.h>
 //#include <ObjReadManager.h>
 #include <EntitySystem.h>
+#include <PlayerManagerImplement.h>
 #include <shared.h>
 #include "ModelItems.h"
 #include <map>
 
 extern ModelItems* modelItems;
 extern unsigned int *modelSword;
-std::map<int, std::vector<int>> childObjs = { { 0x10010, {} }, // Empty list needed for modelItems load
+std::map<int, std::vector<int>> childObjs = { { 0x10010, {0x32040} }, // Empty list needed for modelItems load
 	                                          { 0x11400, {0x3D070} },
 											  { 0x11500, {0x11503, 0x11504, 0x11506} } };
 
@@ -233,8 +234,10 @@ public:
 								ready &= (loadedIDs.at((eObjID)id2) & 4) != 0 && (loadedIDs.at((eObjID)id2) & 9) != 1;
 						}
 
-						if (ready)
-							str.bDone = cObjReadManager::Instance.loadRequestedObject(str.mObjId, str.iSetType);
+						if (ready) {
+							int trueSetType = (str.mObjId == (eObjID)0x10010) ? str.iSetType : 0;
+							str.bDone = cObjReadManager::Instance.loadRequestedObject(str.mObjId, trueSetType);
+						}
 
 					}
 
@@ -273,6 +276,24 @@ public:
 								}
 
 								elem.m_Entity = EntitySystem::ms_Instance.createEntity(&myEntity);
+
+								if (elem.iSetType == 2) {
+									Pl0000* newPlayer = elem.m_Entity->getEntityInstance<Pl0000>();
+									//newPlayer->field_13F4 = 0;
+									//newPlayer->field_13F8 = 1;
+									newPlayer->setSwordLost(true);
+									newPlayer->m_SwordState = 1;
+									*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
+									((void(__thiscall*)(Pl0000*))(shared::base + 0x7948D0))(newPlayer); // Pl0000::RebuildCustomWeapon
+									PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
+									newPlayer->setIdle(0);
+
+									newPlayer->toggleAnyMesh("skin_in", false);
+									newPlayer->toggleAnyMesh("saya_arm", false);
+									Behavior* newSheath = newPlayer->m_SheathHandle.getEntity()->m_pInstance;
+									newSheath->toggleAnyMesh("equip_sheath", false);
+									newSheath->toggleAnyMesh("connect", false);
+								}
 
 							}
 							else {

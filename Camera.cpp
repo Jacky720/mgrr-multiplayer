@@ -9,6 +9,7 @@ bool customCamera = true;
 bool qteCamera = true;
 bool invertCameraY = false;
 bool enableCameraY = true;
+bool zoomOut = false;
 double camLateralScale = 1.0;
 double camHeightScale = 5.0;
 double camLateralMin = 1.0;
@@ -17,6 +18,8 @@ double camHeightMin = -2.5;
 double camHeightMax = 10.0;
 double camSensitivity = 1.0;
 double camYaw = 0.0;
+double zoomInFOV = 50.0;
+double zoomOutFOV = 75.0;
 
 int __fastcall CameraHacked(void* ecx) {
 	if (overrideCamera) {
@@ -27,6 +30,27 @@ int __fastcall CameraHacked(void* ecx) {
 		//return ((INT(__thiscall*)(void*, float))(shared::base + 0x9d1a30))(ecx, a2);
 		return ((INT(__thiscall*)())(shared::base + 0x9d1a30))();
 	}
+}
+
+void LoadCameraConfig() noexcept {
+	// Load configuration data
+	CIniReader iniReader("MGRRMultiplayerControls.ini");
+
+	customCamera = iniReader.ReadBoolean("MGRRMultiplayerCamera", "UseCustomCamera", true);
+	qteCamera = iniReader.ReadBoolean("MGRRMultiplayerCamera", "UseVanillaQTECamera", true);
+	enableCameraY = iniReader.ReadBoolean("MGRRMultiplayerCamera", "UseCameraYControl", true);
+	invertCameraY = iniReader.ReadBoolean("MGRRMultiplayerCamera", "InvertCameraYControl", false);
+
+	camLateralScale = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraLateralDistance", 1.0);
+	camLateralMin = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMinLateralDist", 1.0);
+	camLateralMax = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMaxLateralDist", 6.0);
+	camHeightScale = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraVerticalDistance", 5.0);
+	camHeightMin = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMinVerticalDist", -2.5);
+	camHeightMax = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraMaxVerticalDist", 10.0);
+	camSensitivity = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraSensitivity", 1.0);
+	zoomInFOV = iniReader.ReadFloat("MGRRMultiplayerCmaera", "CameraLowFOV", 50.0);
+	zoomOutFOV = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraHighFOV", 75.0);
+	maxAllowedDist = iniReader.ReadFloat("MGRRMultiplayerCamera", "MaxAllowedPlayerDist", 15.0);
 }
 
 void GetCameraInput(int controllerNumber) {
@@ -75,6 +99,16 @@ void GetCameraInput(int controllerNumber) {
 	camLateralScale -= deltaPitch * (camLateralMax - camLateralMin) * 0.02 * camSensitivity;
 	if (camLateralScale < camLateralMin) camLateralScale = camLateralMin;
 	if (camLateralScale > camLateralMax) camLateralScale = camLateralMax;
+
+	static bool zooming[5] = { false };
+#define playerNumber (controllerNumber + 1)
+	if (CheckControlPressed(controllerNumber, GamepadCamReset) && !CheckControlPressed(controllerNumber, GamepadAbility)) {
+		if (!zooming[playerNumber])
+			zoomOut = !zoomOut;
+		zooming[playerNumber] = true;
+	}
+	else
+		zooming[playerNumber] = false;
 }
 
 void OverrideCameraPos() {
@@ -103,9 +137,9 @@ void OverrideCameraPos() {
 			cVec4 p2Pos = player2->m_vecTransPos;
 			float dist = sqrt((p2Pos.x - p1Pos.x) * (p2Pos.x - p1Pos.x)
 				+ (p2Pos.z - p1Pos.z) * (p2Pos.z - p1Pos.z));
-			if (dist >= 15.0) {
+			if (dist >= maxAllowedDist) {
 				// Move players closer
-				float distMoveBack = (dist - 15.0f) / 2;
+				float distMoveBack = (dist - maxAllowedDist) / 2;
 				float xVecNrm = (p2Pos.x - p1Pos.x) / dist;
 				float zVecNrm = (p2Pos.z - p1Pos.z) / dist;
 				player->m_vecTransPos.x += distMoveBack * xVecNrm;
@@ -196,4 +230,5 @@ void OverrideCameraPos() {
 	cameraOffset->y = 0.0;
 	cameraOffset->z = 0.0;
 	cameraOffset->w = 0.0;
+	camera->m_TranslationMatrix.m_fFOV = (zoomOut ? zoomOutFOV : zoomInFOV) * PI / 180;
 }
