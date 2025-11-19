@@ -61,7 +61,6 @@ LRESULT CALLBACK hkWindowProc(
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
 
-Sub_18AE10_t sundownerPhase2Create = (Sub_18AE10_t)(shared::base + 0x188E40); // forward definition
 
 //bool SamSpawned = false;
 //bool WolfSpawned = false;
@@ -160,10 +159,6 @@ Keys* keys = injector::ReadMemory<Keys*>(shared::base + 0x177B7C0, true);*/
 
 //bool isPlayerAtOnce = false;
 bool gotOriginalModelItems = false;
-
-int giveVanillaCameraControl(Pl0000* player) {
-	return ((int(__thiscall*)(Pl0000*))(shared::base + 0x784B90))(player);
-}
 
 void RecalibrateBossCode() {
 	if (PlayAsArmstrong)

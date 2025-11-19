@@ -9,8 +9,6 @@
 #include "MGRFunctions.h"
 #include "MPPlayer.h"
 
-extern Sub_18AE10_t sundownerPhase2Create;
-
 bool isARPressed = false;
 bool wasARPressed = false;
 

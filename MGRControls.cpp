@@ -478,7 +478,7 @@ std::string TryParseVKToHex(std::string in) {
 }
 
 
-void LoadControl(CIniReader iniReader, std::string* GamepadControl, std::string name) {
+inline void LoadControl(CIniReader iniReader, std::string* GamepadControl, std::string name) {
 	//*Control = TryParseVKToHex(iniReader.ReadString("MGRRMultiplayerControls", name, *Control));
 	*GamepadControl = iniReader.ReadString("MGRRMultiplayerControls", "Gamepad" + name, *GamepadControl);
 }

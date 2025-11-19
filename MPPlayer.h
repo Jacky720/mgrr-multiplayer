@@ -99,7 +99,7 @@ public:
 		dpadInputs[Right] = false;
 	}
 
-	static inline MPPlayer* players[5];
+	static inline MPPlayer* players[maxPlayerCount];
 
 	static void InitPlayers() {
 		dpadKeys[Up] = "XINPUT_GAMEPAD_DPAD_UP";

@@ -12,17 +12,12 @@
 #include "dllmain.h"
 #include "MGRControls.h"
 #include "MGRCustomUI.h"
+#include "MGRFunctions.h"
 #include "MPPlayer.h"
 #include "imgui/imgui.h"
 using namespace std;
 
-
 namespace fs = std::filesystem;
-
-void __cdecl Se_PlayEvent(const char* event)
-{
-	((void(__cdecl*)(const char*))(shared::base + 0xA5E1B0))(event);
-}
 
 int checkScreenSizeTimer = 60;
 

@@ -19,8 +19,6 @@
 
 #include <format>
 
-extern Sub_18AE10_t sundownerPhase2Create;
-
 void gui::OnReset::Before()
 {
 	ImGui_ImplDX9_InvalidateDeviceObjects();
