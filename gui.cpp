@@ -160,6 +160,10 @@ void gui::RenderWindow()
 							}
 						}
 					}
+
+					if (ImGui::Button(std::format("Drop player {}", designation).c_str())) {
+						players[i]->DropOut();
+					}
 				}
 
 #define PRINTACTIONS

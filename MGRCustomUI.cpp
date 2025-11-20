@@ -513,19 +513,7 @@ void Present() {
 				draw_offset += 40;
 
 				if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_A")) {
-					player->controllerFlag = Out;
-					player->characterSelection = 0;
-					Se_PlayEvent("core_se_sys_decide_l");
-					if ((player->playerType & 0xf0000) == 0x20000) {
-						// Go directly to hell
-						player->playerObj->place({0, -10000, 0, 0}, {0, 0, 0, 0});
-					}
-					else { // TODO: "destruction queue" (it crashes if unarmed drops)
-						player->playerObj->m_pEntity->~Entity();
-						// playerDestroyQueue.insert(player->playerObj); // Still crashes nvm
-					}
-					player->playerObj = nullptr;
-					player->playerType = (eObjID)0;
+					player->DropOut();
 				}
 				else if (IsGamepadButtonPressed(ctrlr, "XINPUT_GAMEPAD_B")) {
 					player->controllerFlag = In;

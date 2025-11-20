@@ -160,6 +160,22 @@ public:
 		return playerType && !playerObj;
 	}
 
+	void DropOut() {
+		controllerFlag = Out;
+		characterSelection = 0;
+		Se_PlayEvent("core_se_sys_decide_l");
+		if ((playerType & 0xf0000) == 0x20000) {
+			// Go directly to hell
+			playerObj->place({ 0, -10000, 0, 0 }, { 0, 0, 0, 0 });
+		}
+		else { // TODO: "destruction queue" (it crashes if unarmed drops)
+			playerObj->m_pEntity->~Entity();
+			// playerDestroyQueue.insert(player->playerObj); // Still crashes nvm
+		}
+		playerObj = nullptr;
+		playerType = (eObjID)0;
+	}
+
 	static Pl0000** GetPlayerObjs() {
 		for (int i = 0; i < maxPlayerCount; i++) {
 			allPlayerObjs[i] = players[i]->playerObj;
