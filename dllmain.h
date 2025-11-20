@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 
 //bool handleKeyPress(int hotKey, bool* isMenuShowPtr);
 void RecalibrateBossCode();
@@ -30,3 +31,5 @@ __declspec(selectany) Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
 
 __declspec(selectany) bool isInit = false;
 __declspec(selectany) float maxAllowedDist = 15.0f;
+__declspec(selectany) std::set<Pl0000*> playerDestroyQueue;
+__declspec(selectany) float hudScale = 0.9;

@@ -107,6 +107,7 @@ void gui::RenderWindow()
 					TeleportToMainPlayer(MainPlayer);
 				}*/
 				ImGui::InputFloat("Maximum diameter between players", &maxAllowedDist);
+				ImGui::InputFloat("HUD scale", &hudScale);
 
 				ImGui::Checkbox("All players can heal (30 second cooldown)", &EveryHeal);
 
@@ -166,12 +167,12 @@ void gui::RenderWindow()
 					}
 				}
 
-//#define PRINTACTIONS
+#define PRINTACTIONS
 #ifdef PRINTACTIONS
 				ImGui::Text("");
 				for (int i = 0; i < 5; i++) {
-					if (players[i])
-						ImGui::Text("Player %d action: %x %x", i + 1, players[i]->getCurrentAction(), players[i]->getCurrentActionId());
+					if (players[i]->playerObj)
+						ImGui::Text("Player %d action: %x %x", i + 1, players[i]->playerObj->getCurrentAction(), players[i]->playerObj->getCurrentActionId());
 				}
 #endif
 				ImGui::EndTabItem();
