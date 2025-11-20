@@ -135,11 +135,6 @@ void gui::RenderWindow()
 					if (players[i]->playerType == eObjID(0x20310)) {
 						ImGui::Text("Sundowner %i", i);
 						ImGui::SameLine();
-						if (ImGui::Button("Phase 2-ify")) {
-							sundownerPhase2Create(players[i]->enemyObj, 0);
-							players[i]->isSundownerPhase2 = true;
-						}
-						ImGui::SameLine();
 						ImGui::Checkbox("Is Controller ID Phase 2", &players[i]->isSundownerPhase2);
 					}
 					else if (players[i]->playerType == eObjID(0x10010)) {

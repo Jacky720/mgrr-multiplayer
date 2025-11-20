@@ -260,6 +260,8 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 */
 
 void Spawner(SpawnOption ent, int controllerIndex = -1) {
+	players[controllerIndex]->sundownerInitialized = false;
+
 	if (ent.subParts.m_nModel != 0) {
 		*modelItems = ent.subParts;
 	}
