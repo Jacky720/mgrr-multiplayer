@@ -235,24 +235,28 @@ void DrawProgressBar(int x, int y, float value, float maxvalue, D3DCOLOR fg, int
 	DrawLine(Hw::GraphicDevice, x, y, (int)(barlength * value / maxvalue), fg, 8);
 }
 
-void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, float fcvalue, float fcmax, string name, bool ripper) {
+void DrawFalseMGRUI(int x, int y, float hpvalue, float hpmax, float truehpmax, float fcvalue, float fcmax, string name, bool ripper, int baseLength = 300) {
 	// Health bar length. 100% = 300, 200% = 750 (2.5x)
-	int hpBarLength = (int)(300 + (truehpmax / hpmax - 1) * 450);
+	int hpBarLength = (int)(baseLength + (truehpmax / hpmax - 1) * 450);
 	int decimalplace = static_cast<int>(((hpvalue / hpmax) * 100) * 10) % 10;
 	// e.g. [100.][0 %], with coordinates justified between the ][
-	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".", x + hpBarLength - 50, y - 25, C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
-	RenderTextWithShadow(to_string(decimalplace) + " %", x + hpBarLength - 50, y - 5, C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
+	RenderTextWithShadow(to_string((int)floor(100 * hpvalue / hpmax)) + ".",
+		x + hpBarLength * hudScale - 50, y - 25,
+		C_DKGRAY, C_HPYELLOW, 0, RIGHT_JUSTIFIED);
+	RenderTextWithShadow(to_string(decimalplace) + " %",
+		x + hpBarLength * hudScale - 50, y - 5,
+		C_DKGRAY, C_HPYELLOW, 1, LEFT_JUSTIFIED);
 
-	RenderTextWithShadow(name, x, y - 8, C_BLACK, C_LTGRAY, 0, LEFT_JUSTIFIED, 1.5);
-	DrawProgressBar(x, y + 23, hpvalue, truehpmax, C_HPYELLOW, hpBarLength);
+	RenderTextWithShadow(name, x, y - 8 * hudScale, C_BLACK, C_LTGRAY, 0, LEFT_JUSTIFIED, hudScale * 1.5);
+	DrawProgressBar(x, y + 23 * hudScale, hpvalue, truehpmax, C_HPYELLOW, hpBarLength * hudScale);
 	auto fcCol = C_CYAN;
 	if (fcvalue < 400) fcCol = C_FCYELLOW;
 	if (ripper) fcCol = C_RED;
 	if (fcmax > 0) {
-		DrawProgressBar(x, y + 32, min(fcvalue, 400), 400, fcCol);
+		DrawProgressBar(x, y + 32 * hudScale, min(fcvalue, 400), 400, fcCol, baseLength * hudScale);
 	}
-	for (int fcOff = 400, xOff = 305; fcmax > fcOff; fcOff += 280, xOff += 90) {
-		DrawProgressBar(x + xOff, y + 32, (float)clamp((int)(fcvalue - fcOff), 0, 280), 280, fcCol, 85);
+	for (int fcOff = 400, xOff = 305 * hudScale; fcmax > fcOff; fcOff += 280, xOff += 90 * hudScale) {
+		DrawProgressBar(x + xOff, y + 32 * hudScale, (float)clamp((int)(fcvalue - fcOff), 0, 280), 280, fcCol, 85 * hudScale);
 	}
 
 
@@ -435,8 +439,10 @@ void Present() {
 				hpMax = 100;
 #endif
 			}
+			int hpBaseLength = 300;
+			if ((player->playerType & 0xF0000) == 0x20000) hpBaseLength = 500;
 			bool ripper = (player->playerType == 0x10010) && (playerObj->canActivateRipperMode() || playerObj->m_nRipperModeEnabled);
-			DrawFalseMGRUI(140, 90 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper);
+			DrawFalseMGRUI(140, 90 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper, hpBaseLength);
 			auto pDrawList = ImGui::GetWindowDrawList();
 			cVec4 player_pos = playerObj->getTransPos();
 			player_pos.y += 2.3f;
@@ -514,8 +520,9 @@ void Present() {
 						// Go directly to hell
 						player->playerObj->place({0, -10000, 0, 0}, {0, 0, 0, 0});
 					}
-					else { // TODO: "destruction queue" (it crashes if unarmed drops during attack, need to await idle)
+					else { // TODO: "destruction queue" (it crashes if unarmed drops)
 						player->playerObj->m_pEntity->~Entity();
+						// playerDestroyQueue.insert(player->playerObj); // Still crashes nvm
 					}
 					player->playerObj = nullptr;
 					player->playerType = (eObjID)0;

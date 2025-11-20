@@ -37,6 +37,7 @@ void LoadCameraConfig() noexcept {
 	zoomInFOV = iniReader.ReadFloat("MGRRMultiplayerCmaera", "CameraLowFOV", 50.0);
 	zoomOutFOV = iniReader.ReadFloat("MGRRMultiplayerCamera", "CameraHighFOV", 75.0);
 	maxAllowedDist = iniReader.ReadFloat("MGRRMultiplayerCamera", "MaxAllowedPlayerDist", 15.0);
+	hudScale = iniReader.ReadFloat("MGRRMultiplayerCamera", "HUDScale", 0.9);
 }
 
 void GetCameraInput(int controllerNumber) {

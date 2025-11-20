@@ -330,7 +330,7 @@ void LoadSkinConfig() noexcept {
 		if (name.empty()) break;
 		if (i == 1) customSkins->clear();
 		eObjID objID = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Object", 0x10010);
-		ModelItems subParts;
+		ModelItems subParts = {};
 		subParts.m_nModel = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Body", 0x11300);
 		subParts.m_nHead = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Head", -1);
 		subParts.m_nHair = (eObjID)iniReader.ReadInteger("MGRRMultiplayerSkins", designation + "_Hair", -1);
@@ -387,6 +387,17 @@ void Update()
 
 	for (MPPlayer* player : players) {
 		if (player->spawnFailTimer) player->spawnFailTimer--;
+	}
+
+	std::vector<Pl0000*> playersToKill;
+	for (Pl0000* player : playerDestroyQueue) {
+		if (player->isIdle()) {
+			player->m_pEntity->~Entity();
+			playersToKill.push_back(player);
+		}
+	}
+	for (Pl0000* player : playersToKill) {
+		playerDestroyQueue.erase(player);
 	}
 
 	MainPlayer = cGameUIManager::Instance.m_pPlayer;
