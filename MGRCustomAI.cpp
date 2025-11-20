@@ -263,7 +263,7 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 				if (sword) {
 					Behavior* swordBehavior = sword->m_pInstance;
 					if (swordBehavior) {
-						swordBehavior->requestAnimationByMap(0x123, (Entity*)Enemy->enemyObj, 0, 0.0, 1.0, 0, -1.0, 1.0); // who knows
+						//swordBehavior->requestAnimationByMap(0x123, (Entity*)Enemy->enemyObj, 0, 0.0, 1.0, 0, -1.0, 1.0); // who knows
 					}
 
 				}
