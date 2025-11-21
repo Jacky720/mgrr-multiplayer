@@ -308,7 +308,7 @@ void SpawnCharacter(int id, int controller, int costumeIndex) {
 		PlayAsArmstrong = true;
 
 	players[controller]->isSundownerPhase2 = (ent.special == SundownerPhase2);
-	players[controller]->sundownerInitialized = false;
+	players[controller]->sundownerPhase2Init = (ent.special == SundownerPhase2) ? MPPlayer::PlayingAnimation : MPPlayer::Uninitialized;
 	players[controller]->unarmed = (ent.special == SpawnUnarmed);
 	players[controller]->disableMeshes = ent.disableMeshes;
 	
@@ -557,6 +557,7 @@ void Update()
 		else { // Raiden, Sam, Wolf
 			FullHandleAIPlayer(players[i]);
 		}
+
 	}
 
 	OverrideCameraPos();

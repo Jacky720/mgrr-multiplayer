@@ -141,23 +141,10 @@ void gui::RenderWindow()
 						ImGui::Text("Raiden %d", i);
 						ImGui::SameLine();
 						if (players[i]->unarmed) {
-							if (ImGui::Button("Arm")) {
-								players[i]->playerObj->setSwordLost(false);
-								players[i]->playerObj->m_SwordState = 0;
-								players[i]->playerObj->setIdle(0);
-								players[i]->unarmed = false;
-							}
+							if (ImGui::Button("Arm")) players[i]->Arm();
 						}
-						else if (!players[i]->unarmed) {
-							if (ImGui::Button("Disarm")) {
-								players[i]->playerObj->setSwordLost(true);
-								players[i]->playerObj->m_SwordState = 1;
-								*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
-								players[i]->playerObj->rebuildCustomWeapon(); // (Thanks Genos)
-								PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
-								players[i]->playerObj->setIdle(0);
-								players[i]->unarmed = true;
-							}
+						else {
+							if (ImGui::Button("Disarm")) players[i]->Disarm();
 						}
 					}
 

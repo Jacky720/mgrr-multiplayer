@@ -1,6 +1,7 @@
 #pragma once
 #include <Pl0000.h>
 #include <BehaviorEmBase.h>
+#include <PlayerManagerImplement.h>
 #include "MGRCustomUI.h"
 #include "MGRFunctions.h"
 #include "ModelItems.h"
@@ -96,7 +97,11 @@ public:
 	int healTimer;
 	unsigned int prevPressed;
 	bool isSundownerPhase2;
-	bool sundownerInitialized;
+	enum eSunP2Init {
+		Uninitialized,
+		PlayingAnimation,
+		Initialized
+	} sundownerPhase2Init;
 	float dwarfGekkoAngle;
 	bool zoomingCamera;
 	int controlIndex;
@@ -118,7 +123,7 @@ public:
 		healTimer = -1;
 		prevPressed = 0x0;
 		isSundownerPhase2 = false;
-		sundownerInitialized = false;
+		sundownerPhase2Init = Uninitialized;
 		dwarfGekkoAngle = 0.0;
 		zoomingCamera = false;
 		dpadInputs[Up] = false;
@@ -175,6 +180,33 @@ public:
 		}
 		playerObj = nullptr;
 		playerType = (eObjID)0;
+	}
+
+	void Disarm() {
+		if (playerType != eObjID(0x10010)) return;
+		playerObj->setSwordLost(true);
+		playerObj->m_SwordState = 1;
+		// TODO: need to load, heck preload wp2040 to keep this from crashing
+		*selectedCustomWeapon = &validCustomWeapons[CustomWeapons::Unarmed];
+		playerObj->rebuildCustomWeapon(); // (Thanks Genos)
+		PlayerManagerImplement::ms_Instance->setCustomWeaponEquipped(5); // Unarmed
+		playerObj->setIdle(0);
+		unarmed = true;
+	}
+
+	void Arm() {
+		if (playerType != eObjID(0x10010)) return;
+		playerObj->setSwordLost(false);
+		playerObj->m_SwordState = 0;
+		playerObj->setIdle(0);
+		unarmed = false;
+	}
+
+	void ToggleArmed() {
+		if (unarmed)
+			Arm();
+		else
+			Disarm();
 	}
 
 	static Pl0000** GetPlayerObjs() {

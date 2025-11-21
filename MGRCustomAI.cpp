@@ -75,7 +75,7 @@ bool matchAction(MPPlayer* Enemy, setAction act) {
 void useAction(MPPlayer* Enemy, setAction act) {
 	Enemy->enemyObj->setState(act.ActionId, act.SubactionId, 0, 0);
 	if (act.AnimationMapId) {
-		((int(__thiscall*)(Behavior*, int, int, float, float, int, float, float))(shared::base + 0x6A4080))(Enemy->enemyObj, act.AnimationMapId, 0, act.AnimationLength, 1.0, 0x80000000, -1.0, 1.0);
+		requestAnimationByMap(Enemy->enemyObj, act.AnimationMapId, 0, act.AnimationLength, 1.0, 0x80000000, -1.0, 1.0);
 	}
 }
 
@@ -158,7 +158,7 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 	if (CheckControlPressed(Enemy->controlIndex, GamepadPause2))
 		TeleportToMainPlayer(MainPlayer, Enemy->controlIndex);
 
-
+	GetCameraInput(Enemy->controlIndex);
 
 	//float rotation = 0;
 	//float v9;
@@ -239,25 +239,42 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 		BossActions = &SamBossActions;
 	}
 	if (Enemy->playerType == 0x20310) {
+		if (CheckControlPressed(Enemy->controlIndex, GamepadWeaponMenu))
+			Enemy->isSundownerPhase2 = true;
+
 		if (Enemy->isSundownerPhase2) {
 			
 			BossActions = &Sundowner2BossActions;
-			if (!Enemy->sundownerInitialized) {
-				//sundownerPhase2Create(enemyObj, 0);
-
-				Em0310* sundowner = (Em0310*)Enemy->enemyObj;
-				sundowner->field_10E0 |= 0x200;
-				sundowner->field_10E0 |= 0x400;
-
+			Em0310* sundowner = (Em0310*)Enemy->enemyObj;
+			if (Enemy->sundownerPhase2Init == MPPlayer::Uninitialized) {
 				((void(__thiscall*)(Em0310*))(shared::base + 0x17C950))(sundowner); // Delete Shields
+				requestAnimationByMap(sundowner, 0xA0, 0, 4.0 / 15.0, 1.0, 0x00000000, -1.0, 1.0);
+				sundowner->field_924 = 0.f;
+				//DataArchiveHolder holder = sundowner->m_DataFile;
+				//void* mot = holder.getFiledata(false, "em0310_9030.mot");
+				//void* bxm = holder.getFiledata(false, "em0310_9030_0_seq.bxm");
+				//sundowner->setDirectAnimation(mot, bxm, 0, 1.f / 60.f, 1.f, 0x80000000, -1.f, 1.f);
+				//sundowner->requestAnimationByName("9030", 0, 1.f / 60.f, 0, 0x80000000, -1.f, 1.f);
+				Enemy->sundownerPhase2Init = MPPlayer::PlayingAnimation;
+				return;
+			} else if (Enemy->sundownerPhase2Init == MPPlayer::PlayingAnimation) {
+				if (isAnimationFinished(sundowner, 0)) {
+					//sundownerPhase2Create(sundowner, 0);
+					sundowner->field_10E0 |= 0x200;
+					sundowner->field_10E0 |= 0x400;
+					sundowner->field_924 = 659.f;
+					((void(__thiscall*)(Em0310*))(shared::base + 0x17C950))(sundowner); // Delete Shields
+					((void(__thiscall*)(Em0310*, int))(shared::base + 0x181CB0))(sundowner, 2); // Mask Animations & Effects
+					Enemy->sundownerPhase2Init = MPPlayer::Initialized;
+				}
 
+				sundowner->field_924++;
+				if (sundowner->field_924 != 660.f)
+					return;
 
 				((void(__thiscall*)(Em0310*, int, unsigned int, int))(shared::base + 0x69E120))(sundowner, 0, 0x702, -1); // Rebind sword
 
-				((void(__thiscall*)(Em0310*, int))(shared::base + 0x181CB0))(sundowner, 2); // Mask Animations & Effects
-
 				EntityHandle* swordHandle = &sundowner->field_10EC;
-
 				Entity* sword = swordHandle->getEntity();
 				
 				if (sword) {
@@ -266,11 +283,13 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 						swordBehavior->requestAnimationByMap(0x123, sundowner->m_pEntity, 0, 0.0, 1.0, 0, -1.0, 1.0); // who knows
 						swordBehavior->updateAnimation();
 					}
-
 				}
 
 
-				Enemy->sundownerInitialized = true;
+				if (!isAnimationFinished(sundowner, 0))
+					return;
+
+				sundowner->field_924 = 0.f;
 			}
 			
 		}
@@ -325,8 +344,6 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 	else {
 		if (matchAction(Enemy, BossActions->Walking)) useAction(Enemy, BossActions->Idle);
 	}
-
-	GetCameraInput(Enemy->controlIndex);
 
 	//v9 = field_X * field_X + field_Y * field_Y;
 
@@ -534,8 +551,13 @@ void FullHandleAIPlayer(MPPlayer* player) {
 	}
 	if (player->healTimer > 0)
 		player->healTimer--;
-	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu, WeaponMenuBit);
-	//isAny |= SetFlagsForAction(player, controllerNumber, GamepadWeaponMenu2, WeaponMenu2Bit);
+
+	isAny |= SetFlagsForAction(player, GamepadWeaponMenu, WeaponMenuBit);
+	isAny |= SetFlagsForAction(player, GamepadWeaponMenu2, WeaponMenu2Bit);
+	// Mode change!
+	if (player->playerType == eObjID(0x10010) && (playerObj->m_CurrentInput.m_nButtonsPressed & WeaponMenuBit))
+		player->ToggleArmed();
+
 	// Other
 	isAny |= SetFlagsForAction(player, GamepadAbility, AbilityBit);
 	isAny |= SetFlagsForAction(player, GamepadCamReset, CamResetBit);
