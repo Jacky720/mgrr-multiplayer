@@ -402,6 +402,8 @@ void Update()
 	}
 
 	MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	if (!MainPlayer && PlayerManagerImplement::ms_Instance->m_KogekkoEntity)
+		MainPlayer = (Pl0000*)PlayerManagerImplement::ms_Instance->m_KogekkoEntity.getEntity()->m_pInstance;
 
 	if (!MainPlayer) {
 		if (p1IsKeyboard != p1WasKeyboard) p1WasKeyboard = p1IsKeyboard;
@@ -436,13 +438,17 @@ void Update()
 	if (players[p1Index]->playerObj != MainPlayer) {
 		MPPlayer::EmptyPlayers();
 		players[p1Index]->playerObj = MainPlayer;
-		players[p1Index]->playerType = MainPlayer->m_pEntity->m_EntityIndex;
-		if (MainPlayer->m_pEntity->m_EntityIndex == eObjID(0x10010))
-			players[p1Index]->playerName = "raiden";
-		else if (MainPlayer->m_pEntity->m_EntityIndex == eObjID(0x11400))
-			players[p1Index]->playerName = "sam";
-		if (MainPlayer->m_pEntity->m_EntityIndex == eObjID(0x11500))
-			players[p1Index]->playerName = "blade_wolf";
+		eObjID playerType = MainPlayer->m_pEntity->m_EntityIndex;
+		players[p1Index]->playerType = playerType;
+		players[p1Index]->playerName = "unknown";
+		if (playerType == eObjID(0x10010))
+			players[p1Index]->playerName = "Raiden";
+		else if (playerType == eObjID(0x11400))
+			players[p1Index]->playerName = "Sam";
+		else if (playerType == eObjID(0x11500))
+			players[p1Index]->playerName = "Blade Wolf";
+		else if (playerType == eObjID(0x12040))
+			players[p1Index]->playerName = "Dwarf Gekko";
 		// Don't let controller 1 tag in twice!
 		MPPlayer::FixIndexes();
 	}

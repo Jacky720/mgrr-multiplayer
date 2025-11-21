@@ -396,7 +396,7 @@ void Present() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2((float)screenWidth, (float)screenHeight));
 	ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground);
-	Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	//Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer; // Commented to inherit from dllmain
 	if (isInit && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");
@@ -444,7 +444,7 @@ void Present() {
 			bool ripper = (player->playerType == 0x10010) && (playerObj->canActivateRipperMode() || playerObj->m_nRipperModeEnabled);
 			DrawFalseMGRUI(140, 90 + 60 * hpDrawOffset, hpCur, hpMax, trueHpMax, fcCur, fcMax, name, ripper, hpBaseLength);
 			auto pDrawList = ImGui::GetWindowDrawList();
-			cVec4 player_pos = playerObj->getTransPos();
+			cVec4 player_pos = playerObj->m_vecTransPos; // Can't use the getter here, crashes with Dwarf Gekko end.
 			player_pos.y += 2.3f;
 			cVec4 temporary_projection = cVec4(0, 0, 0, 0);
 			WorldToScreen(player_pos, temporary_projection);
