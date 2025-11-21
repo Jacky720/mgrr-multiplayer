@@ -505,6 +505,8 @@ void FullHandleAIPlayer(MPPlayer* player) {
 	}
 	else {
 		isAny |= true;
+		if (playerObj->m_CurrentInput.m_nButtonsPressed & BladeModeBit)
+			giveVanillaCameraControl(playerObj);
 	}
 	isAny |= SetFlagsForAction(player, GamepadSubweapon, SubWeaponBit);
 	// D-pad
