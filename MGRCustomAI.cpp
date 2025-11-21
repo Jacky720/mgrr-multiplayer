@@ -245,25 +245,26 @@ void FullHandleAIBoss(MPPlayer* Enemy) {
 			if (!Enemy->sundownerInitialized) {
 				//sundownerPhase2Create(enemyObj, 0);
 
-				Em0310* sundowner = (Em0310*)Enemy;
+				Em0310* sundowner = (Em0310*)Enemy->enemyObj;
 				sundowner->field_10E0 |= 0x200;
 				sundowner->field_10E0 |= 0x400;
 
-				((void(__thiscall*)(Em0310*))(shared::base + 0x17C950))((Em0310*)Enemy->enemyObj); // Delete Shields
+				((void(__thiscall*)(Em0310*))(shared::base + 0x17C950))(sundowner); // Delete Shields
 
 
-				((void(__thiscall*)(Em0310*, int, unsigned int, int))(shared::base + 0x69E120))((Em0310*)Enemy->enemyObj, 0, 0x702, -1); // Rebind sword
+				((void(__thiscall*)(Em0310*, int, unsigned int, int))(shared::base + 0x69E120))(sundowner, 0, 0x702, -1); // Rebind sword
 
-				((void(__thiscall*)(Em0310*, int))(shared::base + 0x181CB0))((Em0310*)Enemy->enemyObj, 2); // Mask Animations & Effects
+				((void(__thiscall*)(Em0310*, int))(shared::base + 0x181CB0))(sundowner, 2); // Mask Animations & Effects
 
-				EntityHandle* swordHandle = (EntityHandle*)((char*)Enemy->enemyObj + 0x10EC);
+				EntityHandle* swordHandle = &sundowner->field_10EC;
 
 				Entity* sword = swordHandle->getEntity();
 				
 				if (sword) {
 					Behavior* swordBehavior = sword->m_pInstance;
 					if (swordBehavior) {
-						//swordBehavior->requestAnimationByMap(0x123, (Entity*)Enemy->enemyObj, 0, 0.0, 1.0, 0, -1.0, 1.0); // who knows
+						swordBehavior->requestAnimationByMap(0x123, sundowner->m_pEntity, 0, 0.0, 1.0, 0, -1.0, 1.0); // who knows
+						swordBehavior->updateAnimation();
 					}
 
 				}

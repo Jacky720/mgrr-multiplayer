@@ -260,8 +260,6 @@ bool handleKeyPress(int hotKey, bool* isMenuShowPtr) {
 */
 
 void Spawner(SpawnOption ent, int controllerIndex = -1) {
-	players[controllerIndex]->sundownerInitialized = false;
-
 	if (ent.subParts.m_nModel != 0) {
 		*modelItems = ent.subParts;
 	}
@@ -310,6 +308,7 @@ void SpawnCharacter(int id, int controller, int costumeIndex) {
 		PlayAsArmstrong = true;
 
 	players[controller]->isSundownerPhase2 = (ent.special == SundownerPhase2);
+	players[controller]->sundownerInitialized = false;
 	players[controller]->unarmed = (ent.special == SpawnUnarmed);
 	players[controller]->disableMeshes = ent.disableMeshes;
 	

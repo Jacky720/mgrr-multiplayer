@@ -2,6 +2,7 @@
 #include <Pl0000.h>
 #include <BehaviorEmBase.h>
 #include "MGRCustomUI.h"
+#include "MGRFunctions.h"
 #include "ModelItems.h"
 
 #include <string>
