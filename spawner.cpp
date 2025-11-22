@@ -293,8 +293,8 @@ public:
 
 					//cObjReadManager::Instance.requestWork((eObjID)0x11400, instance->m_nSetType);
 
-					auto pos = cGameUIManager::Instance.m_pPlayer ? cGameUIManager::Instance.m_pPlayer->m_vecTransPos : cVec4();
-					auto rot = cGameUIManager::Instance.m_pPlayer ? cGameUIManager::Instance.m_pPlayer->m_vecRotation : cVec4();
+					auto pos = MainPlayer ? MainPlayer->m_vecTransPos : cVec4();
+					auto rot = MainPlayer ? MainPlayer->m_vecRotation : cVec4();
 
 					instance->place(pos, rot);
 

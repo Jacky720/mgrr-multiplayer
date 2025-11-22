@@ -315,8 +315,8 @@ void SpawnCharacter(int id, int controller, int costumeIndex) {
 	players[controller]->playerName = ent.gameName;
 
 	RecalibrateBossCode();
-	//camera back to Raiden
-	giveVanillaCameraControl(MainPlayer);
+	//camera back to Raiden (seems to crash dwarf gekko)
+	//giveVanillaCameraControl(MainPlayer);
 
 }
 
@@ -390,25 +390,23 @@ void Update()
 		if (player->spawnFailTimer) player->spawnFailTimer--;
 	}
 
-	std::vector<Pl0000*> playersToKill;
+	std::vector<Pl0000*> playersKilled;
 	for (Pl0000* player : playerDestroyQueue) {
 		if (player->isIdle()) {
 			player->m_pEntity->~Entity();
-			playersToKill.push_back(player);
+			playersKilled.push_back(player);
 		}
 	}
-	for (Pl0000* player : playersToKill) {
+	for (Pl0000* player : playersKilled) {
 		playerDestroyQueue.erase(player);
 	}
 
-	MainPlayer = cGameUIManager::Instance.m_pPlayer;
-	if (!MainPlayer && PlayerManagerImplement::ms_Instance->m_KogekkoEntity)
-		MainPlayer = (Pl0000*)PlayerManagerImplement::ms_Instance->m_KogekkoEntity.getEntity()->m_pInstance;
+	UpdateMainPlayer();
 
 	if (!MainPlayer) {
 		if (p1IsKeyboard != p1WasKeyboard) p1WasKeyboard = p1IsKeyboard;
 		MPPlayer::EmptyPlayers();
-		ResetControllerAllFlags();
+		//ResetControllerAllFlags();
 		gotOriginalModelItems = false;
 		return;
 	}
@@ -477,6 +475,15 @@ void Update()
 
 	//auto& pos = matrix[0];
 	//auto& rotate = matrix[1];
+	
+	for (MPPlayer* player : players) {
+		if (player->controllerFlag == In && player->playerType == eObjID(0)) {
+			// Respawn!
+			SpawnCharacter(player->characterSelection,
+				player->controlIndex,
+				player->costumeSelection[player->characterSelection]);
+		}
+	}
 
 	// Detect newly-spawned players
 	bool needNewPlayer = false;

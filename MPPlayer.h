@@ -48,12 +48,12 @@ __declspec(selectany) std::vector<SpawnOption> spawnOptions[] = {
 	  {"Raiden (Blue Body)",      "Raiden", eObjID(0x10010), costumesList[CustomBodyBlue], eObjID(0x11012)},
 	  {"Raiden (Red Body)",       "Raiden", eObjID(0x10010), costumesList[CustomBodyRed], eObjID(0x11012)},
 	  {"Raiden (Yellow Body)",    "Raiden", eObjID(0x10010), costumesList[CustomBodyYellow], eObjID(0x11012)},
-	  {"Raiden (Desperado)",      "Raiden", eObjID(0x10010), costumesList[DesperadoBody], eObjID(0x11012)},
+	  {"Raiden (Desperado)",      "Raiden", eObjID(0x10010), costumesList[DesperadoBody], eObjID(0x13005)},
 	  {"Raiden (Suit)",           "Raiden", eObjID(0x10010), costumesList[Suit], eObjID(0x11012)},
 	  // {"Raiden (Mariachi)",    "Raiden", eObjID(0x10010), costumesList[Mariachi], eObjID(0x11012)}, // Different hair spawning, wouldn't work
 	  {"Raiden (Prologue)",       "Raiden", eObjID(0x10010), costumesList[PrologueBody], eObjID(0x11012)},
 	  {"Raiden (Original)",       "Raiden", eObjID(0x10010), costumesList[OriginalBody], eObjID(0x11012)},
-	  {"Gray Fox",                "Gray Fox", eObjID(0x10010), costumesList[GrayFox], eObjID(0x11012)},
+	  {"Gray Fox",                "Gray Fox", eObjID(0x10010), costumesList[GrayFox], eObjID(0x11301)},
 	  {"Raiden (White Armor)",    "Raiden", eObjID(0x10010), costumesList[WhiteArmor], eObjID(0x11012)},
 	  {"Raiden (Inferno Armor)",  "Raiden", eObjID(0x10010), costumesList[InfernoArmor], eObjID(0x11012)},
 	  {"Raiden (Commando Armor)", "Raiden", eObjID(0x10010), costumesList[CommandoArmor], eObjID(0x11012)} },
@@ -158,7 +158,8 @@ public:
 	static void FixIndexes() {
 		for (int i = 0; i < maxPlayerCount; i++) {
 			players[i]->controlIndex = i;
-			players[i]->controllerFlag = (players[i]->playerType) ? In : Out;
+			//players[i]->controllerFlag = (players[i]->playerType) ? In : Out;
+			if (players[i]->playerType) players[i]->controllerFlag = In;
 		}
 	}
 

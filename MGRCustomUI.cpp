@@ -396,7 +396,7 @@ void Present() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2((float)screenWidth, (float)screenHeight));
 	ImGui::Begin("Overlay", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground);
-	//Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer; // Commented to inherit from dllmain
+	UpdateMainPlayer();
 	if (isInit && MainPlayer) { // Keep this IF statment to ensure UI textures are loaded
 		// also _ = space, but i assume you got that
 		//DrawFalseMGRUI(75.0f, 105.0f, 100, 100, 100, 100, "jetstream_sam");

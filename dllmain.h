@@ -1,6 +1,7 @@
 #pragma once
 #include <Pl0000.h>
 #include <cGameUIManager.h>
+#include <PlayerManagerImplement.h>
 #include "ModelItems.h"
 #include "MPPlayer.h"
 
@@ -14,7 +15,6 @@ void RecalibrateBossCode();
 void TeleportToMainPlayer(MPPlayer* mainPlayer, int controllerIndex = -1);
 void TeleportToMainPlayer(Pl0000* mainPlayer, int controllerIndex = -1);
 void SpawnCharacter(int id, int controller, int costumeID = 0);
-int giveVanillaCameraControl(Pl0000* player);
 
 __declspec(selectany) unsigned int HotKey = VK_INSERT; //Hotkey for menu show
 
@@ -28,6 +28,12 @@ __declspec(selectany) bool EnableFriendlyFire = false;
 __declspec(selectany) bool p1IsKeyboard = true;
 
 __declspec(selectany) Pl0000* MainPlayer = cGameUIManager::Instance.m_pPlayer;
+
+inline void UpdateMainPlayer() {
+	MainPlayer = cGameUIManager::Instance.m_pPlayer;
+	if (!MainPlayer && PlayerManagerImplement::ms_Instance && PlayerManagerImplement::ms_Instance->m_KogekkoEntity)
+		MainPlayer = (Pl0000*)PlayerManagerImplement::ms_Instance->m_KogekkoEntity.getEntity()->m_pInstance;
+}
 
 __declspec(selectany) bool isInit = false;
 __declspec(selectany) float maxAllowedDist = 15.0f;
