@@ -219,6 +219,7 @@ void gui::RenderWindow()
 				ImGui::Text("First entity pointer: 0x%x", (unsigned int)firstEnt);
 
 				// Debug print stuff
+//#define PRINTNAMES
 //#define PRINTSAM
 //#define PRINTENEMY
 //#define SHOWBOSSACTION
@@ -239,6 +240,9 @@ void gui::RenderWindow()
 
 				for (auto value : EntitySystem::ms_Instance.m_EntityList) {
 					if (!value || value == (Entity*)0xEFEFEFEF) continue;
+#ifdef PRINTNAMES
+					ImGui::Text("Object named: %s", value->m_EntityName);
+#endif
 #ifdef PRINTSAM
 					auto player = value->getEntityInstance<Pl0000>();
 					if (!player) continue;

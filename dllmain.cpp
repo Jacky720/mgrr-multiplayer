@@ -516,6 +516,7 @@ void Update()
 						modelItems->m_nModel = originalModelItems.m_nModel;
 						*modelSword = originalModelSword;
 					}
+					// Alright, we got our object! Let's initialize whatever needs it.
 					if (playerIt->unarmed) {
 						player->toggleAnyMesh("saya_arm", false); // Doesn't work?
 						Behavior* newSheath = player->m_SheathHandle.getEntity()->m_pInstance;
@@ -531,6 +532,15 @@ void Update()
 					}
 					for (std::string toggleMesh : playerIt->disableMeshes) {
 						player->toggleAnyMesh(toggleMesh.c_str(), false);
+					}
+					// Raiden using Sam's damage values returns all 0. Fix it.
+					if (PhaseManager::ms_Instance.isDLCPhase() && playerIt->playerType == 0x10010) {
+						float* multipliersOffset = (float*)&player->field_1C9C;
+						// Multipliers are in groups of 5, with 17 total. We need index 15 and 16 for Sam and Wolf DLC numbers.
+						for (int i = 0; i < 5; i++) {
+							multipliersOffset[15 * 5 + i] = 1.f;
+							multipliersOffset[16 * 5 + i] = 1.f;
+						}
 					}
 					break;
 				}

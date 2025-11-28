@@ -59,7 +59,7 @@ __declspec(selectany) std::vector<SpawnOption> spawnOptions[] = {
 	  {"Raiden (Commando Armor)", "Raiden", eObjID(0x10010), costumesList[CommandoArmor], eObjID(0x11012)} },
 
 	{ // 0x11083 (Desperado sheath) to avoid sheath light
-	  {"Raiden (Unarmed)", "Raiden",   eObjID(0x10010), {0x11010, 0x11011, 0x11014, 0x11083, 0x11017}, eObjID(0x11012), SpawnUnarmed}, // Desperado sheath for no light
+	  {"Raiden (Unarmed)", "Raiden",   eObjID(0x10010), {0x11010, 0x11011, 0x11014, 0x11083, 0x11017}, eObjID(0x11012), SpawnUnarmed},
 	  {"Civilian A",       "Civilian", eObjID(0x10010), {0x10800, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
 	  {"Civilian B",       "Civilian", eObjID(0x10010), {0x10801, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
 	  {"Civilian C",       "Civilian", eObjID(0x10010), {0x10a00, NILBODY, NILBODY, 0x11083, NILBODY}, eObjID(0x11012), SpawnUnarmed, {"skin_in"}},
